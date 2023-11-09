@@ -37,6 +37,7 @@ func NewBoard(xmax int, ymax int, hexSize int) *Board {
 		YMax:    ymax,
 		HexSize: hexSize,
 		Biomes:  make([]*Biome, 0),
+		Agents:  make([]*Human, 0),
 	}
 }
 
@@ -106,4 +107,34 @@ func (b *Board) GenerateBiomes() {
 		}
 		b.Biomes = append(b.Biomes, &biomeHexs)
 	}
+}
+
+func (b *Board) GenerateHumans() {
+	humans := make([]*Human, 10)
+
+	availableHexs := make(map[string]*Hexagone)
+	for k, v := range b.Cases {
+		availableHexs[k] = v
+	}
+
+	for i := range humans {
+		// Ensure unique position for each human
+		for pos, hex := range availableHexs {
+			humans[i] = &Human{
+				id:          i,
+				Position:    *hex,
+				Type:        rune(rand.Intn(2)), // 0 or 1
+				Hungriness:  rand.Intn(101),     // 0 to 100
+				Thirstiness: rand.Intn(101),     // 0 to 100
+				Age:         rand.Intn(101),     // 0 to 100
+				Gender:      rune(rand.Intn(2)), // 0 or 1
+				Strength:    rand.Intn(101),     // 0 to 100
+				Sociability: rand.Intn(101),     // 0 to 100
+			}
+			delete(availableHexs, pos)
+			break
+		}
+	}
+
+	b.Agents = humans
 }

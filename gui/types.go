@@ -3,8 +3,8 @@ package gui
 import _map "github.com/adrsimon/gomagnon/hexmap"
 
 const (
-	ScreenWidth  = 1080
-	ScreenHeight = 720
+	ScreenWidth  = 1920
+	ScreenHeight = 1080
 )
 
 type Simulation struct {

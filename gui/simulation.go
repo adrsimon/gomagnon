@@ -16,12 +16,13 @@ func NewSimulation() Simulation {
 		colornames.Darkgreen,
 		colornames.Blue,
 		colornames.Darkslategrey,
-		30,
-		30,
+		50,
 		40,
+		30,
 	)
 	simu.gameMap.Board.Generate()
 	simu.gameMap.Board.GenerateBiomes()
+	simu.gameMap.Board.GenerateHumans()
 
 	simu.ScreenWidth = ScreenWidth
 	simu.ScreenHeight = ScreenHeight
