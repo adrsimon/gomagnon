@@ -9,19 +9,15 @@ import (
 func NewSimulation() Simulation {
 	simu := Simulation{}
 	simu.gameMap = _map.NewGame(
-		ScreenWidth,
-		ScreenHeight,
-		colornames.Black,
-		colornames.Yellow,
-		colornames.Darkgreen,
-		colornames.Blue,
-		colornames.Darkslategrey,
-		30,
-		30,
+		ScreenWidth, ScreenHeight,
+		colornames.Black, colornames.Yellow, colornames.Darkgreen, colornames.Blue, colornames.Darkslategrey,
+		27, 23,
 		40,
+		10, 10, 10, 10,
 	)
 	simu.gameMap.Board.Generate()
 	simu.gameMap.Board.GenerateBiomes()
+	simu.gameMap.Board.GenerateResources()
 
 	simu.ScreenWidth = ScreenWidth
 	simu.ScreenHeight = ScreenHeight
@@ -60,9 +56,9 @@ func (s *Simulation) Draw(screen *ebiten.Image) {
 
 			if int(y)%2 == 0 {
 				offsetX = hexSize / 2
-				s.gameMap.DrawHex(screen, x*hexSize+offsetX, y*offsetY, color, hexSize)
+				s.gameMap.DrawHex(screen, x*hexSize+offsetX, y*offsetY, color, hexSize, hex.Resource)
 			} else {
-				s.gameMap.DrawHex(screen, x*hexSize+offsetX, y*offsetY, color, hexSize)
+				s.gameMap.DrawHex(screen, x*hexSize+offsetX, y*offsetY, color, hexSize, hex.Resource)
 			}
 		}
 	}
