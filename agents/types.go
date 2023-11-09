@@ -5,11 +5,11 @@ import "github.com/adrsimon/gomagnon/hexmap"
 type Human struct {
 	id          int
 	Position    hexmap.Hexagone
-	Type        rune
-	Hungriness  int
-	Thirstiness int
+	Type        rune // can me cromagnon or neandertal
+	Hungriness  int  // 0 to 100
+	Thirstiness int  // 0 to 100
 	Age         int
 	Gender      rune
-	Strength    int
-	Sociability int
+	Strength    int // 0 to 100
+	Sociability int // 0 to 100
 }
