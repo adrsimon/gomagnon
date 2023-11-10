@@ -137,4 +137,9 @@ func (b *Board) GenerateHumans() {
 	}
 
 	b.Agents = humans
+	//print agents
+	// for _, agent := range b.Agents {
+	// 	fmt.Println(*agent)
+	// }
+
 }
