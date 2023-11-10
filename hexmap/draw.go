@@ -38,7 +38,7 @@ func init() {
 	imgCaves = caves
 }
 
-func (g *GameMap) DrawHex(background *ebiten.Image, xCenter float32, yCenter float32, biome BiomesType, hexSize float32) {
+func (g *GameMap) DrawHex(background *ebiten.Image, xCenter float32, yCenter float32, biome BiomesType, hexSize float32, resource ResourceType) {
 	var hexImage *ebiten.Image
 	switch biome {
 	case PLAINS:
@@ -69,4 +69,16 @@ func (g *GameMap) DrawHex(background *ebiten.Image, xCenter float32, yCenter flo
 	vector.StrokeLine(background, x2, y4, x2, y3, 0, colornames.Black, false)
 	vector.StrokeLine(background, x2, y3, x0, y1, 0, colornames.Black, false)
 	vector.StrokeLine(background, x0, y1, x1, y3, 0, colornames.Black, false)
+
+	switch resource {
+	case FRUIT:
+		vector.DrawFilledCircle(background, xCenter, yCenter, hexSize/8, colornames.Green, false)
+	case ANIMAL:
+		vector.DrawFilledCircle(background, xCenter, yCenter, hexSize/8, colornames.Red, false)
+	case ROCK:
+		vector.DrawFilledCircle(background, xCenter, yCenter, hexSize/8, colornames.Grey, false)
+	case WOOD:
+		vector.DrawFilledCircle(background, xCenter, yCenter, hexSize/8, colornames.Black, false)
+	case NONE:
+	}
 }

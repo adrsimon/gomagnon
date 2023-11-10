@@ -7,36 +7,38 @@ import (
 )
 
 func NewGame(
-	screenWidth int,
-	screenHeight int,
+	screenWidth, screenHeight int,
 	backgroundColor color.RGBA,
-	dirtColor color.RGBA,
-	forestColor color.RGBA,
-	waterColor color.RGBA,
-	caveColor color.RGBA,
-	xmax int,
-	ymax int,
+	xmax, ymax int,
 	hexSize int,
+	fruits, animals, rocks, woods int,
 ) *GameMap {
 	return &GameMap{
-		Board:           NewBoard(xmax, ymax, hexSize),
+		Board:           NewBoard(xmax, ymax, hexSize, fruits, animals, rocks, woods),
 		ScreenWidth:     screenWidth,
 		ScreenHeight:    screenHeight,
 		BackgroundColor: backgroundColor,
-		DirtColor:       dirtColor,
-		ForestColor:     forestColor,
-		WaterColor:      waterColor,
-		CaveColor:       caveColor,
 	}
 }
 
-func NewBoard(xmax int, ymax int, hexSize int) *Board {
+func NewBoard(xmax, ymax, hexSize, fruits, animals, rocks, woods int) *Board {
 	return &Board{
-		Cases:   make(map[string]*Hexagone),
-		XMax:    xmax,
-		YMax:    ymax,
-		HexSize: hexSize,
-		Biomes:  make([]*Biome, 0),
+		Cases:           make(map[string]*Hexagone),
+		XMax:            xmax,
+		YMax:            ymax,
+		HexSize:         hexSize,
+		Biomes:          make([]*Biome, 0),
+		ResourceManager: NewResourceManager(fruits, animals, rocks, woods),
+	}
+}
+
+func NewResourceManager(fruits, animals, rocks, woods int) *ResourceManager {
+	return &ResourceManager{
+		Resources:         make([]ResourceType, 0),
+		MaxFruitQuantity:  fruits,
+		MaxAnimalQuantity: animals,
+		MaxRockQuantity:   rocks,
+		MaxWoodQuantity:   woods,
 	}
 }
 
@@ -98,12 +100,64 @@ func (b *Board) GenerateBiomes() {
 			}
 			key := fmt.Sprintf("%d:%d", neighbour.Position.X, neighbour.Position.Y)
 			_, ok := availableHexs[key]
-			if try := rand.Intn(100); try > 80 && ok {
+			if try := rand.Intn(100); try > 1 && ok {
 				biomeHexs.Hexs = append(biomeHexs.Hexs, neighbour)
 				delete(availableHexs, key)
 				neighbours = append(neighbours, b.GetNeighbours(neighbour)...)
 			}
 		}
 		b.Biomes = append(b.Biomes, &biomeHexs)
+	}
+}
+
+func (b *Board) GetHexBiome(hex *Hexagone) *Biome {
+	for _, biome := range b.Biomes {
+		for _, biomeHex := range biome.Hexs {
+			if biomeHex == hex {
+				return biome
+			}
+		}
+	}
+	return nil
+}
+
+func (b *Board) GenerateResources() {
+	for _, biome := range b.Biomes {
+		var resourceType ResourceType
+
+		hex := biome.Hexs[rand.Intn(len(biome.Hexs))]
+		if (b.ResourceManager.MaxFruitQuantity > b.ResourceManager.FruitQuantity) ||
+			(b.ResourceManager.MaxAnimalQuantity > b.ResourceManager.AnimalQuantity) ||
+			(b.ResourceManager.MaxRockQuantity > b.ResourceManager.RockQuantity) ||
+			(b.ResourceManager.MaxWoodQuantity > b.ResourceManager.WoodQuantity) {
+			switch biome.BiomeType {
+			case PLAINS:
+				resourceType = ANIMAL
+			case FOREST:
+				if rand.Intn(2) == 0 {
+					resourceType = FRUIT
+				} else {
+					resourceType = WOOD
+				}
+			case WATER:
+				resourceType = NONE
+			case CAVE:
+				resourceType = ROCK
+			}
+			hex.Resource = resourceType
+			b.ResourceManager.Resources = append(b.ResourceManager.Resources, resourceType)
+			switch resourceType {
+			case FRUIT:
+				b.ResourceManager.FruitQuantity++
+			case ANIMAL:
+				b.ResourceManager.AnimalQuantity++
+			case ROCK:
+				b.ResourceManager.RockQuantity++
+			case WOOD:
+				b.ResourceManager.WoodQuantity++
+			}
+		} else {
+			hex.Resource = NONE
+		}
 	}
 }

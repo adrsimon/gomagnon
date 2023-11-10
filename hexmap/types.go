@@ -9,18 +9,15 @@ type GameMap struct {
 	ScreenWidth     int
 	ScreenHeight    int
 	BackgroundColor color.RGBA
-	DirtColor       color.RGBA
-	ForestColor     color.RGBA
-	WaterColor      color.RGBA
-	CaveColor       color.RGBA
 }
 
 type Board struct {
-	Cases   map[string]*Hexagone
-	XMax    int
-	YMax    int
-	HexSize int
-	Biomes  []*Biome
+	Cases           map[string]*Hexagone
+	XMax            int
+	YMax            int
+	HexSize         int
+	Biomes          []*Biome
+	ResourceManager *ResourceManager
 }
 
 type BiomesType int
@@ -37,8 +34,31 @@ type Biome struct {
 	Hexs      []*Hexagone
 }
 
+type ResourceType int
+
+const (
+	NONE ResourceType = iota
+	FRUIT
+	ANIMAL
+	ROCK
+	WOOD
+)
+
+type ResourceManager struct {
+	Resources         []ResourceType
+	MaxFruitQuantity  int
+	MaxAnimalQuantity int
+	MaxRockQuantity   int
+	MaxWoodQuantity   int
+	FruitQuantity     int
+	AnimalQuantity    int
+	RockQuantity      int
+	WoodQuantity      int
+}
+
 type Hexagone struct {
 	Position *Point2D
+	Resource ResourceType
 }
 
 type Point2D struct {
