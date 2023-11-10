@@ -9,10 +9,6 @@ type GameMap struct {
 	ScreenWidth     int
 	ScreenHeight    int
 	BackgroundColor color.RGBA
-	DirtColor       color.RGBA
-	ForestColor     color.RGBA
-	WaterColor      color.RGBA
-	CaveColor       color.RGBA
 }
 
 type Board struct {
@@ -27,7 +23,7 @@ type Board struct {
 type BiomesType int
 
 const (
-	DIRT BiomesType = iota
+	PLAINS BiomesType = iota
 	FOREST
 	WATER
 	CAVE

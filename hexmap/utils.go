@@ -8,7 +8,7 @@ import (
 
 func NewGame(
 	screenWidth, screenHeight int,
-	backgroundColor, dirtColor, forestColor, waterColor, caveColor color.RGBA,
+	backgroundColor color.RGBA,
 	xmax, ymax int,
 	hexSize int,
 	fruits, animals, rocks, woods int,
@@ -18,10 +18,6 @@ func NewGame(
 		ScreenWidth:     screenWidth,
 		ScreenHeight:    screenHeight,
 		BackgroundColor: backgroundColor,
-		DirtColor:       dirtColor,
-		ForestColor:     forestColor,
-		WaterColor:      waterColor,
-		CaveColor:       caveColor,
 	}
 }
 
@@ -135,7 +131,7 @@ func (b *Board) GenerateResources() {
 			(b.ResourceManager.MaxRockQuantity > b.ResourceManager.RockQuantity) ||
 			(b.ResourceManager.MaxWoodQuantity > b.ResourceManager.WoodQuantity) {
 			switch biome.BiomeType {
-			case DIRT:
+			case PLAINS:
 				resourceType = ANIMAL
 			case FOREST:
 				if rand.Intn(2) == 0 {
