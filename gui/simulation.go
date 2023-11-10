@@ -16,9 +16,9 @@ func NewSimulation() Simulation {
 		colornames.Darkgreen,
 		colornames.Blue,
 		colornames.Darkslategrey,
-		30,
-		30,
-		40,
+		20,
+		15,
+		60,
 	)
 	simu.gameMap.Board.Generate()
 	simu.gameMap.Board.GenerateBiomes()
@@ -37,18 +37,6 @@ func (s *Simulation) Draw(screen *ebiten.Image) {
 	screen.Fill(s.gameMap.BackgroundColor)
 
 	for _, biome := range s.gameMap.Board.Biomes {
-		color := s.gameMap.BackgroundColor
-		switch biome.BiomeType {
-		case _map.DIRT:
-			color = s.gameMap.DirtColor
-		case _map.FOREST:
-			color = s.gameMap.ForestColor
-		case _map.WATER:
-			color = s.gameMap.WaterColor
-		case _map.CAVE:
-			color = s.gameMap.CaveColor
-		}
-
 		for _, hex := range biome.Hexs {
 			hexSize := float32(s.gameMap.Board.HexSize)
 			x := float32(hex.Position.X)
@@ -60,9 +48,9 @@ func (s *Simulation) Draw(screen *ebiten.Image) {
 
 			if int(y)%2 == 0 {
 				offsetX = hexSize / 2
-				s.gameMap.DrawHex(screen, x*hexSize+offsetX, y*offsetY, color, hexSize)
+				s.gameMap.DrawHex(screen, x*hexSize+offsetX, y*offsetY, biome.BiomeType, hexSize)
 			} else {
-				s.gameMap.DrawHex(screen, x*hexSize+offsetX, y*offsetY, color, hexSize)
+				s.gameMap.DrawHex(screen, x*hexSize+offsetX, y*offsetY, biome.BiomeType, hexSize)
 			}
 		}
 	}

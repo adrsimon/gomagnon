@@ -26,7 +26,7 @@ type Board struct {
 type BiomesType int
 
 const (
-	DIRT BiomesType = iota
+	PLAINS BiomesType = iota
 	FOREST
 	WATER
 	CAVE
