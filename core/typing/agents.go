@@ -2,7 +2,7 @@ package typing
 
 type Human struct {
 	id          int
-	Position    Hexagone
+	Position    string
 	Type        rune // can be cromagnon or neandertal
 	Hungriness  int  // 0 to 100
 	Thirstiness int  // 0 to 100
