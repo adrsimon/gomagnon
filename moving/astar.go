@@ -1,6 +1,12 @@
 package moving
 
-/*func astar(agent Agent, env hexmap.GameMap) Agent { // goal methode agent
+/*
+import (
+	"github.com/adrsimon/gomagnon/core/typing"
+
+)
+
+func astar(agent Agent, env []typing.Hexagone) Agent { // goal methode agent
 	l := make(PriorityQueue, 0)
 	l.Push(Item{agent, agent.goal(env)})
 	var save map[Agent]Agent
@@ -28,4 +34,5 @@ package moving
 	bestIfnot95 :=findMax(save)
 	return bestIfnot95
 }
+
 */
