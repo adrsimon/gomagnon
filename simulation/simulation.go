@@ -29,6 +29,7 @@ func NewSimulation() Simulation {
 	simu.GameMap.Board.Generate()
 	simu.GameMap.Board.GenerateBiomes()
 	simu.GameMap.Board.GenerateResources()
+	simu.GameMap.Board.GenerateHumans()
 
 	simu.ScreenWidth = ScreenWidth
 	simu.ScreenHeight = ScreenHeight
