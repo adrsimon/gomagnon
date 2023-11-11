@@ -1,6 +1,7 @@
-package hexmap
+package drawing
 
 import (
+	"github.com/adrsimon/gomagnon/core/typing"
 	"golang.org/x/image/colornames"
 	_ "image/png"
 	"log"
@@ -38,16 +39,16 @@ func init() {
 	imgCaves = caves
 }
 
-func (g *GameMap) DrawHex(background *ebiten.Image, xCenter float32, yCenter float32, biome BiomesType, hexSize float32, resource ResourceType) {
+func DrawHex(background *ebiten.Image, xCenter float32, yCenter float32, biome typing.BiomesType, hexSize float32, resource typing.ResourceType) {
 	var hexImage *ebiten.Image
 	switch biome {
-	case PLAINS:
+	case typing.PLAINS:
 		hexImage = imgPlains
-	case FOREST:
+	case typing.FOREST:
 		hexImage = imgForest
-	case WATER:
+	case typing.WATER:
 		hexImage = imgWater
-	case CAVE:
+	case typing.CAVE:
 		hexImage = imgCaves
 	}
 
@@ -56,29 +57,15 @@ func (g *GameMap) DrawHex(background *ebiten.Image, xCenter float32, yCenter flo
 	op.GeoM.Translate(float64(xCenter-(3.0/4.0)*hexSize), float64(yCenter-(2.0/3.0)*hexSize))
 	background.DrawImage(hexImage, op)
 
-	x0 := xCenter
-	x1 := xCenter - hexSize/2
-	x2 := xCenter + hexSize/2
-	y1 := yCenter - hexSize/2
-	y2 := yCenter + hexSize/2
-	y3 := yCenter - hexSize/4
-	y4 := yCenter + hexSize/4
-	vector.StrokeLine(background, x1, y3, x1, y4, 0, colornames.Black, false)
-	vector.StrokeLine(background, x1, y4, x0, y2, 0, colornames.Black, false)
-	vector.StrokeLine(background, x0, y2, x2, y4, 0, colornames.Black, false)
-	vector.StrokeLine(background, x2, y4, x2, y3, 0, colornames.Black, false)
-	vector.StrokeLine(background, x2, y3, x0, y1, 0, colornames.Black, false)
-	vector.StrokeLine(background, x0, y1, x1, y3, 0, colornames.Black, false)
-
 	switch resource {
-	case FRUIT:
+	case typing.FRUIT:
 		vector.DrawFilledCircle(background, xCenter, yCenter, hexSize/8, colornames.Green, false)
-	case ANIMAL:
+	case typing.ANIMAL:
 		vector.DrawFilledCircle(background, xCenter, yCenter, hexSize/8, colornames.Red, false)
-	case ROCK:
+	case typing.ROCK:
 		vector.DrawFilledCircle(background, xCenter, yCenter, hexSize/8, colornames.Grey, false)
-	case WOOD:
+	case typing.WOOD:
 		vector.DrawFilledCircle(background, xCenter, yCenter, hexSize/8, colornames.Black, false)
-	case NONE:
+	case typing.NONE:
 	}
 }

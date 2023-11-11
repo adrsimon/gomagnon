@@ -1,24 +1,17 @@
-package hexmap
+package typing
 
 import (
 	"fmt"
-	"image/color"
 	"math/rand"
 )
 
-func NewGame(
-	screenWidth, screenHeight int,
-	backgroundColor color.RGBA,
-	xmax, ymax int,
-	hexSize int,
-	fruits, animals, rocks, woods int,
-) *GameMap {
-	return &GameMap{
-		Board:           NewBoard(xmax, ymax, hexSize, fruits, animals, rocks, woods),
-		ScreenWidth:     screenWidth,
-		ScreenHeight:    screenHeight,
-		BackgroundColor: backgroundColor,
-	}
+type Board struct {
+	Cases           map[string]*Hexagone
+	XMax            int
+	YMax            int
+	HexSize         int
+	Biomes          []*Biome
+	ResourceManager *ResourceManager
 }
 
 func NewBoard(xmax, ymax, hexSize, fruits, animals, rocks, woods int) *Board {
@@ -29,16 +22,6 @@ func NewBoard(xmax, ymax, hexSize, fruits, animals, rocks, woods int) *Board {
 		HexSize:         hexSize,
 		Biomes:          make([]*Biome, 0),
 		ResourceManager: NewResourceManager(fruits, animals, rocks, woods),
-	}
-}
-
-func NewResourceManager(fruits, animals, rocks, woods int) *ResourceManager {
-	return &ResourceManager{
-		Resources:         make([]ResourceType, 0),
-		MaxFruitQuantity:  fruits,
-		MaxAnimalQuantity: animals,
-		MaxRockQuantity:   rocks,
-		MaxWoodQuantity:   woods,
 	}
 }
 
@@ -85,12 +68,13 @@ func (b *Board) GenerateBiomes() {
 		if hex == nil {
 			continue
 		}
-		biome := BiomesType(rand.Intn(4))
-		biomeHexs := Biome{
-			BiomeType: biome,
+		biomeType := BiomesType(rand.Intn(4))
+		biome := Biome{
+			BiomeType: biomeType,
 			Hexs:      make([]*Hexagone, 0),
 		}
-		biomeHexs.Hexs = append(biomeHexs.Hexs, hex)
+		biome.Hexs = append(biome.Hexs, hex)
+		hex.Biome = &biome
 		delete(availableHexs, pos)
 
 		neighbours := b.GetNeighbours(hex)
@@ -101,63 +85,48 @@ func (b *Board) GenerateBiomes() {
 			key := fmt.Sprintf("%d:%d", neighbour.Position.X, neighbour.Position.Y)
 			_, ok := availableHexs[key]
 			if try := rand.Intn(100); try > 1 && ok {
-				biomeHexs.Hexs = append(biomeHexs.Hexs, neighbour)
+				biome.Hexs = append(biome.Hexs, neighbour)
+				neighbour.Biome = &biome
 				delete(availableHexs, key)
 				neighbours = append(neighbours, b.GetNeighbours(neighbour)...)
 			}
 		}
-		b.Biomes = append(b.Biomes, &biomeHexs)
+		b.Biomes = append(b.Biomes, &biome)
 	}
-}
-
-func (b *Board) GetHexBiome(hex *Hexagone) *Biome {
-	for _, biome := range b.Biomes {
-		for _, biomeHex := range biome.Hexs {
-			if biomeHex == hex {
-				return biome
-			}
-		}
-	}
-	return nil
 }
 
 func (b *Board) GenerateResources() {
 	for _, biome := range b.Biomes {
-		var resourceType ResourceType
+		resourceType := NONE
 
 		hex := biome.Hexs[rand.Intn(len(biome.Hexs))]
-		if (b.ResourceManager.MaxFruitQuantity > b.ResourceManager.FruitQuantity) ||
-			(b.ResourceManager.MaxAnimalQuantity > b.ResourceManager.AnimalQuantity) ||
-			(b.ResourceManager.MaxRockQuantity > b.ResourceManager.RockQuantity) ||
-			(b.ResourceManager.MaxWoodQuantity > b.ResourceManager.WoodQuantity) {
-			switch biome.BiomeType {
-			case PLAINS:
+		switch biome.BiomeType {
+		case PLAINS:
+			if b.ResourceManager.MaxAnimalQuantity > b.ResourceManager.AnimalQuantity {
 				resourceType = ANIMAL
-			case FOREST:
-				if rand.Intn(2) == 0 {
-					resourceType = FRUIT
-				} else {
-					resourceType = WOOD
-				}
-			case WATER:
-				resourceType = NONE
-			case CAVE:
+			}
+		case FOREST:
+			if rand.Intn(2) == 0 && b.ResourceManager.MaxFruitQuantity > b.ResourceManager.FruitQuantity {
+				resourceType = FRUIT
+			} else if b.ResourceManager.MaxWoodQuantity > b.ResourceManager.WoodQuantity {
+				resourceType = WOOD
+			}
+		case CAVE:
+			if b.ResourceManager.MaxRockQuantity > b.ResourceManager.RockQuantity {
 				resourceType = ROCK
 			}
-			hex.Resource = resourceType
-			b.ResourceManager.Resources = append(b.ResourceManager.Resources, resourceType)
-			switch resourceType {
-			case FRUIT:
-				b.ResourceManager.FruitQuantity++
-			case ANIMAL:
-				b.ResourceManager.AnimalQuantity++
-			case ROCK:
-				b.ResourceManager.RockQuantity++
-			case WOOD:
-				b.ResourceManager.WoodQuantity++
-			}
-		} else {
-			hex.Resource = NONE
+		}
+		hex.Resource = resourceType
+		b.ResourceManager.Resources = append(b.ResourceManager.Resources, resourceType)
+		switch resourceType {
+		case FRUIT:
+			b.ResourceManager.FruitQuantity++
+		case ANIMAL:
+			b.ResourceManager.AnimalQuantity++
+		case ROCK:
+			b.ResourceManager.RockQuantity++
+		case WOOD:
+			b.ResourceManager.WoodQuantity++
 		}
 	}
 }
