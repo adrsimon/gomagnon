@@ -12,19 +12,25 @@ type Human struct {
 	Sociability int // 0 to 100
 }
 
+const (
+	AnimalFoodValueMultiplier = 3.0
+	FruitFoodValueMultiplier  = 1.0
+	WaterValueMultiplier      = 2.0
+)
+
 func (h *Human) EvaluateSurroundings(hex *Hexagone) float64 {
-	var foodValue, waterValue float64
+	var score = 0.0
 
 	switch hex.Resource {
 	case ANIMAL:
-		foodValue = (float64(h.Hungriness) / 100) * 3
+		score = (float64(h.Hungriness) / 100) * AnimalFoodValueMultiplier
 	case FRUIT:
-		foodValue = (float64(h.Hungriness) / 100)
+		score = (float64(h.Hungriness) / 100) * FruitFoodValueMultiplier
 	}
 
 	if hex.Biome.BiomeType == WATER {
-		waterValue = (float64(h.Thirstiness) / 100)
+		score = (float64(h.Thirstiness) / 100) * WaterValueMultiplier
 	}
 
-	return (foodValue + waterValue) / 2
+	return score
 }
