@@ -141,7 +141,6 @@ func (b *Board) GenerateHumans() {
 	}
 
 	for i := range humans {
-		// Ensure unique position for each human
 		for pos := range availableHexs {
 			humans[i] = &Human{
 				id:          i,

@@ -12,6 +12,7 @@ type Human struct {
 	Sociability int // 0 to 100
 }
 
+
 const (
 	AnimalFoodValueMultiplier = 3.0
 	FruitFoodValueMultiplier  = 1.0
