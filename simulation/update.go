@@ -19,3 +19,5 @@ func (s *Simulation) Update() error {
 	wg.Wait()
 	return nil
 }
+
+// printAgents functon just has to recover every Simulation.GameMap.Board.Agents.Position (string format) and print them on the right hexagone

@@ -43,7 +43,7 @@ func (h *Human) EvaluateSurroundings(hex *Hexagone) float64 {
 	return score
 }
 
-// Adapt to quentin A* + add concurency handling
+// Adapt to quentin A* + add concurency handling + send request to take resource + add updating resources when taken
 func (h *Human) UpdateAgent() {
 	if !h.MovingToTarget {
 		surroundingHexagons := h.GetSurroundingHexagons()
@@ -69,9 +69,11 @@ func (h *Human) UpdateAgent() {
 
 func (h *Human) UpdateStateBasedOnResource(hex *Hexagone) {
 	if hex.Resource == ANIMAL {
+		// TODO: send request to take resource and if yes:
 		h.Hungriness = max(0, h.Hungriness-rand.Intn(20))
 	}
 	if hex.Resource == FRUIT {
+		// TODO: send request to take resource and if yes:
 		h.Hungriness = max(0, h.Hungriness-rand.Intn(10))
 	}
 	if hex.Biome.BiomeType == WATER {
