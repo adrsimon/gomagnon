@@ -1,9 +1,11 @@
 package main
 
 import (
+	"log"
+	"time"
+
 	"github.com/adrsimon/gomagnon/simulation"
 	"github.com/hajimehoshi/ebiten/v2"
-	"log"
 )
 
 func main() {
@@ -13,5 +15,16 @@ func main() {
 
 	if err := ebiten.RunGame(&sim); err != nil {
 		log.Fatal(err)
+	}
+
+	ticker := time.NewTicker(1 * time.Second)
+	for {
+		select {
+		case <-ticker.C:
+			err := sim.Update()
+			if err != nil {
+				// Handle error
+			}
+		}
 	}
 }
