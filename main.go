@@ -1,13 +1,13 @@
 package main
 
 import (
-	"github.com/adrsimon/gomagnon/gui"
+	"github.com/adrsimon/gomagnon/simulation"
 	"github.com/hajimehoshi/ebiten/v2"
 	"log"
 )
 
 func main() {
-	sim := gui.NewSimulation()
+	sim := simulation.NewSimulation()
 	ebiten.SetWindowSize(sim.ScreenWidth, sim.ScreenHeight)
 	ebiten.SetWindowTitle("Map Generated")
 

@@ -1,43 +1,29 @@
-package hexmap
+package typing
 
 import (
 	"fmt"
-	"image/color"
 	"math/rand"
 )
 
-func NewGame(
-	screenWidth int,
-	screenHeight int,
-	backgroundColor color.RGBA,
-	dirtColor color.RGBA,
-	forestColor color.RGBA,
-	waterColor color.RGBA,
-	caveColor color.RGBA,
-	xmax int,
-	ymax int,
-	hexSize int,
-) *GameMap {
-	return &GameMap{
-		Board:           NewBoard(xmax, ymax, hexSize),
-		ScreenWidth:     screenWidth,
-		ScreenHeight:    screenHeight,
-		BackgroundColor: backgroundColor,
-		DirtColor:       dirtColor,
-		ForestColor:     forestColor,
-		WaterColor:      waterColor,
-		CaveColor:       caveColor,
-	}
+type Board struct {
+	Cases           map[string]*Hexagone
+	XMax            int
+	YMax            int
+	HexSize         int
+	Biomes          []*Biome
+	ResourceManager *ResourceManager
+	AgentManager    *AgentManager
+	Agents          []*Human
 }
 
-func NewBoard(xmax int, ymax int, hexSize int) *Board {
+func NewBoard(xmax, ymax, hexSize, fruits, animals, rocks, woods int) *Board {
 	return &Board{
-		Cases:   make(map[string]*Hexagone),
-		XMax:    xmax,
-		YMax:    ymax,
-		HexSize: hexSize,
-		Biomes:  make([]*Biome, 0),
-		Agents:  make([]*Human, 0),
+		Cases:           make(map[string]*Hexagone),
+		XMax:            xmax,
+		YMax:            ymax,
+		HexSize:         hexSize,
+		Biomes:          make([]*Biome, 0),
+		ResourceManager: NewResourceManager(fruits, animals, rocks, woods),
 	}
 }
 
@@ -84,12 +70,13 @@ func (b *Board) GenerateBiomes() {
 		if hex == nil {
 			continue
 		}
-		biome := BiomesType(rand.Intn(4))
-		biomeHexs := Biome{
-			BiomeType: biome,
+		biomeType := BiomesType(rand.Intn(4))
+		biome := Biome{
+			BiomeType: biomeType,
 			Hexs:      make([]*Hexagone, 0),
 		}
-		biomeHexs.Hexs = append(biomeHexs.Hexs, hex)
+		biome.Hexs = append(biome.Hexs, hex)
+		hex.Biome = &biome
 		delete(availableHexs, pos)
 
 		neighbours := b.GetNeighbours(hex)
@@ -99,13 +86,50 @@ func (b *Board) GenerateBiomes() {
 			}
 			key := fmt.Sprintf("%d:%d", neighbour.Position.X, neighbour.Position.Y)
 			_, ok := availableHexs[key]
-			if try := rand.Intn(100); try > 80 && ok {
-				biomeHexs.Hexs = append(biomeHexs.Hexs, neighbour)
+			if try := rand.Intn(100); try > 1 && ok {
+				biome.Hexs = append(biome.Hexs, neighbour)
+				neighbour.Biome = &biome
 				delete(availableHexs, key)
 				neighbours = append(neighbours, b.GetNeighbours(neighbour)...)
 			}
 		}
-		b.Biomes = append(b.Biomes, &biomeHexs)
+		b.Biomes = append(b.Biomes, &biome)
+	}
+}
+
+func (b *Board) GenerateResources() {
+	for _, biome := range b.Biomes {
+		resourceType := NONE
+
+		hex := biome.Hexs[rand.Intn(len(biome.Hexs))]
+		switch biome.BiomeType {
+		case PLAINS:
+			if b.ResourceManager.MaxAnimalQuantity > b.ResourceManager.AnimalQuantity {
+				resourceType = ANIMAL
+			}
+		case FOREST:
+			if rand.Intn(2) == 0 && b.ResourceManager.MaxFruitQuantity > b.ResourceManager.FruitQuantity {
+				resourceType = FRUIT
+			} else if b.ResourceManager.MaxWoodQuantity > b.ResourceManager.WoodQuantity {
+				resourceType = WOOD
+			}
+		case CAVE:
+			if b.ResourceManager.MaxRockQuantity > b.ResourceManager.RockQuantity {
+				resourceType = ROCK
+			}
+		}
+		hex.Resource = resourceType
+		b.ResourceManager.Resources = append(b.ResourceManager.Resources, resourceType)
+		switch resourceType {
+		case FRUIT:
+			b.ResourceManager.FruitQuantity++
+		case ANIMAL:
+			b.ResourceManager.AnimalQuantity++
+		case ROCK:
+			b.ResourceManager.RockQuantity++
+		case WOOD:
+			b.ResourceManager.WoodQuantity++
+		}
 	}
 }
 
@@ -118,11 +142,10 @@ func (b *Board) GenerateHumans() {
 	}
 
 	for i := range humans {
-		// Ensure unique position for each human
-		for pos, hex := range availableHexs {
+		for pos := range availableHexs {
 			humans[i] = &Human{
 				id:          i,
-				Position:    *hex,
+				Position:    pos,
 				Type:        rune(rand.Intn(2)), // 0 or 1
 				Hungriness:  rand.Intn(101),     // 0 to 100
 				Thirstiness: rand.Intn(101),     // 0 to 100
