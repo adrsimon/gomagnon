@@ -12,6 +12,7 @@ type Board struct {
 	HexSize         int
 	Biomes          []*Biome
 	ResourceManager *ResourceManager
+	AgentManager    *AgentManager
 	Agents          []*Human
 }
 
