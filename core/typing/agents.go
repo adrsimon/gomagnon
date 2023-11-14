@@ -2,6 +2,7 @@ package typing
 
 import (
 	"fmt"
+	"github.com/adrsimon/gomagnon/moving"
 	"math/rand"
 )
 
@@ -76,7 +77,7 @@ func (h *Human) GetNeighborsWithin5() []*Hexagone {
 
 		for _, currentHex := range currentLevel {
 			var neighbors []*Hexagone
-			neighbors = h.GetNeighbours(currentHex)
+			neighbors = h.GetNeighbours(fmt.Sprintf("%d:%d", currentHex.Position.X, currentHex.Position.Y))
 
 			for _, neighbor := range neighbors {
 				if !visited[fmt.Sprintf("%d:%d", neighbor.Position.X, neighbor.Position.Y)] {
@@ -95,14 +96,16 @@ func (h *Human) GetNeighborsWithin5() []*Hexagone {
 }
 
 func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
-	best := 0
+	best := 0.
+	indexBest := 0
 	for i, v := range surroundingHexagons {
 		score := h.EvaluateOneHex(v)
 		if score > best {
-			best = i
+			indexBest = i
+			best = score
 		}
 	}
-	return surroundingHexagons[best]
+	return surroundingHexagons[indexBest]
 }
 
 // Adapt to quentin A* + add concurency handling + send request to take resource + add updating resources when taken
@@ -112,7 +115,7 @@ func (h *Human) UpdateAgent() {
 		targetHexagon := h.BestNeighbor(surroundingHexagons)
 
 		if targetHexagon != nil {
-			h.CurrentPath = AStarPathfinding(h.CurrentHexagon(), targetHexagon)
+			h.CurrentPath = moving.Astar()
 			h.Target = targetHexagon
 			h.MovingToTarget = true
 		}

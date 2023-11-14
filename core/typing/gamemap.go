@@ -31,6 +31,12 @@ type Hexagone struct {
 	Agents   []*Human
 }
 
+func (h *Hexagone) OodrToAxial() (int, int) {
+	q := h.Position.X - (h.Position.Y-(h.Position.Y&1))/2
+	r := h.Position.Y
+	return q, r
+}
+
 type Point2D struct {
 	X int
 	Y int
