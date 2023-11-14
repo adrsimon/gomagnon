@@ -6,7 +6,7 @@ import (
 )
 
 type Human struct {
-	id             int
+	id             string
 	Position       string
 	Type           rune // can be cromagnon or neandertal
 	Hungriness     int  // 0 to 100
@@ -18,6 +18,9 @@ type Human struct {
 	CurrentPath    []*Hexagone
 	MovingToTarget bool
 	Target         *Hexagone
+	ComOut         agentToManager
+	Comin          managerToAgent
+	Map            map[string]*Hexagone
 }
 
 const (
@@ -26,7 +29,7 @@ const (
 	WaterValueMultiplier      = 2.0
 )
 
-func (h *Human) EvaluateSurroundings(hex *Hexagone) float64 {
+func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 	var score = 0.0
 
 	switch hex.Resource {
@@ -43,11 +46,70 @@ func (h *Human) EvaluateSurroundings(hex *Hexagone) float64 {
 	return score
 }
 
+func (h *Human) GetNeighbours(coord string) []*Hexagone {
+	neighbours := make([]*Hexagone, 0)
+	pos := h.Map[coord].Position
+	if pos.Y%2 == 0 {
+		neighbours = append(neighbours, h.Map[fmt.Sprintf("%d:%d", pos.X+1, pos.Y+1)])
+		neighbours = append(neighbours, h.Map[fmt.Sprintf("%d:%d", pos.X, pos.Y-1)])
+		neighbours = append(neighbours, h.Map[fmt.Sprintf("%d:%d", pos.X+1, pos.Y-1)])
+		neighbours = append(neighbours, h.Map[fmt.Sprintf("%d:%d", pos.X-1, pos.Y)])
+		neighbours = append(neighbours, h.Map[fmt.Sprintf("%d:%d", pos.X+1, pos.Y)])
+		neighbours = append(neighbours, h.Map[fmt.Sprintf("%d:%d", pos.X, pos.Y+1)])
+	} else {
+		neighbours = append(neighbours, h.Map[fmt.Sprintf("%d:%d", pos.X-1, pos.Y)])
+		neighbours = append(neighbours, h.Map[fmt.Sprintf("%d:%d", pos.X, pos.Y-1)])
+		neighbours = append(neighbours, h.Map[fmt.Sprintf("%d:%d", pos.X+1, pos.Y)])
+		neighbours = append(neighbours, h.Map[fmt.Sprintf("%d:%d", pos.X-1, pos.Y+1)])
+		neighbours = append(neighbours, h.Map[fmt.Sprintf("%d:%d", pos.X-1, pos.Y-1)])
+		neighbours = append(neighbours, h.Map[fmt.Sprintf("%d:%d", pos.X, pos.Y+1)]) // SI JAMAIS EXISTE PAS ????
+	}
+	return neighbours
+}
+
+func (h *Human) GetNeighborsWithin5() []*Hexagone {
+	currentLevel := []*Hexagone{h.Map[h.Position]}
+	visited := make(map[string]bool)
+
+	for i := 0; i < 5; i++ {
+		nextLevel := make([]*Hexagone, 0)
+
+		for _, currentHex := range currentLevel {
+			var neighbors []*Hexagone
+			neighbors = h.GetNeighbours(currentHex)
+
+			for _, neighbor := range neighbors {
+				if !visited[fmt.Sprintf("%d:%d", neighbor.Position.X, neighbor.Position.Y)] {
+					visited[fmt.Sprintf("%d:%d", neighbor.Position.X, neighbor.Position.Y)] = true
+					nextLevel = append(nextLevel, neighbor)
+				}
+			}
+		}
+
+		// Concaténation des niveaux pour passer au niveau suivant
+		currentLevel = append(currentLevel, nextLevel...)
+	}
+
+	// Retourne tous les voisins à 5 cases de distance ou moins
+	return currentLevel
+}
+
+func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
+	best := 0
+	for i, v := range surroundingHexagons {
+		score := h.EvaluateOneHex(v)
+		if score > best {
+			best = i
+		}
+	}
+	return surroundingHexagons[best]
+}
+
 // Adapt to quentin A* + add concurency handling + send request to take resource + add updating resources when taken
 func (h *Human) UpdateAgent() {
 	if !h.MovingToTarget {
-		surroundingHexagons := h.GetSurroundingHexagons()
-		targetHexagon := h.ChooseTargetHexagon(surroundingHexagons)
+		surroundingHexagons := h.GetNeighborsWithin5()
+		targetHexagon := h.BestNeighbor(surroundingHexagons)
 
 		if targetHexagon != nil {
 			h.CurrentPath = AStarPathfinding(h.CurrentHexagon(), targetHexagon)
@@ -83,4 +145,8 @@ func (h *Human) UpdateStateBasedOnResource(hex *Hexagone) {
 
 func (h *Human) MoveToHexagon(hex *Hexagone) {
 	h.Position = fmt.Sprintf("%d:%d", hex.Position.X, hex.Position.Y)
+}
+
+func (h *Human) Start() {
+
 }
