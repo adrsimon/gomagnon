@@ -2,7 +2,12 @@ module github.com/adrsimon/gomagnon
 
 go 1.21.0
 
-require github.com/hajimehoshi/ebiten/v2 v2.6.2
+
+require (
+	github.com/hajimehoshi/ebiten/v2 v2.6.2
+	golang.org/x/image v0.12.0
+)
+
 
 require (
 	github.com/ebitengine/purego v0.5.0 // indirect
