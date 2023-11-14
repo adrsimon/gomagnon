@@ -28,6 +28,7 @@ type Hexagone struct {
 	Position *Point2D
 	Resource ResourceType
 	Biome    *Biome
+	Agents   []*Human
 }
 
 type Point2D struct {
