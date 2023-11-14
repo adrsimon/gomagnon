@@ -8,8 +8,9 @@ type agentToManager struct {
 }
 
 type managerToAgent struct {
-	Valid bool
-	Map   map[string]*Hexagone
+	Valid    bool
+	Map      map[string]*Hexagone
+	Resource ResourceType
 }
 
 type AgentManager struct {
@@ -53,19 +54,12 @@ func (agMan *AgentManager) execute(request agentToManager) {
 		agMan.removeAgent(request.Agent.Position, &request.Agent)
 		request.commOut <- managerToAgent{Valid: true, Map: agMan.Map}
 	case "get":
-		if agMan.Map[request.Pos].RessourceAvailable {
-			switch agMan.Map[request.Pos].Resource {
-			case 1:
-				request.commOut <- managerToAgent{Valid: false, Map: agMan.Map}
-			default:
-				if agMan.Map[request.Pos].RessourceAvailable {
-					agMan.Map[request.Pos].RessourceAvailable = false
-					request.commOut <- managerToAgent{Valid: true, Map: agMan.Map}
-				} else {
-					request.commOut <- managerToAgent{Valid: false, Map: agMan.Map}
-				}
-
-			}
+		switch agMan.Map[request.Pos].Resource {
+		case 1:
+			request.commOut <- managerToAgent{Valid: false, Map: agMan.Map}
+		default:
+			request.commOut <- managerToAgent{Valid: true, Map: agMan.Map, resource: agMan.Map[request.Pos].Resource}
+			agMan.Map[request.Pos].Resource = NONE
 		}
 	}
 }

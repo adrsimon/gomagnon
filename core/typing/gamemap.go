@@ -25,11 +25,10 @@ func NewGame(
 }
 
 type Hexagone struct {
-	Position           *Point2D
-	Resource           ResourceType
-	RessourceAvailable bool
-	Biome              *Biome
-	Agents             []*Agent
+	Position *Point2D
+	Resource ResourceType
+	Biome    *Biome
+	Agents   []*Agent
 }
 
 type Point2D struct {
