@@ -13,6 +13,7 @@ type Board struct {
 	Biomes          []*Biome
 	ResourceManager *ResourceManager
 	AgentManager    *AgentManager
+	Agents          []*Human
 }
 
 func NewBoard(xmax, ymax, hexSize, fruits, animals, rocks, woods int) *Board {
