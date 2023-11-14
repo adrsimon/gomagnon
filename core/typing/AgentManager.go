@@ -1,7 +1,7 @@
 package typing
 
 type agentToManager struct {
-	Agent   Agent
+	Agent   Human
 	Action  string
 	Pos     string
 	commOut chan managerToAgent
@@ -35,7 +35,7 @@ func (agMan *AgentManager) startAnswering() {
 		}
 	}
 }
-func (agMan *AgentManager) removeAgent(hexagone string, a *Agent) {
+func (agMan *AgentManager) removeAgent(hexagone string, a *Human) {
 	ind := -1
 	for i, v := range agMan.Map[hexagone].Agents {
 		if v == a {
@@ -58,7 +58,7 @@ func (agMan *AgentManager) execute(request agentToManager) {
 		case 1:
 			request.commOut <- managerToAgent{Valid: false, Map: agMan.Map}
 		default:
-			request.commOut <- managerToAgent{Valid: true, Map: agMan.Map, resource: agMan.Map[request.Pos].Resource}
+			request.commOut <- managerToAgent{Valid: true, Map: agMan.Map, Resource: agMan.Map[request.Pos].Resource}
 			agMan.Map[request.Pos].Resource = NONE
 		}
 	}
