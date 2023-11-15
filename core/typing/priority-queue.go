@@ -1,11 +1,7 @@
-package moving
-
-import (
-	"github.com/adrsimon/gomagnon/core/typing"
-)
+package typing
 
 type Item struct { // Une fois Agent crée stocker des agents avec priorité
-	value    typing.Human
+	value    Human
 	priority float64
 }
 

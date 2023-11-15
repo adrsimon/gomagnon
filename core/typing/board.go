@@ -11,7 +11,6 @@ type Board struct {
 	YMax            int
 	HexSize         int
 	Biomes          []*Biome
-	Agents          map[string]*Human
 	ResourceManager *ResourceManager
 	AgentManager    *AgentManager
 }
@@ -25,7 +24,6 @@ func NewBoard(xmax, ymax, hexSize, fruits, animals, rocks, woods int) *Board {
 		YMax:            ymax,
 		HexSize:         hexSize,
 		Biomes:          make([]*Biome, 0),
-		Agents:          agents,
 		ResourceManager: NewResourceManager(fruits, animals, rocks, woods),
 		AgentManager:    NewAgentManager(cases, make(chan agentToManager), make([]agentToManager, 0), agents),
 	}
@@ -135,35 +133,4 @@ func (b *Board) GenerateResources() {
 			b.ResourceManager.WoodQuantity++
 		}
 	}
-}
-
-func (b *Board) GenerateHumans() {
-	availableHexs := make(map[string]*Hexagone)
-	for k, v := range b.Cases {
-		availableHexs[k] = v
-	}
-
-	for i := 0; i < 10; i++ {
-		for pos := range availableHexs {
-			b.Agents[fmt.Sprintf("%d", i)] = &Human{
-				id:          fmt.Sprintf("%d", i),
-				Position:    pos,
-				Type:        rune(rand.Intn(2)), // 0 or 1
-				Hungriness:  rand.Intn(101),     // 0 to 100
-				Thirstiness: rand.Intn(101),     // 0 to 100
-				Age:         rand.Intn(101),     // 0 to 100
-				Gender:      rune(rand.Intn(2)), // 0 or 1
-				Strength:    rand.Intn(101),     // 0 to 100
-				Sociability: rand.Intn(101),     // 0 to 100
-			}
-			delete(availableHexs, pos)
-			break
-		}
-	}
-
-	//print agents
-	// for _, agent := range b.Agents {
-	// 	fmt.Println(*agent)
-	// }
-
 }

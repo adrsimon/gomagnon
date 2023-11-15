@@ -2,26 +2,35 @@ package typing
 
 import (
 	"fmt"
-	"github.com/adrsimon/gomagnon/moving"
 	"math/rand"
 )
 
+type HumanStats struct {
+	Strength    int
+	Sociability int
+}
+
+type HumanBody struct {
+	Age         int
+	Gender      rune
+	Hungriness  int
+	Thirstiness int
+}
+
 type Human struct {
-	id             string
-	Position       string
-	Type           rune // can be cromagnon or neandertal
-	Hungriness     int  // 0 to 100
-	Thirstiness    int  // 0 to 100
-	Age            int
-	Gender         rune
-	Strength       int // 0 to 100
-	Sociability    int // 0 to 100
-	CurrentPath    []*Hexagone
-	MovingToTarget bool
+	id    string
+	Type  rune
+	Body  HumanBody
+	Stats HumanStats
+
+	Position       *Hexagone
 	Target         *Hexagone
-	ComOut         agentToManager
-	Comin          managerToAgent
-	Map            map[string]*Hexagone
+	MovingToTarget bool
+	CurrentPath    []*Hexagone
+	Board          *Board
+
+	ComOut agentToManager
+	ComIn  managerToAgent
 }
 
 const (
@@ -33,66 +42,44 @@ const (
 func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 	var score = 0.0
 
+	if hex == nil {
+		return score
+	}
+
 	switch hex.Resource {
 	case ANIMAL:
-		score = (float64(h.Hungriness) / 100) * AnimalFoodValueMultiplier
+		score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.01
 	case FRUIT:
-		score = (float64(h.Hungriness) / 100) * FruitFoodValueMultiplier
+		score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.01
+	case ROCK:
+		score += 0.5
+	case WOOD:
+		score += 0.5
 	}
 
 	if hex.Biome.BiomeType == WATER {
-		score = (float64(h.Thirstiness) / 100) * WaterValueMultiplier
+		score = (float64(h.Body.Thirstiness) / 100) * WaterValueMultiplier
 	}
 
 	return score
 }
 
-func (h *Human) GetNeighbours(coord string) []*Hexagone {
-	neighbours := make([]*Hexagone, 0)
-	pos := h.Map[coord].Position
-	if pos.Y%2 == 0 {
-		neighbours = append(neighbours, h.Map[fmt.Sprintf("%d:%d", pos.X+1, pos.Y+1)])
-		neighbours = append(neighbours, h.Map[fmt.Sprintf("%d:%d", pos.X, pos.Y-1)])
-		neighbours = append(neighbours, h.Map[fmt.Sprintf("%d:%d", pos.X+1, pos.Y-1)])
-		neighbours = append(neighbours, h.Map[fmt.Sprintf("%d:%d", pos.X-1, pos.Y)])
-		neighbours = append(neighbours, h.Map[fmt.Sprintf("%d:%d", pos.X+1, pos.Y)])
-		neighbours = append(neighbours, h.Map[fmt.Sprintf("%d:%d", pos.X, pos.Y+1)])
-	} else {
-		neighbours = append(neighbours, h.Map[fmt.Sprintf("%d:%d", pos.X-1, pos.Y)])
-		neighbours = append(neighbours, h.Map[fmt.Sprintf("%d:%d", pos.X, pos.Y-1)])
-		neighbours = append(neighbours, h.Map[fmt.Sprintf("%d:%d", pos.X+1, pos.Y)])
-		neighbours = append(neighbours, h.Map[fmt.Sprintf("%d:%d", pos.X-1, pos.Y+1)])
-		neighbours = append(neighbours, h.Map[fmt.Sprintf("%d:%d", pos.X-1, pos.Y-1)])
-		neighbours = append(neighbours, h.Map[fmt.Sprintf("%d:%d", pos.X, pos.Y+1)]) // SI JAMAIS EXISTE PAS ????
-	}
-	return neighbours
-}
-
 func (h *Human) GetNeighborsWithin5() []*Hexagone {
-	currentLevel := []*Hexagone{h.Map[h.Position]}
-	visited := make(map[string]bool)
-
-	for i := 0; i < 5; i++ {
-		nextLevel := make([]*Hexagone, 0)
-
-		for _, currentHex := range currentLevel {
-			var neighbors []*Hexagone
-			neighbors = h.GetNeighbours(fmt.Sprintf("%d:%d", currentHex.Position.X, currentHex.Position.Y))
-
-			for _, neighbor := range neighbors {
-				if !visited[fmt.Sprintf("%d:%d", neighbor.Position.X, neighbor.Position.Y)] {
-					visited[fmt.Sprintf("%d:%d", neighbor.Position.X, neighbor.Position.Y)] = true
-					nextLevel = append(nextLevel, neighbor)
-				}
+	neighbours := h.Board.GetNeighbours(h.Position)
+	visited := make(map[*Hexagone]bool)
+	for i := 0; i < 4; i++ {
+		for _, neighbour := range neighbours {
+			if neighbour == nil {
+				continue
+			}
+			if _, ok := visited[neighbour]; !ok {
+				visited[neighbour] = true
+				neighbours = append(neighbours, h.Board.GetNeighbours(neighbour)...)
 			}
 		}
-
-		// Concaténation des niveaux pour passer au niveau suivant
-		currentLevel = append(currentLevel, nextLevel...)
 	}
 
-	// Retourne tous les voisins à 5 cases de distance ou moins
-	return currentLevel
+	return neighbours
 }
 
 func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
@@ -108,16 +95,19 @@ func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
 	return surroundingHexagons[indexBest]
 }
 
-// Adapt to quentin A* + add concurency handling + send request to take resource + add updating resources when taken
 func (h *Human) UpdateAgent() {
 	if !h.MovingToTarget {
+		fmt.Println("Looking for target")
 		surroundingHexagons := h.GetNeighborsWithin5()
 		targetHexagon := h.BestNeighbor(surroundingHexagons)
 
 		if targetHexagon != nil {
-			h.CurrentPath = moving.Astar()
+			h.CurrentPath = AStar(*h, targetHexagon)
 			h.Target = targetHexagon
 			h.MovingToTarget = true
+			fmt.Println("New target:", targetHexagon.ToString())
+		} else {
+			fmt.Println("No target found")
 		}
 	}
 
@@ -130,24 +120,31 @@ func (h *Human) UpdateAgent() {
 			h.MovingToTarget = false
 		}
 	}
+
+	if h.Target.Position == h.Position.Position {
+		fmt.Println("Reached target")
+		h.MovingToTarget = false
+		h.Target = nil
+		h.Board.Cases[h.Position.ToString()].Resource = NONE
+	}
 }
 
 func (h *Human) UpdateStateBasedOnResource(hex *Hexagone) {
 	if hex.Resource == ANIMAL {
 		// TODO: send request to take resource and if yes:
-		h.Hungriness = max(0, h.Hungriness-rand.Intn(20))
+		h.Body.Hungriness = max(0, h.Body.Hungriness-rand.Intn(20))
 	}
 	if hex.Resource == FRUIT {
 		// TODO: send request to take resource and if yes:
-		h.Hungriness = max(0, h.Hungriness-rand.Intn(10))
+		h.Body.Hungriness = max(0, h.Body.Hungriness-rand.Intn(10))
 	}
 	if hex.Biome.BiomeType == WATER {
-		h.Thirstiness = max(0, h.Thirstiness-rand.Intn(30))
+		h.Body.Thirstiness = max(0, h.Body.Thirstiness-rand.Intn(30))
 	}
 }
 
 func (h *Human) MoveToHexagon(hex *Hexagone) {
-	h.Position = fmt.Sprintf("%d:%d", hex.Position.X, hex.Position.Y)
+	h.Position = hex
 }
 
 func (h *Human) Start() {

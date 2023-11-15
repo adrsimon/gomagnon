@@ -70,7 +70,6 @@ func (agMan *AgentManager) execute(request agentToManager) {
 	}
 }
 
-// mouvement action ou pas
 func (agMan *AgentManager) Start() {
 	go agMan.startListening()
 	go agMan.startAnswering()

@@ -29,10 +29,20 @@ func NewSimulation() Simulation {
 	simu.GameMap.Board.Generate()
 	simu.GameMap.Board.GenerateBiomes()
 	simu.GameMap.Board.GenerateResources()
-	simu.GameMap.Board.GenerateHumans()
 
 	simu.ScreenWidth = ScreenWidth
 	simu.ScreenHeight = ScreenHeight
+
+	simu.GameMap.Board.AgentManager.Agents["ag-0"] = &typing.Human{
+		Type:           0,
+		Body:           typing.HumanBody{},
+		Stats:          typing.HumanStats{},
+		Position:       simu.GameMap.Board.Cases["10:10"],
+		Target:         nil,
+		MovingToTarget: false,
+		CurrentPath:    nil,
+		Board:          simu.GameMap.Board,
+	}
 
 	return simu
 }
