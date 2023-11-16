@@ -134,3 +134,15 @@ func (b *Board) GenerateResources() {
 		}
 	}
 }
+
+func (b *Board) isValidHex(hex *Hexagone) bool {
+	if hex == nil {
+		return false
+	}
+
+	if hex.Position.X < 0 || hex.Position.X >= b.XMax || hex.Position.Y < 0 || hex.Position.Y >= b.YMax {
+		return false
+	}
+
+	return true
+}

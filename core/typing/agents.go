@@ -93,10 +93,20 @@ func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
 		}
 	}
 
-	if indexBest == -1 {
-		return surroundingHexagons[rand.Intn(len(surroundingHexagons))]
+	if indexBest != -1 {
+		return surroundingHexagons[indexBest]
 	}
-	return surroundingHexagons[indexBest]
+
+	valid := false
+	randHex := &Hexagone{}
+	for !valid {
+		randHex = surroundingHexagons[rand.Intn(len(surroundingHexagons))]
+		if h.Board.isValidHex(randHex) {
+			valid = true
+		}
+	}
+
+	return randHex
 }
 
 func (h *Human) UpdateAgent() {
