@@ -84,13 +84,17 @@ func (h *Human) GetNeighborsWithin5() []*Hexagone {
 
 func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
 	best := 0.
-	indexBest := 0
+	indexBest := -1
 	for i, v := range surroundingHexagons {
 		score := h.EvaluateOneHex(v)
 		if score > best {
 			indexBest = i
 			best = score
 		}
+	}
+
+	if indexBest == -1 {
+		return surroundingHexagons[rand.Intn(len(surroundingHexagons))]
 	}
 	return surroundingHexagons[indexBest]
 }
@@ -101,14 +105,10 @@ func (h *Human) UpdateAgent() {
 		surroundingHexagons := h.GetNeighborsWithin5()
 		targetHexagon := h.BestNeighbor(surroundingHexagons)
 
-		if targetHexagon != nil {
-			h.CurrentPath = AStar(*h, targetHexagon)
-			h.Target = targetHexagon
-			h.MovingToTarget = true
-			fmt.Println("New target:", targetHexagon.ToString())
-		} else {
-			fmt.Println("No target found")
-		}
+		h.CurrentPath = AStar(*h, targetHexagon)
+		h.Target = targetHexagon
+		h.MovingToTarget = true
+		fmt.Println("New target:", targetHexagon.ToString())
 	}
 
 	if h.MovingToTarget && len(h.CurrentPath) > 0 {
