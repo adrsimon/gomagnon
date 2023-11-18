@@ -2,7 +2,7 @@ package typing
 
 import (
 	"fmt"
-	"math/rand"
+	"sort"
 )
 
 type Board struct {
@@ -68,11 +68,19 @@ func (b *Board) GenerateBiomes() {
 		availableHexs[k] = v
 	}
 
-	for pos, hex := range availableHexs {
+	var sortedKeys []string
+	for k := range availableHexs {
+		sortedKeys = append(sortedKeys, k)
+	}
+	sort.Strings(sortedKeys)
+
+	for _, pos := range sortedKeys {
+		hex := availableHexs[pos]
 		if hex == nil {
 			continue
 		}
-		biomeType := BiomesType(rand.Intn(4))
+
+		biomeType := BiomesType(r.Intn(4))
 		biome := Biome{
 			BiomeType: biomeType,
 			Hexs:      make([]*Hexagone, 0),
@@ -88,7 +96,7 @@ func (b *Board) GenerateBiomes() {
 			}
 			key := fmt.Sprintf("%d:%d", neighbour.Position.X, neighbour.Position.Y)
 			_, ok := availableHexs[key]
-			if try := rand.Intn(100); try > 1 && ok {
+			if try := r.Intn(100); try > 1 && ok {
 				biome.Hexs = append(biome.Hexs, neighbour)
 				neighbour.Biome = &biome
 				delete(availableHexs, key)
@@ -102,15 +110,14 @@ func (b *Board) GenerateBiomes() {
 func (b *Board) GenerateResources() {
 	for _, biome := range b.Biomes {
 		resourceType := NONE
-
-		hex := biome.Hexs[rand.Intn(len(biome.Hexs))]
+		hex := biome.Hexs[r.Intn(len(biome.Hexs))]
 		switch biome.BiomeType {
 		case PLAINS:
 			if b.ResourceManager.MaxAnimalQuantity > b.ResourceManager.AnimalQuantity {
 				resourceType = ANIMAL
 			}
 		case FOREST:
-			if rand.Intn(2) == 0 && b.ResourceManager.MaxFruitQuantity > b.ResourceManager.FruitQuantity {
+			if r.Intn(2) == 0 && b.ResourceManager.MaxFruitQuantity > b.ResourceManager.FruitQuantity {
 				resourceType = FRUIT
 			} else if b.ResourceManager.MaxWoodQuantity > b.ResourceManager.WoodQuantity {
 				resourceType = WOOD

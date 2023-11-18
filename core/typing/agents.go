@@ -2,7 +2,6 @@ package typing
 
 import (
 	"fmt"
-	"math/rand"
 )
 
 type HumanStats struct {
@@ -100,7 +99,7 @@ func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
 	valid := false
 	randHex := &Hexagone{}
 	for !valid {
-		randHex = surroundingHexagons[rand.Intn(len(surroundingHexagons))]
+		randHex = surroundingHexagons[r.Intn(len(surroundingHexagons))]
 		if h.Board.isValidHex(randHex) {
 			valid = true
 		}
@@ -142,14 +141,14 @@ func (h *Human) UpdateAgent() {
 func (h *Human) UpdateStateBasedOnResource(hex *Hexagone) {
 	if hex.Resource == ANIMAL {
 		// TODO: send request to take resource and if yes:
-		h.Body.Hungriness = max(0, h.Body.Hungriness-rand.Intn(20))
+		h.Body.Hungriness = max(0, h.Body.Hungriness-r.Intn(20))
 	}
 	if hex.Resource == FRUIT {
 		// TODO: send request to take resource and if yes:
-		h.Body.Hungriness = max(0, h.Body.Hungriness-rand.Intn(10))
+		h.Body.Hungriness = max(0, h.Body.Hungriness-r.Intn(10))
 	}
 	if hex.Biome.BiomeType == WATER {
-		h.Body.Thirstiness = max(0, h.Body.Thirstiness-rand.Intn(30))
+		h.Body.Thirstiness = max(0, h.Body.Thirstiness-r.Intn(30))
 	}
 }
 
