@@ -11,6 +11,16 @@ func distance(from Hexagone, to Hexagone) float64 {
 	return (math.Abs(float64(q3)) + math.Abs(float64(q3+r3)) + math.Abs(float64(r3))) / 2
 }
 
+func HauteurNoeud(node string, save map[string]string) int {
+	cnt := 1
+	for save[node] != "" {
+		cnt++
+		parent := save[node]
+		node = parent
+	}
+	return cnt
+}
+
 func AStar(human Human, goal *Hexagone) []*Hexagone {
 	l := make(PriorityQueue, 0)
 	l.Push(&Item{value: human, priority: 0})
@@ -41,4 +51,32 @@ func AStar(human Human, goal *Hexagone) []*Hexagone {
 		path = append(path, v.value.Position)
 	}
 	return path
+}
+func Astarnew(agent Human, goal *Hexagone) (Human, map[string]string) { // goal methode agent
+	l := make(PriorityQueue, 50)
+	l.Push(Item{agent, distance(*agent.Position, *goal)})
+	var save map[string]string
+	save[agent.Position.ToString()] = ""
+	for l.Len() != 0 {
+		var agTemp Human
+		a := l.Pop()
+		agTemp = a.value
+		for _, succ := range agTemp.Board.GetNeighbours(agTemp.Position) {
+			_, ok := save[succ.ToString()]
+			// If the key exists
+			if !ok {
+				save[succ.ToString()] = agTemp.Position.ToString()
+				newHum := NewHuman(agTemp.id, agTemp.Type, agTemp.Body, agTemp.Stats, succ, agTemp.Target, agTemp.MovingToTarget, agTemp.CurrentPath, agTemp.Board, agTemp.ComOut, agTemp.ComIn)
+				if succ == goal {
+					return *newHum, save
+				}
+				g := HauteurNoeud(succ.ToString(), save)
+				dist := distance(*newHum.Position, *goal)
+				l.Push(newHum, dist+g) // ou plus en fait j'ai pun probleme dans la gestion des goals avec la profondeur du chemin
+			}
+
+		}
+	}
+	bestIfnot95 := findMax(save)
+	return bestIfnot95
 }
