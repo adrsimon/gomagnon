@@ -1,6 +1,9 @@
 package typing
 
-import "image/color"
+import (
+	"fmt"
+	"image/color"
+)
 
 type GameMap struct {
 	Board           *Board
@@ -29,6 +32,16 @@ type Hexagone struct {
 	Resource ResourceType
 	Biome    *Biome
 	Agents   []*Human
+}
+
+func (h *Hexagone) OddRToAxial() (int, int) {
+	q := h.Position.X - (h.Position.Y-(h.Position.Y&1))/2
+	r := h.Position.Y
+	return q, r
+}
+
+func (h *Hexagone) ToString() string {
+	return fmt.Sprintf("%d:%d", h.Position.X, h.Position.Y)
 }
 
 type Point2D struct {

@@ -2,7 +2,7 @@ package typing
 
 import (
 	"fmt"
-	"math/rand"
+	"sort"
 )
 
 type Board struct {
@@ -13,17 +13,19 @@ type Board struct {
 	Biomes          []*Biome
 	ResourceManager *ResourceManager
 	AgentManager    *AgentManager
-	Agents          []*Human
 }
 
 func NewBoard(xmax, ymax, hexSize, fruits, animals, rocks, woods int) *Board {
+	cases := make(map[string]*Hexagone)
+	agents := make(map[string]*Human)
 	return &Board{
-		Cases:           make(map[string]*Hexagone),
+		Cases:           cases,
 		XMax:            xmax,
 		YMax:            ymax,
 		HexSize:         hexSize,
 		Biomes:          make([]*Biome, 0),
 		ResourceManager: NewResourceManager(fruits, animals, rocks, woods),
+		AgentManager:    NewAgentManager(cases, make(chan agentToManager), make([]agentToManager, 0), agents),
 	}
 }
 
@@ -42,20 +44,28 @@ func (b *Board) Generate() {
 
 func (b *Board) GetNeighbours(hex *Hexagone) []*Hexagone {
 	neighbours := make([]*Hexagone, 0)
+
+	addIfExist := func(x, y int) {
+		key := fmt.Sprintf("%d:%d", x, y)
+		if neighbor, ok := b.Cases[key]; ok {
+			neighbours = append(neighbours, neighbor)
+		}
+	}
+
 	if hex.Position.Y%2 == 0 {
-		neighbours = append(neighbours, b.Cases[fmt.Sprintf("%d:%d", hex.Position.X+1, hex.Position.Y+1)])
-		neighbours = append(neighbours, b.Cases[fmt.Sprintf("%d:%d", hex.Position.X, hex.Position.Y-1)])
-		neighbours = append(neighbours, b.Cases[fmt.Sprintf("%d:%d", hex.Position.X+1, hex.Position.Y-1)])
-		neighbours = append(neighbours, b.Cases[fmt.Sprintf("%d:%d", hex.Position.X-1, hex.Position.Y)])
-		neighbours = append(neighbours, b.Cases[fmt.Sprintf("%d:%d", hex.Position.X+1, hex.Position.Y)])
-		neighbours = append(neighbours, b.Cases[fmt.Sprintf("%d:%d", hex.Position.X, hex.Position.Y+1)])
+		addIfExist(hex.Position.X+1, hex.Position.Y+1)
+		addIfExist(hex.Position.X, hex.Position.Y-1)
+		addIfExist(hex.Position.X+1, hex.Position.Y-1)
+		addIfExist(hex.Position.X-1, hex.Position.Y)
+		addIfExist(hex.Position.X+1, hex.Position.Y)
+		addIfExist(hex.Position.X, hex.Position.Y+1)
 	} else {
-		neighbours = append(neighbours, b.Cases[fmt.Sprintf("%d:%d", hex.Position.X-1, hex.Position.Y)])
-		neighbours = append(neighbours, b.Cases[fmt.Sprintf("%d:%d", hex.Position.X, hex.Position.Y-1)])
-		neighbours = append(neighbours, b.Cases[fmt.Sprintf("%d:%d", hex.Position.X+1, hex.Position.Y)])
-		neighbours = append(neighbours, b.Cases[fmt.Sprintf("%d:%d", hex.Position.X-1, hex.Position.Y+1)])
-		neighbours = append(neighbours, b.Cases[fmt.Sprintf("%d:%d", hex.Position.X-1, hex.Position.Y-1)])
-		neighbours = append(neighbours, b.Cases[fmt.Sprintf("%d:%d", hex.Position.X, hex.Position.Y+1)])
+		addIfExist(hex.Position.X-1, hex.Position.Y)
+		addIfExist(hex.Position.X, hex.Position.Y-1)
+		addIfExist(hex.Position.X+1, hex.Position.Y)
+		addIfExist(hex.Position.X-1, hex.Position.Y+1)
+		addIfExist(hex.Position.X-1, hex.Position.Y-1)
+		addIfExist(hex.Position.X, hex.Position.Y+1)
 	}
 	return neighbours
 }
@@ -66,11 +76,19 @@ func (b *Board) GenerateBiomes() {
 		availableHexs[k] = v
 	}
 
-	for pos, hex := range availableHexs {
+	var sortedKeys []string
+	for k := range availableHexs {
+		sortedKeys = append(sortedKeys, k)
+	}
+	sort.Strings(sortedKeys)
+
+	for _, pos := range sortedKeys {
+		hex := availableHexs[pos]
 		if hex == nil {
 			continue
 		}
-		biomeType := BiomesType(rand.Intn(4))
+
+		biomeType := BiomesType(r.Intn(4))
 		biome := Biome{
 			BiomeType: biomeType,
 			Hexs:      make([]*Hexagone, 0),
@@ -86,7 +104,7 @@ func (b *Board) GenerateBiomes() {
 			}
 			key := fmt.Sprintf("%d:%d", neighbour.Position.X, neighbour.Position.Y)
 			_, ok := availableHexs[key]
-			if try := rand.Intn(100); try > 1 && ok {
+			if try := r.Intn(100); try > 1 && ok {
 				biome.Hexs = append(biome.Hexs, neighbour)
 				neighbour.Biome = &biome
 				delete(availableHexs, key)
@@ -100,15 +118,14 @@ func (b *Board) GenerateBiomes() {
 func (b *Board) GenerateResources() {
 	for _, biome := range b.Biomes {
 		resourceType := NONE
-
-		hex := biome.Hexs[rand.Intn(len(biome.Hexs))]
+		hex := biome.Hexs[r.Intn(len(biome.Hexs))]
 		switch biome.BiomeType {
 		case PLAINS:
 			if b.ResourceManager.MaxAnimalQuantity > b.ResourceManager.AnimalQuantity {
 				resourceType = ANIMAL
 			}
 		case FOREST:
-			if rand.Intn(2) == 0 && b.ResourceManager.MaxFruitQuantity > b.ResourceManager.FruitQuantity {
+			if r.Intn(2) == 0 && b.ResourceManager.MaxFruitQuantity > b.ResourceManager.FruitQuantity {
 				resourceType = FRUIT
 			} else if b.ResourceManager.MaxWoodQuantity > b.ResourceManager.WoodQuantity {
 				resourceType = WOOD
@@ -133,36 +150,14 @@ func (b *Board) GenerateResources() {
 	}
 }
 
-func (b *Board) GenerateHumans() {
-	humans := make([]*Human, 10)
-
-	availableHexs := make(map[string]*Hexagone)
-	for k, v := range b.Cases {
-		availableHexs[k] = v
+func (b *Board) isValidHex(hex *Hexagone) bool {
+	if hex == nil {
+		return false
 	}
 
-	for i := range humans {
-		for pos := range availableHexs {
-			humans[i] = &Human{
-				id:          i,
-				Position:    pos,
-				Type:        rune(rand.Intn(2)), // 0 or 1
-				Hungriness:  rand.Intn(101),     // 0 to 100
-				Thirstiness: rand.Intn(101),     // 0 to 100
-				Age:         rand.Intn(101),     // 0 to 100
-				Gender:      rune(rand.Intn(2)), // 0 or 1
-				Strength:    rand.Intn(101),     // 0 to 100
-				Sociability: rand.Intn(101),     // 0 to 100
-			}
-			delete(availableHexs, pos)
-			break
-		}
+	if hex.Position.X < 0 || hex.Position.X >= b.XMax || hex.Position.Y < 0 || hex.Position.Y >= b.YMax {
+		return false
 	}
 
-	b.Agents = humans
-	//print agents
-	// for _, agent := range b.Agents {
-	// 	fmt.Println(*agent)
-	// }
-
+	return true
 }

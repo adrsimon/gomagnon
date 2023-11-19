@@ -1,7 +1,7 @@
 package typing
 
 type agentToManager struct {
-	Agent   Human
+	AgentID string
 	Action  string
 	Pos     string
 	commOut chan managerToAgent
@@ -17,6 +17,11 @@ type AgentManager struct {
 	Map          map[string]*Hexagone
 	messIn       chan agentToManager
 	stackRequest []agentToManager
+	Agents       map[string]*Human
+}
+
+func NewAgentManager(Map map[string]*Hexagone, messIn chan agentToManager, stackRequest []agentToManager, agents map[string]*Human) *AgentManager {
+	return &AgentManager{Map: Map, messIn: messIn, stackRequest: stackRequest, Agents: agents}
 }
 
 func (agMan *AgentManager) startListening() {
@@ -50,21 +55,21 @@ func (agMan *AgentManager) removeAgent(hexagone string, a *Human) {
 func (agMan *AgentManager) execute(request agentToManager) {
 	switch request.Action {
 	case "walk":
-		agMan.Map[request.Pos].Agents = append(agMan.Map[request.Pos].Agents, &request.Agent)
-		agMan.removeAgent(request.Agent.Position, &request.Agent)
-		request.commOut <- managerToAgent{Valid: true, Map: agMan.Map}
+		agMan.Map[request.Pos].Agents = append(agMan.Map[request.Pos].Agents, agMan.Agents[request.AgentID])
+		agMan.removeAgent(request.Pos, agMan.Agents[request.AgentID])
+		request.commOut <- managerToAgent{Valid: true, Map: agMan.Map, Resource: NONE}
 	case "get":
 		switch agMan.Map[request.Pos].Resource {
 		case 1:
-			request.commOut <- managerToAgent{Valid: false, Map: agMan.Map}
+			request.commOut <- managerToAgent{Valid: false, Map: agMan.Map, Resource: NONE}
 		default:
-			request.commOut <- managerToAgent{Valid: true, Map: agMan.Map, Resource: agMan.Map[request.Pos].Resource}
+			res := agMan.Map[request.Pos].Resource
 			agMan.Map[request.Pos].Resource = NONE
+			request.commOut <- managerToAgent{Valid: true, Map: agMan.Map, Resource: res}
 		}
 	}
 }
 
-// mouvement action ou pas
 func (agMan *AgentManager) Start() {
 	go agMan.startListening()
 	go agMan.startAnswering()

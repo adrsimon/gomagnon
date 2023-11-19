@@ -1,0 +1,51 @@
+package typing
+
+import (
+	"container/heap"
+	"math"
+)
+
+func distance(from Hexagone, to Hexagone) float64 {
+	q1, r1 := from.OddRToAxial()
+	q2, r2 := to.OddRToAxial()
+	q3, r3 := q1-q2, r1-r2
+	return (math.Abs(float64(q3)) + math.Abs(float64(q3+r3)) + math.Abs(float64(r3))) / 2
+}
+
+func HauteurNoeud(node string, save map[string]string) int {
+	cnt := 1
+	for save[node] != "" {
+		cnt++
+		parent := save[node]
+		node = parent
+	}
+	return cnt
+}
+
+func AStar(agent Human, goal *Hexagone) map[string]string {
+	l := make(PriorityQueue, 0)
+	heap.Init(&l)
+	l.Push(Item{agent, distance(*agent.Position, *goal)})
+	save := make(map[string]string)
+	save[agent.Position.ToString()] = ""
+	for l.Len() != 0 {
+		var agTemp Human
+		a := heap.Pop(&l).(*Item)
+		agTemp = a.value
+		for _, succ := range agTemp.Board.GetNeighbours(agTemp.Position) {
+			_, ok := save[succ.ToString()]
+			if !ok {
+				save[succ.ToString()] = agTemp.Position.ToString()
+				newHum := NewHuman(agent.id, agent.Type, agent.Body, agent.Stats, succ, agent.Target, agent.MovingToTarget, agent.CurrentPath, agent.Board, agent.ComOut, agent.ComIn)
+				if succ.ToString() == goal.ToString() {
+					return save
+				}
+				g := HauteurNoeud(succ.ToString(), save)
+				dist := distance(*newHum.Position, *goal)
+				l.Push(Item{*newHum, dist + float64(g)})
+			}
+
+		}
+	}
+	return save
+}
