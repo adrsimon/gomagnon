@@ -72,11 +72,10 @@ func Astarnew(agent Human, goal *Hexagone) (Human, map[string]string) { // goal 
 				}
 				g := HauteurNoeud(succ.ToString(), save)
 				dist := distance(*newHum.Position, *goal)
-				l.Push(newHum, dist+g) // ou plus en fait j'ai pun probleme dans la gestion des goals avec la profondeur du chemin
+				l.Push(Item{*newHum, dist + float64(g)}) // ou plus en fait j'ai pun probleme dans la gestion des goals avec la profondeur du chemin
 			}
 
 		}
 	}
-	bestIfnot95 := findMax(save)
-	return bestIfnot95
+	return agent, save
 }
