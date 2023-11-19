@@ -44,20 +44,28 @@ func (b *Board) Generate() {
 
 func (b *Board) GetNeighbours(hex *Hexagone) []*Hexagone {
 	neighbours := make([]*Hexagone, 0)
+
+	addIfExist := func(x, y int) {
+		key := fmt.Sprintf("%d:%d", x, y)
+		if neighbor, ok := b.Cases[key]; ok {
+			neighbours = append(neighbours, neighbor)
+		}
+	}
+
 	if hex.Position.Y%2 == 0 {
-		neighbours = append(neighbours, b.Cases[fmt.Sprintf("%d:%d", hex.Position.X+1, hex.Position.Y+1)])
-		neighbours = append(neighbours, b.Cases[fmt.Sprintf("%d:%d", hex.Position.X, hex.Position.Y-1)])
-		neighbours = append(neighbours, b.Cases[fmt.Sprintf("%d:%d", hex.Position.X+1, hex.Position.Y-1)])
-		neighbours = append(neighbours, b.Cases[fmt.Sprintf("%d:%d", hex.Position.X-1, hex.Position.Y)])
-		neighbours = append(neighbours, b.Cases[fmt.Sprintf("%d:%d", hex.Position.X+1, hex.Position.Y)])
-		neighbours = append(neighbours, b.Cases[fmt.Sprintf("%d:%d", hex.Position.X, hex.Position.Y+1)])
+		addIfExist(hex.Position.X+1, hex.Position.Y+1)
+		addIfExist(hex.Position.X, hex.Position.Y-1)
+		addIfExist(hex.Position.X+1, hex.Position.Y-1)
+		addIfExist(hex.Position.X-1, hex.Position.Y)
+		addIfExist(hex.Position.X+1, hex.Position.Y)
+		addIfExist(hex.Position.X, hex.Position.Y+1)
 	} else {
-		neighbours = append(neighbours, b.Cases[fmt.Sprintf("%d:%d", hex.Position.X-1, hex.Position.Y)])
-		neighbours = append(neighbours, b.Cases[fmt.Sprintf("%d:%d", hex.Position.X, hex.Position.Y-1)])
-		neighbours = append(neighbours, b.Cases[fmt.Sprintf("%d:%d", hex.Position.X+1, hex.Position.Y)])
-		neighbours = append(neighbours, b.Cases[fmt.Sprintf("%d:%d", hex.Position.X-1, hex.Position.Y+1)])
-		neighbours = append(neighbours, b.Cases[fmt.Sprintf("%d:%d", hex.Position.X-1, hex.Position.Y-1)])
-		neighbours = append(neighbours, b.Cases[fmt.Sprintf("%d:%d", hex.Position.X, hex.Position.Y+1)])
+		addIfExist(hex.Position.X-1, hex.Position.Y)
+		addIfExist(hex.Position.X, hex.Position.Y-1)
+		addIfExist(hex.Position.X+1, hex.Position.Y)
+		addIfExist(hex.Position.X-1, hex.Position.Y+1)
+		addIfExist(hex.Position.X-1, hex.Position.Y-1)
+		addIfExist(hex.Position.X, hex.Position.Y+1)
 	}
 	return neighbours
 }

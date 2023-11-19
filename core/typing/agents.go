@@ -141,6 +141,49 @@ func (h *Human) UpdateAgent() {
 		h.Board.Cases[h.Position.ToString()].Resource = NONE
 	}
 }
+func (h *Human) UpdateAgentNew() {
+	Path := make([]string, 0)
+	if !h.MovingToTarget {
+		fmt.Println("Looking for target")
+		surroundingHexagons := h.GetNeighborsWithin5()
+		targetHexagon := h.BestNeighbor(surroundingHexagons)
+
+		maps := Astarnew(*h, targetHexagon)
+		Path = createPath(maps, targetHexagon)
+		Path = Path[:len(Path)-2]
+		h.Target = targetHexagon
+		h.MovingToTarget = true
+		fmt.Println("New target:", targetHexagon.ToString())
+	}
+
+	for h.MovingToTarget && len(Path) > 0 {
+		nextHexagon := Path[len(Path)-1]
+		h.MoveToHexagon(h.Board.Cases[nextHexagon])
+		Path = Path[:len(Path)-1]
+		h.UpdateStateBasedOnResource(h.Board.Cases[nextHexagon])
+		if h.Board.Cases[nextHexagon] == h.Target {
+			h.MovingToTarget = false
+		}
+	}
+
+	if h.Target.Position == h.Position.Position {
+		fmt.Println("Reached target")
+		h.MovingToTarget = false
+		h.Target = nil
+		h.Board.Cases[h.Position.ToString()].Resource = NONE
+	}
+}
+
+func createPath(maps map[string]string, hexagon *Hexagone) []string {
+	path := make([]string, 0)
+	path = append(path, hexagon.ToString())
+	val, ok := maps[hexagon.ToString()]
+	for ok {
+		path = append(path, val)
+		val, ok = maps[val]
+	}
+	return path
+}
 
 func (h *Human) UpdateStateBasedOnResource(hex *Hexagone) {
 	if hex.Resource == ANIMAL {

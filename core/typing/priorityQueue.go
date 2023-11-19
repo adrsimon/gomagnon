@@ -11,7 +11,7 @@ func (pq PriorityQueue) Len() int { return len(pq) }
 
 func (pq PriorityQueue) Less(i, j int) bool {
 	// We want Pop to give us the highest, not lowest, priority so we use greater than here.
-	return pq[i].priority > pq[j].priority
+	return pq[i].priority < pq[j].priority
 }
 
 func (pq PriorityQueue) Swap(i, j int) {
@@ -20,11 +20,11 @@ func (pq PriorityQueue) Swap(i, j int) {
 }
 
 func (pq *PriorityQueue) Push(x any) {
-	item := x.(*Item)
-	*pq = append(*pq, item)
+	item := x.(Item)         //	item := x.(*Item)
+	*pq = append(*pq, &item) //*pq = append(*pq, item)
 }
 
-func (pq *PriorityQueue) Pop() *Item {
+func (pq *PriorityQueue) Pop() any {
 	old := *pq
 	n := len(old)
 	item := old[n-1]

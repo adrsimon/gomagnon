@@ -1,6 +1,7 @@
 package typing
 
 import (
+	"container/heap"
 	"math"
 )
 
@@ -23,6 +24,7 @@ func HauteurNoeud(node string, save map[string]string) int {
 
 func AStar(human Human, goal *Hexagone) []*Hexagone {
 	l := make(PriorityQueue, 0)
+	heap.Init(&l)
 	l.Push(&Item{value: human, priority: 0})
 	visited := make(map[*Hexagone]bool)
 	dist := make(map[*Hexagone]float64)
@@ -30,7 +32,7 @@ func AStar(human Human, goal *Hexagone) []*Hexagone {
 	d := make(map[*Hexagone]*Hexagone)
 	d[human.Position] = nil
 	for len(l) > 0 {
-		current := l.Pop().value
+		current := heap.Pop(&l).(*Item).value
 		visited[current.Position] = true
 		if current.Position == goal {
 			break
@@ -52,23 +54,24 @@ func AStar(human Human, goal *Hexagone) []*Hexagone {
 	}
 	return path
 }
-func Astarnew(agent Human, goal *Hexagone) (Human, map[string]string) { // goal methode agent
-	l := make(PriorityQueue, 50)
+func Astarnew(agent Human, goal *Hexagone) map[string]string { // goal methode agent
+	l := make(PriorityQueue, 0)
+	heap.Init(&l)
 	l.Push(Item{agent, distance(*agent.Position, *goal)})
-	var save map[string]string
+	save := make(map[string]string, 0)
 	save[agent.Position.ToString()] = ""
 	for l.Len() != 0 {
 		var agTemp Human
-		a := l.Pop()
+		a := heap.Pop(&l).(*Item)
 		agTemp = a.value
 		for _, succ := range agTemp.Board.GetNeighbours(agTemp.Position) {
 			_, ok := save[succ.ToString()]
 			// If the key exists
 			if !ok {
 				save[succ.ToString()] = agTemp.Position.ToString()
-				newHum := NewHuman(agTemp.id, agTemp.Type, agTemp.Body, agTemp.Stats, succ, agTemp.Target, agTemp.MovingToTarget, agTemp.CurrentPath, agTemp.Board, agTemp.ComOut, agTemp.ComIn)
-				if succ == goal {
-					return *newHum, save
+				newHum := NewHuman(agent.id, agent.Type, agent.Body, agent.Stats, succ, agent.Target, agent.MovingToTarget, agent.CurrentPath, agent.Board, agent.ComOut, agent.ComIn)
+				if succ.ToString() == goal.ToString() {
+					return save
 				}
 				g := HauteurNoeud(succ.ToString(), save)
 				dist := distance(*newHum.Position, *goal)
@@ -77,5 +80,5 @@ func Astarnew(agent Human, goal *Hexagone) (Human, map[string]string) { // goal 
 
 		}
 	}
-	return agent, save
+	return save
 }
