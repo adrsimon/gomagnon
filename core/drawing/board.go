@@ -6,23 +6,14 @@ import (
 )
 
 func DrawBoard(screen *ebiten.Image, b *typing.Board) {
-
 	for _, biome := range b.Biomes {
 		for _, hex := range biome.Hexs {
 			hexSize := float32(b.HexSize)
-			x := float32(hex.Position.X)
-			y := float32(hex.Position.Y)
+			x := hex.Position.X
+			y := hex.Position.Y
 
-			var offsetX, offsetY float32
-			offsetY = 0.75 * hexSize
-			offsetX = 0
-
-			if int(y)%2 == 0 {
-				offsetX = hexSize / 2
-				DrawHex(screen, x*hexSize+offsetX, y*offsetY, biome.BiomeType, hexSize, hex.Resource)
-			} else {
-				DrawHex(screen, x*hexSize+offsetX, y*offsetY, biome.BiomeType, hexSize, hex.Resource)
-			}
+			xc, yc := getHexGraphicalCenter(x, y, hexSize)
+			DrawHex(screen, xc, yc, biome.BiomeType, hexSize, hex.Resource)
 		}
 	}
 }
@@ -35,32 +26,42 @@ func DrawAgents(screen *ebiten.Image, b *typing.Board) {
 
 	for _, agent := range agents {
 		hexSize := float32(b.HexSize)
-		x := float32(agent.Position.Position.X)
-		y := float32(agent.Position.Position.Y)
+		x := agent.Position.Position.X
+		y := agent.Position.Position.Y
 
-		var offsetX, offsetY float32
-		offsetY = 0.75 * hexSize
-		offsetX = 0
-
-		if int(y)%2 == 0 {
-			offsetX = hexSize / 2
-			DrawAgent(screen, x*hexSize+offsetX, y*offsetY, hexSize)
-		} else {
-			DrawAgent(screen, x*hexSize+offsetX, y*offsetY, hexSize)
-		}
+		xA, yA := getHexGraphicalCenter(x, y, hexSize)
+		DrawAgent(screen, xA, yA, hexSize)
 
 		for _, neighbor := range agent.GetNeighborsWithin5() {
 			if neighbor == nil {
 				continue
 			}
-			xN := float32(neighbor.Position.X)
-			yN := float32(neighbor.Position.Y)
-			if int(yN)%2 == 0 {
-				offsetX = hexSize / 2
-				DrawAgentNeighbor(screen, xN*hexSize+offsetX, yN*offsetY, hexSize)
-			} else {
-				DrawAgentNeighbor(screen, xN*hexSize, yN*offsetY, hexSize)
+			xN, yN := getHexGraphicalCenter(neighbor.Position.X, neighbor.Position.Y, hexSize)
+			DrawAgentNeighbor(screen, xN, yN, hexSize)
+		}
+
+		if agent.CurrentPath != nil && len(agent.CurrentPath) > 0 {
+			x0, y0 := getHexGraphicalCenter(agent.Position.Position.X, agent.Position.Position.Y, hexSize)
+			x1, y1 := getHexGraphicalCenter(agent.CurrentPath[len(agent.CurrentPath)-1].Position.X, agent.CurrentPath[len(agent.CurrentPath)-1].Position.Y, hexSize)
+			DrawAgentPath(screen, x0, y0, x1, y1)
+			for i := 0; i < len(agent.CurrentPath)-1; i++ {
+				xa, ya := getHexGraphicalCenter(agent.CurrentPath[i].Position.X, agent.CurrentPath[i].Position.Y, hexSize)
+				xb, yb := getHexGraphicalCenter(agent.CurrentPath[i+1].Position.X, agent.CurrentPath[i+1].Position.Y, hexSize)
+				DrawAgentPath(screen, xa, ya, xb, yb)
 			}
 		}
+	}
+}
+
+func getHexGraphicalCenter(x, y int, hexSize float32) (float32, float32) {
+	var offsetX, offsetY float32
+	offsetY = 0.75 * hexSize
+	offsetX = 0
+
+	if int(y)%2 == 0 {
+		offsetX = hexSize / 2
+		return float32(x)*hexSize + offsetX, float32(y) * offsetY
+	} else {
+		return float32(x)*hexSize + offsetX, float32(y) * offsetY
 	}
 }

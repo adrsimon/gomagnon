@@ -22,7 +22,7 @@ func NewSimulation() Simulation {
 	simu.GameMap = typing.NewGame(
 		ScreenWidth, ScreenHeight,
 		colornames.Black,
-		27, 23,
+		28, 25,
 		40,
 		10, 10, 10, 10,
 	)

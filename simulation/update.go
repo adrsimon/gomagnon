@@ -11,7 +11,7 @@ func (s *Simulation) Update() error {
 		wg.Add(1)
 		go func(a *typing.Human) {
 			defer wg.Done()
-			a.UpdateAgentNew()
+			a.UpdateAgent()
 		}(agent)
 	}
 	wg.Wait()

@@ -118,52 +118,22 @@ func (h *Human) UpdateAgent() {
 		surroundingHexagons := h.GetNeighborsWithin5()
 		targetHexagon := h.BestNeighbor(surroundingHexagons)
 
-		h.CurrentPath = AStar(*h, targetHexagon)
+		res := AStar(*h, targetHexagon)
+		path := createPath(res, targetHexagon)
+		for _, hex := range path {
+			h.CurrentPath = append(h.CurrentPath, h.Board.Cases[hex])
+		}
+		h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-2]
 		h.Target = targetHexagon
 		h.MovingToTarget = true
 		fmt.Println("New target:", targetHexagon.ToString())
 	}
 
 	if h.MovingToTarget && len(h.CurrentPath) > 0 {
-		nextHexagon := h.CurrentPath[0]
-		h.MoveToHexagon(nextHexagon)
-		h.CurrentPath = h.CurrentPath[1:]
-		h.UpdateStateBasedOnResource(nextHexagon)
-		if nextHexagon == h.Target {
-			h.MovingToTarget = false
-		}
-	}
-
-	if h.Target.Position == h.Position.Position {
-		fmt.Println("Reached target")
-		h.MovingToTarget = false
-		h.Target = nil
-		h.Board.Cases[h.Position.ToString()].Resource = NONE
-	}
-}
-func (h *Human) UpdateAgentNew() {
-	Path := make([]string, 0)
-	if !h.MovingToTarget {
-		fmt.Println("Looking for target")
-		surroundingHexagons := h.GetNeighborsWithin5()
-		targetHexagon := h.BestNeighbor(surroundingHexagons)
-
-		maps := Astarnew(*h, targetHexagon)
-		Path = createPath(maps, targetHexagon)
-		Path = Path[:len(Path)-2]
-		h.Target = targetHexagon
-		h.MovingToTarget = true
-		fmt.Println("New target:", targetHexagon.ToString())
-	}
-
-	for h.MovingToTarget && len(Path) > 0 {
-		nextHexagon := Path[len(Path)-1]
-		h.MoveToHexagon(h.Board.Cases[nextHexagon])
-		Path = Path[:len(Path)-1]
-		h.UpdateStateBasedOnResource(h.Board.Cases[nextHexagon])
-		if h.Board.Cases[nextHexagon] == h.Target {
-			h.MovingToTarget = false
-		}
+		nextHexagon := h.CurrentPath[len(h.CurrentPath)-1]
+		h.MoveToHexagon(h.Board.Cases[nextHexagon.ToString()])
+		h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-1]
+		h.UpdateStateBasedOnResource(h.Board.Cases[nextHexagon.ToString()])
 	}
 
 	if h.Target.Position == h.Position.Position {

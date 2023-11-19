@@ -10,7 +10,7 @@ func main() {
 	sim := simulation.NewSimulation()
 	ebiten.SetWindowSize(sim.ScreenWidth, sim.ScreenHeight)
 	ebiten.SetWindowTitle("Map Generated")
-	ebiten.SetTPS(1)
+	ebiten.SetTPS(2)
 
 	if err := ebiten.RunGame(&sim); err != nil {
 		log.Fatal(err)
