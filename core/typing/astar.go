@@ -33,6 +33,9 @@ func AStar(agent Human, goal *Hexagone) map[string]string {
 		a := heap.Pop(&l).(*Item)
 		agTemp = a.value
 		for _, succ := range agTemp.Board.GetNeighbours(agTemp.Position) {
+			if succ.Biome.BiomeType == WATER {
+				continue
+			}
 			_, ok := save[succ.ToString()]
 			if !ok {
 				save[succ.ToString()] = agTemp.Position.ToString()
