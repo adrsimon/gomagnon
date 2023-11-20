@@ -54,5 +54,16 @@ func NewSimulation() Simulation {
 		Board:          simu.GameMap.Board,
 	}
 
+	simu.GameMap.Board.AgentManager.Agents["ag-1"] = &typing.Human{
+		Type:           0,
+		Body:           typing.HumanBody{},
+		Stats:          typing.HumanStats{},
+		Position:       simu.GameMap.Board.Cases["1:1"],
+		Target:         nil,
+		MovingToTarget: false,
+		CurrentPath:    nil,
+		Board:          simu.GameMap.Board,
+	}
+
 	return simu
 }

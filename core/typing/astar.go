@@ -39,7 +39,7 @@ func AStar(agent Human, goal *Hexagone) map[string]string {
 			_, ok := save[succ.ToString()]
 			if !ok {
 				save[succ.ToString()] = agTemp.Position.ToString()
-				newHum := NewHuman(agent.id, agent.Type, agent.Body, agent.Stats, succ, agent.Target, agent.MovingToTarget, agent.CurrentPath, agent.Board, agent.ComOut, agent.ComIn)
+				newHum := NewHuman(agent.AgId, agent.Type, agent.Body, agent.Stats, succ, agent.Target, agent.MovingToTarget, agent.CurrentPath, agent.Board, agent.ComOut, agent.ComIn)
 				if succ.ToString() == goal.ToString() {
 					return save
 				}

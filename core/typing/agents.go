@@ -17,7 +17,7 @@ type HumanBody struct {
 }
 
 type Human struct {
-	id    string
+	AgId  string
 	Type  rune
 	Body  HumanBody
 	Stats HumanStats
@@ -33,7 +33,7 @@ type Human struct {
 }
 
 func NewHuman(id string, Type rune, body HumanBody, stats HumanStats, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Hexagone, board *Board, comOut agentToManager, comIn managerToAgent) *Human {
-	return &Human{id: id, Type: Type, Body: body, Stats: stats, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn}
+	return &Human{AgId: id, Type: Type, Body: body, Stats: stats, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn}
 }
 
 const (
@@ -139,7 +139,7 @@ func (h *Human) UpdateAgent() {
 		fmt.Println("Reached target")
 		h.MovingToTarget = false
 		h.Target = nil
-		h.ComOut = agentToManager{AgentID: h.id, Action: "get", Pos: h.Position.ToString(), commOut: make(chan managerToAgent)}
+		h.ComOut = agentToManager{AgentID: h.AgId, Action: "get", Pos: h.Position.ToString(), commOut: make(chan managerToAgent)}
 		h.Board.AgentManager.messIn <- h.ComOut
 		h.ComIn = <-h.ComOut.commOut
 		if h.ComIn.Valid {
