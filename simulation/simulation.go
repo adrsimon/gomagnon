@@ -39,7 +39,7 @@ func NewSimulation() Simulation {
 		Type:           0,
 		Body:           typing.HumanBody{},
 		Stats:          typing.HumanStats{},
-		Position:       simu.GameMap.Board.Cases["10:10"],
+		Position:       simu.GameMap.Board.Cases["1:1"],
 		Target:         nil,
 		MovingToTarget: false,
 		CurrentPath:    nil,

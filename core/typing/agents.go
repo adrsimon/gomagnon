@@ -104,7 +104,7 @@ func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
 	randHex := &Hexagone{}
 	for !valid {
 		randHex = surroundingHexagons[r.Intn(len(surroundingHexagons))]
-		if h.Board.isValidHex(randHex) {
+		if h.Board.isValidHex(randHex) && randHex.Biome.BiomeType != WATER {
 			valid = true
 		}
 	}
