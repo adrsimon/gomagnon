@@ -15,6 +15,9 @@ type Simulation struct {
 
 	ScreenWidth  int
 	ScreenHeight int
+
+	cameraX, cameraY float32
+	zoomFactor       float32
 }
 
 func NewSimulation() Simulation {
@@ -26,6 +29,11 @@ func NewSimulation() Simulation {
 		40,
 		10, 10, 10, 10,
 	)
+
+	simu.cameraX = 0
+	simu.cameraY = 0
+	simu.zoomFactor = 1
+
 	simu.GameMap.Board.Generate()
 	simu.GameMap.Board.GenerateBiomes()
 	simu.GameMap.Board.GenerateResources()

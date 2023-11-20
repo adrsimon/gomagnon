@@ -9,13 +9,13 @@ type Board struct {
 	Cases           map[string]*Hexagone
 	XMax            int
 	YMax            int
-	HexSize         int
+	HexSize         float32
 	Biomes          []*Biome
 	ResourceManager *ResourceManager
 	AgentManager    *AgentManager
 }
 
-func NewBoard(xmax, ymax, hexSize, fruits, animals, rocks, woods int) *Board {
+func NewBoard(xmax, ymax int, hexSize float32, fruits, animals, rocks, woods int) *Board {
 	cases := make(map[string]*Hexagone)
 	agents := make(map[string]*Human)
 	return &Board{

@@ -5,48 +5,63 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-func DrawBoard(screen *ebiten.Image, b *typing.Board) {
+func DrawBoard(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFactor float32) {
 	for _, biome := range b.Biomes {
 		for _, hex := range biome.Hexs {
-			hexSize := float32(b.HexSize)
+			hexSize := b.HexSize
 			x := hex.Position.X
 			y := hex.Position.Y
 
 			xc, yc := getHexGraphicalCenter(x, y, hexSize)
-			DrawHex(screen, xc, yc, biome.BiomeType, hexSize, hex.Resource)
+			xc, yc = xc-cameraX, yc-cameraY
+			xc, yc = xc*zoomFactor, yc*zoomFactor
+
+			DrawHex(screen, xc, yc, biome.BiomeType, hexSize*zoomFactor, hex.Resource)
 		}
 	}
 }
 
-func DrawAgents(screen *ebiten.Image, b *typing.Board) {
+func DrawAgents(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFactor float32) {
 	agents := make([]*typing.Human, 0)
 	for _, ag := range b.AgentManager.Agents {
 		agents = append(agents, ag)
 	}
 
 	for _, agent := range agents {
-		hexSize := float32(b.HexSize)
+		hexSize := b.HexSize
 		x := agent.Position.Position.X
 		y := agent.Position.Position.Y
 
 		xA, yA := getHexGraphicalCenter(x, y, hexSize)
-		DrawAgent(screen, xA, yA, hexSize)
+		xA, yA = xA-cameraX, yA-cameraY
+		xA, yA = xA*zoomFactor, yA*zoomFactor
+		DrawAgent(screen, xA, yA, hexSize*zoomFactor)
 
 		for _, neighbor := range agent.GetNeighborsWithin5() {
 			if neighbor == nil {
 				continue
 			}
 			xN, yN := getHexGraphicalCenter(neighbor.Position.X, neighbor.Position.Y, hexSize)
-			DrawAgentNeighbor(screen, xN, yN, hexSize)
+			xN, yN = xN-cameraX, yN-cameraY
+			xN, yN = xN*zoomFactor, yN*zoomFactor
+			DrawAgentNeighbor(screen, xN, yN, hexSize*zoomFactor)
 		}
 
 		if agent.CurrentPath != nil && len(agent.CurrentPath) > 0 {
 			x0, y0 := getHexGraphicalCenter(agent.Position.Position.X, agent.Position.Position.Y, hexSize)
 			x1, y1 := getHexGraphicalCenter(agent.CurrentPath[len(agent.CurrentPath)-1].Position.X, agent.CurrentPath[len(agent.CurrentPath)-1].Position.Y, hexSize)
+			x0, y0 = x0-cameraX, y0-cameraY
+			x1, y1 = x1-cameraX, y1-cameraY
+			x0, y0 = x0*zoomFactor, y0*zoomFactor
+			x1, y1 = x1*zoomFactor, y1*zoomFactor
 			DrawAgentPath(screen, x0, y0, x1, y1)
 			for i := 0; i < len(agent.CurrentPath)-1; i++ {
 				xa, ya := getHexGraphicalCenter(agent.CurrentPath[i].Position.X, agent.CurrentPath[i].Position.Y, hexSize)
 				xb, yb := getHexGraphicalCenter(agent.CurrentPath[i+1].Position.X, agent.CurrentPath[i+1].Position.Y, hexSize)
+				xa, ya = xa-cameraX, ya-cameraY
+				xb, yb = xb-cameraX, yb-cameraY
+				xa, ya = xa*zoomFactor, ya*zoomFactor
+				xb, yb = xb*zoomFactor, yb*zoomFactor
 				DrawAgentPath(screen, xa, ya, xb, yb)
 			}
 		}

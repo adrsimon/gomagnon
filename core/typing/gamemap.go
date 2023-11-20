@@ -16,7 +16,7 @@ func NewGame(
 	screenWidth, screenHeight int,
 	backgroundColor color.RGBA,
 	xmax, ymax int,
-	hexSize int,
+	hexSize float32,
 	fruits, animals, rocks, woods int,
 ) *GameMap {
 	return &GameMap{
