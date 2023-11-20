@@ -1,5 +1,7 @@
 package typing
 
+import "fmt"
+
 type agentToManager struct {
 	AgentID string
 	Action  string
@@ -18,49 +20,37 @@ type AgentManager struct {
 	messIn       chan agentToManager
 	stackRequest []agentToManager
 	Agents       map[string]*Human
+	signal       chan struct{}
 }
 
 func NewAgentManager(Map map[string]*Hexagone, messIn chan agentToManager, stackRequest []agentToManager, agents map[string]*Human) *AgentManager {
-	return &AgentManager{Map: Map, messIn: messIn, stackRequest: stackRequest, Agents: agents}
+	return &AgentManager{Map: Map, messIn: messIn, stackRequest: stackRequest, Agents: agents, signal: make(chan struct{})}
 }
 
 func (agMan *AgentManager) startListening() {
 	for {
 		request := <-agMan.messIn
 		agMan.stackRequest = append(agMan.stackRequest, request)
+		agMan.signal <- struct{}{}
 	}
 }
 
 func (agMan *AgentManager) startAnswering() {
 	for {
-		if len(agMan.stackRequest) > 0 {
+		select {
+		case <-agMan.signal:
 			request := agMan.stackRequest[0]
 			agMan.execute(request)
 			agMan.stackRequest = agMan.stackRequest[1:]
 		}
 	}
 }
-func (agMan *AgentManager) removeAgent(hexagone string, a *Human) {
-	ind := -1
-	for i, v := range agMan.Map[hexagone].Agents {
-		if v == a {
-			ind = i
-		}
-	}
-	if ind != -1 {
-		agMan.Map[hexagone].Agents = append(agMan.Map[hexagone].Agents[:ind], agMan.Map[hexagone].Agents[ind+1:]...)
-	}
-}
 
 func (agMan *AgentManager) execute(request agentToManager) {
 	switch request.Action {
-	case "walk":
-		agMan.Map[request.Pos].Agents = append(agMan.Map[request.Pos].Agents, agMan.Agents[request.AgentID])
-		agMan.removeAgent(request.Pos, agMan.Agents[request.AgentID])
-		request.commOut <- managerToAgent{Valid: true, Map: agMan.Map, Resource: NONE}
 	case "get":
 		switch agMan.Map[request.Pos].Resource {
-		case 1:
+		case NONE:
 			request.commOut <- managerToAgent{Valid: false, Map: agMan.Map, Resource: NONE}
 		default:
 			res := agMan.Map[request.Pos].Resource
@@ -71,6 +61,7 @@ func (agMan *AgentManager) execute(request agentToManager) {
 }
 
 func (agMan *AgentManager) Start() {
+	fmt.Println("Starting agent manager")
 	go agMan.startListening()
 	go agMan.startAnswering()
 }

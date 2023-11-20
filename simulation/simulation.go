@@ -33,6 +33,8 @@ func NewSimulation() Simulation {
 	simu.ScreenWidth = ScreenWidth
 	simu.ScreenHeight = ScreenHeight
 
+	simu.GameMap.Board.AgentManager.Start()
+
 	simu.GameMap.Board.AgentManager.Agents["ag-0"] = &typing.Human{
 		Type:           0,
 		Body:           typing.HumanBody{},

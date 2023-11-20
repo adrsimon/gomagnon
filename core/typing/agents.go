@@ -133,14 +133,18 @@ func (h *Human) UpdateAgent() {
 		nextHexagon := h.CurrentPath[len(h.CurrentPath)-1]
 		h.MoveToHexagon(h.Board.Cases[nextHexagon.ToString()])
 		h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-1]
-		h.UpdateStateBasedOnResource(h.Board.Cases[nextHexagon.ToString()])
 	}
 
 	if h.Target.Position == h.Position.Position {
 		fmt.Println("Reached target")
 		h.MovingToTarget = false
 		h.Target = nil
-		h.Board.Cases[h.Position.ToString()].Resource = NONE
+		h.ComOut = agentToManager{AgentID: h.id, Action: "get", Pos: h.Position.ToString(), commOut: make(chan managerToAgent)}
+		h.Board.AgentManager.messIn <- h.ComOut
+		h.ComIn = <-h.ComOut.commOut
+		if h.ComIn.Valid {
+			h.UpdateStateBasedOnResource(h.Position)
+		}
 	}
 }
 
@@ -157,11 +161,9 @@ func createPath(maps map[string]string, hexagon *Hexagone) []string {
 
 func (h *Human) UpdateStateBasedOnResource(hex *Hexagone) {
 	if hex.Resource == ANIMAL {
-		// TODO: send request to take resource and if yes:
 		h.Body.Hungriness = max(0, h.Body.Hungriness-r.Intn(20))
 	}
 	if hex.Resource == FRUIT {
-		// TODO: send request to take resource and if yes:
 		h.Body.Hungriness = max(0, h.Body.Hungriness-r.Intn(10))
 	}
 	if hex.Biome.BiomeType == WATER {
