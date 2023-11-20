@@ -16,26 +16,29 @@ type managerToAgent struct {
 }
 
 type AgentManager struct {
-	Map          *map[string]*Hexagone
+	Map          map[string]*Hexagone
 	messIn       chan agentToManager
 	stackRequest []agentToManager
 	Agents       map[string]*Human
+	signal       chan struct{}
 }
 
-func NewAgentManager(Map *map[string]*Hexagone, messIn chan agentToManager, stackRequest []agentToManager, agents map[string]*Human) *AgentManager {
-	return &AgentManager{Map: Map, messIn: messIn, stackRequest: stackRequest, Agents: agents}
+func NewAgentManager(Map map[string]*Hexagone, messIn chan agentToManager, stackRequest []agentToManager, agents map[string]*Human) *AgentManager {
+	return &AgentManager{Map: Map, messIn: messIn, stackRequest: stackRequest, Agents: agents, signal: make(chan struct{})}
 }
 
 func (agMan *AgentManager) startListening() {
 	for {
 		request := <-agMan.messIn
 		agMan.stackRequest = append(agMan.stackRequest, request)
+		agMan.signal <- struct{}{}
 	}
 }
 
 func (agMan *AgentManager) startAnswering() {
 	for {
-		if len(agMan.stackRequest) > 0 {
+		select {
+		case <-agMan.signal:
 			request := agMan.stackRequest[0]
 			agMan.execute(request)
 			agMan.stackRequest = agMan.stackRequest[1:]
@@ -46,13 +49,13 @@ func (agMan *AgentManager) startAnswering() {
 func (agMan *AgentManager) execute(request agentToManager) {
 	switch request.Action {
 	case "get":
-		switch (*agMan.Map)[request.Pos].Resource {
+		switch agMan.Map[request.Pos].Resource {
 		case NONE:
-			request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
+			request.commOut <- managerToAgent{Valid: false, Map: agMan.Map, Resource: NONE}
 		default:
-			res := (*agMan.Map)[request.Pos].Resource
-			(*agMan.Map)[request.Pos].Resource = NONE
-			request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: res}
+			res := agMan.Map[request.Pos].Resource
+			agMan.Map[request.Pos].Resource = NONE
+			request.commOut <- managerToAgent{Valid: true, Map: agMan.Map, Resource: res}
 		}
 	}
 }

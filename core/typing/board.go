@@ -25,7 +25,7 @@ func NewBoard(xmax, ymax, hexSize, fruits, animals, rocks, woods int) *Board {
 		HexSize:         hexSize,
 		Biomes:          make([]*Biome, 0),
 		ResourceManager: NewResourceManager(fruits, animals, rocks, woods),
-		AgentManager:    NewAgentManager(&cases, make(chan agentToManager), make([]agentToManager, 0), agents),
+		AgentManager:    NewAgentManager(cases, make(chan agentToManager), make([]agentToManager, 0), agents),
 	}
 }
 
