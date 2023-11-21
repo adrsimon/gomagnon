@@ -2,6 +2,7 @@ package typing
 
 import (
 	"fmt"
+	"math/rand"
 )
 
 type HumanStats struct {
@@ -14,6 +15,12 @@ type HumanBody struct {
 	Gender      rune
 	Hungriness  int
 	Thirstiness int
+}
+
+type agentComm struct {
+	AgentID string
+	Action  string
+	comm    chan agentComm
 }
 
 type Human struct {
@@ -30,6 +37,9 @@ type Human struct {
 
 	ComOut agentToManager
 	ComIn  managerToAgent
+
+	AgentRelation map[string]string
+	AgentComm     agentComm
 }
 
 func NewHuman(id string, Type rune, body HumanBody, stats HumanStats, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Hexagone, board *Board, comOut agentToManager, comIn managerToAgent) *Human {
@@ -113,37 +123,58 @@ func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
 }
 
 func (h *Human) UpdateAgent() {
-	if !h.MovingToTarget {
-		fmt.Println("Looking for target")
-		surroundingHexagons := h.GetNeighborsWithin5()
-		targetHexagon := h.BestNeighbor(surroundingHexagons)
-
-		res := AStar(*h, targetHexagon)
-		path := createPath(res, targetHexagon)
-		for _, hex := range path {
-			h.CurrentPath = append(h.CurrentPath, h.Board.Cases[hex])
+	select {
+	case interruption := <-h.AgentComm.comm:
+		fmt.Printf("%s wants to %s", interruption.AgentID, interruption.Action)
+	default:
+		if len(h.Position.Agents) > 1 {
+			copyAgents := make([]*Human, 0)
+			copy(copyAgents, h.Position.Agents)
+			for _, v := range copyAgents {
+				if v != h {
+					_, ok := h.AgentRelation[v.id]
+					if !ok {
+						if rand.Intn(1) == 1 {
+							h.AgentRelation[v.id] = "Friend"
+						} else {
+							h.AgentRelation[v.id] = "Ennemy"
+						}
+					}
+				}
+			}
 		}
-		h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-2]
-		h.Target = targetHexagon
-		h.MovingToTarget = true
-		fmt.Println("New target:", targetHexagon.ToString())
-	}
+		if !h.MovingToTarget {
+			fmt.Println("Looking for target")
+			surroundingHexagons := h.GetNeighborsWithin5()
+			targetHexagon := h.BestNeighbor(surroundingHexagons)
 
-	if h.MovingToTarget && len(h.CurrentPath) > 0 {
-		nextHexagon := h.CurrentPath[len(h.CurrentPath)-1]
-		h.MoveToHexagon(h.Board.Cases[nextHexagon.ToString()])
-		h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-1]
-	}
+			res := AStar(*h, targetHexagon)
+			path := createPath(res, targetHexagon)
+			for _, hex := range path {
+				h.CurrentPath = append(h.CurrentPath, h.Board.Cases[hex])
+			}
+			h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-2]
+			h.Target = targetHexagon
+			h.MovingToTarget = true
+			fmt.Println("New target:", targetHexagon.ToString())
+		}
 
-	if h.Target.Position == h.Position.Position {
-		fmt.Println("Reached target")
-		h.MovingToTarget = false
-		h.Target = nil
-		h.ComOut = agentToManager{AgentID: h.id, Action: "get", Pos: h.Position.ToString(), commOut: make(chan managerToAgent)}
-		h.Board.AgentManager.messIn <- h.ComOut
-		h.ComIn = <-h.ComOut.commOut
-		if h.ComIn.Valid {
-			h.UpdateStateBasedOnResource(h.Position)
+		if h.MovingToTarget && len(h.CurrentPath) > 0 {
+			nextHexagon := h.CurrentPath[len(h.CurrentPath)-1]
+			h.MoveToHexagon(h.Board.Cases[nextHexagon.ToString()])
+			h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-1]
+		}
+
+		if h.Target.Position == h.Position.Position {
+			fmt.Println("Reached target")
+			h.MovingToTarget = false
+			h.Target = nil
+			h.ComOut = agentToManager{AgentID: h.id, Action: "get", Pos: h.Position.ToString(), commOut: make(chan managerToAgent)}
+			h.Board.AgentManager.messIn <- h.ComOut
+			h.ComIn = <-h.ComOut.commOut
+			if h.ComIn.Valid {
+				h.UpdateStateBasedOnResource(h.Position)
+			}
 		}
 	}
 }
