@@ -12,9 +12,9 @@ func distance(from Hexagone, to Hexagone) float64 {
 	return (math.Abs(float64(q3)) + math.Abs(float64(q3+r3)) + math.Abs(float64(r3))) / 2
 }
 
-func HauteurNoeud(node string, save map[string]string) int {
+func HauteurNoeud(node *Hexagone, save map[*Hexagone]*Hexagone) int {
 	cnt := 1
-	for save[node] != "" {
+	for save[node] != nil {
 		cnt++
 		parent := save[node]
 		node = parent
@@ -22,12 +22,12 @@ func HauteurNoeud(node string, save map[string]string) int {
 	return cnt
 }
 
-func AStar(agent Human, goal *Hexagone) map[string]string {
+func AStar(agent Human, goal *Hexagone) map[*Hexagone]*Hexagone {
 	l := make(PriorityQueue, 0)
 	heap.Init(&l)
 	l.Push(Item{agent, distance(*agent.Position, *goal)})
-	save := make(map[string]string)
-	save[agent.Position.ToString()] = ""
+	save := make(map[*Hexagone]*Hexagone)
+	save[agent.Position] = nil
 	for l.Len() != 0 {
 		var agTemp Human
 		a := heap.Pop(&l).(*Item)
@@ -36,14 +36,14 @@ func AStar(agent Human, goal *Hexagone) map[string]string {
 			if succ.Biome.BiomeType == WATER {
 				continue
 			}
-			_, ok := save[succ.ToString()]
+			_, ok := save[succ]
 			if !ok {
-				save[succ.ToString()] = agTemp.Position.ToString()
+				save[succ] = agTemp.Position
 				newHum := NewHuman(agent.id, agent.Type, agent.Body, agent.Stats, succ, agent.Target, agent.MovingToTarget, agent.CurrentPath, agent.Board, agent.ComOut, agent.ComIn)
-				if succ.ToString() == goal.ToString() {
+				if succ == goal {
 					return save
 				}
-				g := HauteurNoeud(succ.ToString(), save)
+				g := HauteurNoeud(succ, save)
 				dist := distance(*newHum.Position, *goal)
 				l.Push(Item{*newHum, dist + float64(g)})
 			}

@@ -1,9 +1,5 @@
 package typing
 
-import (
-	"fmt"
-)
-
 type HumanStats struct {
 	Strength    int
 	Sociability int
@@ -114,32 +110,27 @@ func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
 
 func (h *Human) UpdateAgent() {
 	if !h.MovingToTarget {
-		fmt.Println("Looking for target")
 		surroundingHexagons := h.GetNeighborsWithin5()
 		targetHexagon := h.BestNeighbor(surroundingHexagons)
 
 		res := AStar(*h, targetHexagon)
 		path := createPath(res, targetHexagon)
-		for _, hex := range path {
-			h.CurrentPath = append(h.CurrentPath, h.Board.Cases[hex])
-		}
+		h.CurrentPath = path
 		h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-2]
 		h.Target = targetHexagon
 		h.MovingToTarget = true
-		fmt.Println("New target:", targetHexagon.ToString())
 	}
 
 	if h.MovingToTarget && len(h.CurrentPath) > 0 {
 		nextHexagon := h.CurrentPath[len(h.CurrentPath)-1]
-		h.MoveToHexagon(h.Board.Cases[nextHexagon.ToString()])
+		h.MoveToHexagon(h.Board.Cases[nextHexagon.Position.X][nextHexagon.Position.Y])
 		h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-1]
 	}
 
 	if h.Target.Position == h.Position.Position {
-		fmt.Println("Reached target")
 		h.MovingToTarget = false
 		h.Target = nil
-		h.ComOut = agentToManager{AgentID: h.id, Action: "get", Pos: h.Position.ToString(), commOut: make(chan managerToAgent)}
+		h.ComOut = agentToManager{AgentID: h.id, Action: "get", Pos: h.Position, commOut: make(chan managerToAgent)}
 		h.Board.AgentManager.messIn <- h.ComOut
 		h.ComIn = <-h.ComOut.commOut
 		if h.ComIn.Valid {
@@ -148,10 +139,10 @@ func (h *Human) UpdateAgent() {
 	}
 }
 
-func createPath(maps map[string]string, hexagon *Hexagone) []string {
-	path := make([]string, 0)
-	path = append(path, hexagon.ToString())
-	val, ok := maps[hexagon.ToString()]
+func createPath(maps map[*Hexagone]*Hexagone, hexagon *Hexagone) []*Hexagone {
+	path := make([]*Hexagone, 0)
+	path = append(path, hexagon)
+	val, ok := maps[hexagon]
 	for ok {
 		path = append(path, val)
 		val, ok = maps[val]
