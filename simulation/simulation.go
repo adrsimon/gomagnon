@@ -44,7 +44,7 @@ func NewSimulation() Simulation {
 
 	simu.GameMap.Board.AgentManager.Start()
 
-	for i := 0; i < 50; i++ {
+	for i := 0; i < 1; i++ {
 		simu.GameMap.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", i)] = &typing.Human{
 			Type:           0,
 			Body:           typing.HumanBody{},
@@ -53,7 +53,9 @@ func NewSimulation() Simulation {
 			Target:         nil,
 			MovingToTarget: false,
 			CurrentPath:    nil,
+			Hut:            nil,
 			Board:          simu.GameMap.Board,
+			Inventory:      map[typing.ResourceType]int{},
 		}
 	}
 
