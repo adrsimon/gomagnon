@@ -18,10 +18,9 @@ type managerToAgent struct {
 }
 
 type AgentManager struct {
-	Map          *[][]*Hexagone
-	messIn       chan agentToManager
-	stackRequest []agentToManager
-	Agents       map[string]*Human
+	Map    *[][]*Hexagone
+	messIn chan agentToManager
+	Agents map[string]*Human
 }
 
 func NewAgentManager(Map [][]*Hexagone, messIn chan agentToManager, agents map[string]*Human) *AgentManager {
@@ -31,11 +30,11 @@ func NewAgentManager(Map [][]*Hexagone, messIn chan agentToManager, agents map[s
 func (agMan *AgentManager) startRessources() {
 	for {
 		request := <-agMan.messIn
-		agMan.execute(request)
+		agMan.executeRessources(request)
 	}
 }
 
-func (agMan *AgentManager) execute(request agentToManager) {
+func (agMan *AgentManager) executeRessources(request agentToManager) {
 	switch request.Action {
 	case "get":
 		switch (*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Resource {
