@@ -6,8 +6,8 @@ import (
 )
 
 func distance(from Hexagone, to Hexagone) float64 {
-	q1, r1 := from.OddRToAxial()
-	q2, r2 := to.OddRToAxial()
+	q1, r1 := from.EvenRToAxial()
+	q2, r2 := to.EvenRToAxial()
 	q3, r3 := q1-q2, r1-r2
 	return (math.Abs(float64(q3)) + math.Abs(float64(q3+r3)) + math.Abs(float64(r3))) / 2
 }
@@ -28,10 +28,15 @@ func AStar(agent Human, goal *Hexagone) map[*Hexagone]*Hexagone {
 	l.Push(Item{agent, distance(*agent.Position, *goal)})
 	save := make(map[*Hexagone]*Hexagone)
 	save[agent.Position] = nil
+
 	for l.Len() != 0 {
-		var agTemp Human
 		a := heap.Pop(&l).(*Item)
-		agTemp = a.value
+		agTemp := a.value
+
+		if agTemp.Position == goal {
+			return save
+		}
+
 		for _, succ := range agTemp.Board.GetNeighbours(agTemp.Position) {
 			if succ.Biome.BiomeType == WATER {
 				continue
@@ -40,15 +45,13 @@ func AStar(agent Human, goal *Hexagone) map[*Hexagone]*Hexagone {
 			if !ok {
 				save[succ] = agTemp.Position
 				newHum := NewHuman(agent.id, agent.Type, agent.Body, agent.Stats, succ, agent.Target, agent.MovingToTarget, agent.CurrentPath, agent.Board, agent.ComOut, agent.ComIn)
-				if succ == goal {
-					return save
-				}
+
 				g := HauteurNoeud(succ, save)
 				dist := distance(*newHum.Position, *goal)
-				l.Push(Item{*newHum, dist + float64(g)})
+				l.Push(Item{*newHum, dist + float64(g) + a.priority})
 			}
-
 		}
 	}
+
 	return save
 }
