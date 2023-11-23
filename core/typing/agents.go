@@ -174,7 +174,6 @@ func (h *Human) UpdateAgent() {
 			}
 		}
 	}
-
 	h.UpdateState(NONE)
 }
 
