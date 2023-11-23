@@ -22,31 +22,16 @@ type AgentManager struct {
 	messIn       chan agentToManager
 	stackRequest []agentToManager
 	Agents       map[string]*Human
-	signal       chan struct{}
 }
 
-func NewAgentManager(Map [][]*Hexagone, messIn chan agentToManager, stackRequest []agentToManager, agents map[string]*Human) *AgentManager {
-	return &AgentManager{Map: &Map, messIn: messIn, stackRequest: stackRequest, Agents: agents, signal: make(chan struct{})}
+func NewAgentManager(Map [][]*Hexagone, messIn chan agentToManager, agents map[string]*Human) *AgentManager {
+	return &AgentManager{Map: &Map, messIn: messIn, Agents: agents}
 }
 
-func (agMan *AgentManager) startListening() {
+func (agMan *AgentManager) startRessources() {
 	for {
 		request := <-agMan.messIn
-		fmt.Println("Request received: ", request)
-		agMan.stackRequest = append(agMan.stackRequest, request)
-		agMan.signal <- struct{}{}
-	}
-}
-
-func (agMan *AgentManager) startAnswering() {
-	for {
-		select {
-		case <-agMan.signal:
-			request := agMan.stackRequest[0]
-			fmt.Println("Request to execute: ", request)
-			agMan.execute(request)
-			agMan.stackRequest = agMan.stackRequest[1:]
-		}
+		agMan.execute(request)
 	}
 }
 
@@ -66,6 +51,5 @@ func (agMan *AgentManager) execute(request agentToManager) {
 
 func (agMan *AgentManager) Start() {
 	fmt.Println("Starting agent manager")
-	go agMan.startListening()
-	go agMan.startAnswering()
+	go agMan.startRessources()
 }
