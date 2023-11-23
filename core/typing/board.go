@@ -1,12 +1,7 @@
 package typing
 
-import (
-	"fmt"
-	"sort"
-)
-
 type Board struct {
-	Cases           map[string]*Hexagone
+	Cases           [][]*Hexagone
 	XMax            int
 	YMax            int
 	HexSize         float32
@@ -16,7 +11,10 @@ type Board struct {
 }
 
 func NewBoard(xmax, ymax int, hexSize float32, fruits, animals, rocks, woods int) *Board {
-	cases := make(map[string]*Hexagone)
+	cases := make([][]*Hexagone, 0)
+	for x := 0; x < xmax; x++ {
+		cases = append(cases, make([]*Hexagone, ymax))
+	}
 	agents := make(map[string]*Human)
 	return &Board{
 		Cases:           cases,
@@ -32,7 +30,7 @@ func NewBoard(xmax, ymax int, hexSize float32, fruits, animals, rocks, woods int
 func (b *Board) Generate() {
 	for x := 0; x < b.XMax; x++ {
 		for y := 0; y < b.YMax; y++ {
-			b.Cases[fmt.Sprintf("%d:%d", x, y)] = &Hexagone{
+			b.Cases[x][y] = &Hexagone{
 				Position: &Point2D{
 					X: x,
 					Y: y,
@@ -46,9 +44,8 @@ func (b *Board) GetNeighbours(hex *Hexagone) []*Hexagone {
 	neighbours := make([]*Hexagone, 0)
 
 	addIfExist := func(x, y int) {
-		key := fmt.Sprintf("%d:%d", x, y)
-		if neighbor, ok := b.Cases[key]; ok {
-			neighbours = append(neighbours, neighbor)
+		if x >= 0 && x < b.XMax && y >= 0 && y < b.YMax {
+			neighbours = append(neighbours, b.Cases[x][y])
 		}
 	}
 
@@ -71,47 +68,45 @@ func (b *Board) GetNeighbours(hex *Hexagone) []*Hexagone {
 }
 
 func (b *Board) GenerateBiomes() {
-	availableHexs := make(map[string]*Hexagone)
-	for k, v := range b.Cases {
-		availableHexs[k] = v
+	availableHexs := make([][]*Hexagone, b.XMax)
+	for i := range availableHexs {
+		availableHexs[i] = make([]*Hexagone, b.YMax)
+		for j := range availableHexs[i] {
+			availableHexs[i][j] = b.Cases[i][j]
+		}
 	}
 
-	var sortedKeys []string
-	for k := range availableHexs {
-		sortedKeys = append(sortedKeys, k)
-	}
-	sort.Strings(sortedKeys)
-
-	for _, pos := range sortedKeys {
-		hex := availableHexs[pos]
-		if hex == nil {
-			continue
-		}
-
-		biomeType := BiomesType(r.Intn(4))
-		biome := Biome{
-			BiomeType: biomeType,
-			Hexs:      make([]*Hexagone, 0),
-		}
-		biome.Hexs = append(biome.Hexs, hex)
-		hex.Biome = &biome
-		delete(availableHexs, pos)
-
-		neighbours := b.GetNeighbours(hex)
-		for _, neighbour := range neighbours {
-			if neighbour == nil {
+	for i := range availableHexs {
+		for j := range availableHexs[i] {
+			hex := availableHexs[i][j]
+			if hex == nil {
 				continue
 			}
-			key := fmt.Sprintf("%d:%d", neighbour.Position.X, neighbour.Position.Y)
-			_, ok := availableHexs[key]
-			if try := r.Intn(100); try > 1 && ok {
-				biome.Hexs = append(biome.Hexs, neighbour)
-				neighbour.Biome = &biome
-				delete(availableHexs, key)
-				neighbours = append(neighbours, b.GetNeighbours(neighbour)...)
+
+			biomeType := BiomesType(r.Intn(4))
+			biome := Biome{
+				BiomeType: biomeType,
+				Hexs:      make([]*Hexagone, 0),
 			}
+			biome.Hexs = append(biome.Hexs, hex)
+			hex.Biome = &biome
+			availableHexs[i][j] = nil
+
+			neighbours := b.GetNeighbours(hex)
+			for _, neighbour := range neighbours {
+				if neighbour == nil {
+					continue
+				}
+				neighbourHex := availableHexs[neighbour.Position.X][neighbour.Position.Y]
+				if try := r.Intn(100); try > 1 && neighbourHex != nil && neighbourHex.Biome == nil {
+					biome.Hexs = append(biome.Hexs, neighbour)
+					neighbour.Biome = &biome
+					availableHexs[neighbour.Position.X][neighbour.Position.Y] = nil
+					neighbours = append(neighbours, b.GetNeighbours(neighbour)...)
+				}
+			}
+			b.Biomes = append(b.Biomes, &biome)
 		}
-		b.Biomes = append(b.Biomes, &biome)
 	}
 }
 

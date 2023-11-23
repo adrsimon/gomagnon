@@ -113,9 +113,7 @@ func (h *Human) UpdateAgent() {
 
 		res := AStar(*h, targetHexagon)
 		path := createPath(res, targetHexagon)
-		for _, hex := range path {
-			h.CurrentPath = append(h.CurrentPath, h.Board.Cases[hex])
-		}
+		h.CurrentPath = path
 		h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-2]
 		h.Target = targetHexagon
 		h.MovingToTarget = true
@@ -123,14 +121,14 @@ func (h *Human) UpdateAgent() {
 
 	if h.MovingToTarget && len(h.CurrentPath) > 0 {
 		nextHexagon := h.CurrentPath[len(h.CurrentPath)-1]
-		h.MoveToHexagon(h.Board.Cases[nextHexagon.ToString()])
+		h.MoveToHexagon(h.Board.Cases[nextHexagon.Position.X][nextHexagon.Position.Y])
 		h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-1]
 	}
 
 	if h.Target.Position == h.Position.Position {
 		h.MovingToTarget = false
 		h.Target = nil
-		h.ComOut = agentToManager{AgentID: h.ID, Action: "get", Pos: h.Position.ToString(), commOut: make(chan managerToAgent)}
+		h.ComOut = agentToManager{AgentID: h.ID, Action: "get", Pos: h.Position, commOut: make(chan managerToAgent)}
 		h.Board.AgentManager.messIn <- h.ComOut
 		h.ComIn = <-h.ComOut.commOut
 		if h.ComIn.Valid {
@@ -160,10 +158,10 @@ func (h *Human) Update(resource ResourceType) {
 	}
 }
 
-func createPath(maps map[string]string, hexagon *Hexagone) []string {
-	path := make([]string, 0)
-	path = append(path, hexagon.ToString())
-	val, ok := maps[hexagon.ToString()]
+func createPath(maps map[*Hexagone]*Hexagone, hexagon *Hexagone) []*Hexagone {
+	path := make([]*Hexagone, 0)
+	path = append(path, hexagon)
+	val, ok := maps[hexagon]
 	for ok {
 		path = append(path, val)
 		val, ok = maps[val]
