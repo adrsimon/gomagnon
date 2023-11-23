@@ -6,6 +6,17 @@ import (
 )
 
 func (s *Simulation) Update() error {
+	for _, line := range s.GameMap.Board.Cases {
+		for _, hex := range line {
+			hex.Agents = nil
+		}
+	}
+	for _, agent := range s.GameMap.Board.AgentManager.Agents {
+		if agent.Position != nil {
+			s.GameMap.Board.Cases[agent.Position.Position.X][agent.Position.Position.Y].Agents = append(s.GameMap.Board.Cases[agent.Position.Position.X][agent.Position.Position.Y].Agents, agent)
+		}
+	}
+
 	var wg sync.WaitGroup
 	for _, agent := range s.GameMap.Board.AgentManager.Agents {
 		wg.Add(1)

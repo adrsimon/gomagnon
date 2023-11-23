@@ -128,11 +128,13 @@ func (h *Human) UpdateAgent() {
 	if h.Target.Position == h.Position.Position {
 		h.MovingToTarget = false
 		h.Target = nil
-		h.ComOut = agentToManager{AgentID: h.ID, Action: "get", Pos: h.Position, commOut: make(chan managerToAgent)}
-		h.Board.AgentManager.messIn <- h.ComOut
-		h.ComIn = <-h.ComOut.commOut
-		if h.ComIn.Valid {
-			h.Update(h.ComIn.Resource)
+		if h.Position.Resource != NONE {
+			h.ComOut = agentToManager{AgentID: h.ID, Action: "get", Pos: h.Position, commOut: make(chan managerToAgent)}
+			h.Board.AgentManager.messIn <- h.ComOut
+			h.ComIn = <-h.ComOut.commOut
+			if h.ComIn.Valid {
+				h.Update(h.Position.Resource)
+			}
 		}
 	}
 }
