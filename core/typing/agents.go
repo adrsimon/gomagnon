@@ -12,9 +12,16 @@ type HumanBody struct {
 	Thirstiness int
 }
 
+type Race string
+
+const (
+	Neandertal Race = "Neandertal"
+	Sapiens    Race = "Sapiens"
+)
+
 type Human struct {
 	ID    string
-	Race  string
+	Race  Race
 	Body  HumanBody
 	Stats HumanStats
 
@@ -28,7 +35,7 @@ type Human struct {
 	ComIn  managerToAgent
 }
 
-func NewHuman(id string, Race string, body HumanBody, stats HumanStats, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Hexagone, board *Board, comOut agentToManager, comIn managerToAgent) *Human {
+func NewHuman(id string, Race Race, body HumanBody, stats HumanStats, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Hexagone, board *Board, comOut agentToManager, comIn managerToAgent) *Human {
 	return &Human{ID: id, Race: Race, Body: body, Stats: stats, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn}
 }
 
