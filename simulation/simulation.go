@@ -45,7 +45,7 @@ func NewSimulation() Simulation {
 
 	simu.GameMap.Board.AgentManager.Start()
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 50; i++ {
 		simu.GameMap.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", i)] = &typing.Human{
 			Race:           "Neanderthal",
 			Body:           typing.HumanBody{},
