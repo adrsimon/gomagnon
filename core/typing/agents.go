@@ -18,6 +18,8 @@ type Human struct {
 	Body  HumanBody
 	Stats HumanStats
 
+	Inventory map[ResourceType]int
+
 	Position       *Hexagone
 	Target         *Hexagone
 	MovingToTarget bool
@@ -86,7 +88,6 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 	//     score -= LowEnergyPenalty
 	//  if base != none retourner à la base ?
 	// }
-
 	return score
 }
 
@@ -162,8 +163,29 @@ func (h *Human) UpdateAgent() {
 			h.Board.AgentManager.messIn <- h.ComOut
 			h.ComIn = <-h.ComOut.commOut
 			if h.ComIn.Valid {
-				h.UpdateStateBasedOnResource(h.Position)
+				h.Update(h.Position.Resource)
 			}
+		}
+	}
+}
+
+func (h *Human) Update(resource ResourceType) {
+	switch resource {
+	case ANIMAL:
+		h.Body.Hungriness -= 10 * AnimalFoodValueMultiplier
+	case FRUIT:
+		h.Body.Hungriness -= 10 * FruitFoodValueMultiplier
+	case ROCK, WOOD:
+		h.Inventory[resource] += 1
+	}
+
+	neighbours := h.Board.GetNeighbours(h.Position)
+	for _, neighbour := range neighbours {
+		if neighbour == nil {
+			continue
+		}
+		if neighbour.Biome.BiomeType == WATER {
+			h.Body.Thirstiness -= 10
 		}
 	}
 }
@@ -179,20 +201,10 @@ func createPath(maps map[*Hexagone]*Hexagone, hexagon *Hexagone) []*Hexagone {
 	return path
 }
 
-func (h *Human) UpdateStateBasedOnResource(hex *Hexagone) {
-	if hex.Resource == ANIMAL {
-		h.Body.Hungriness = max(0, h.Body.Hungriness-r.Intn(20))
-	}
-	if hex.Resource == FRUIT {
-		h.Body.Hungriness = max(0, h.Body.Hungriness-r.Intn(10))
-	}
-	if hex.Biome.BiomeType == WATER {
-		h.Body.Thirstiness = max(0, h.Body.Thirstiness-r.Intn(30))
-	}
-}
-
 func (h *Human) MoveToHexagon(hex *Hexagone) {
 	h.Position = hex
+	h.Body.Hungriness += 1
+	h.Body.Thirstiness += 2
 }
 
 func (h *Human) Start() {
