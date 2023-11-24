@@ -44,7 +44,7 @@ func AStar(agent Human, goal *Hexagone) map[*Hexagone]*Hexagone {
 			_, ok := save[succ]
 			if !ok {
 				save[succ] = agTemp.Position
-				newHum := NewHuman(agent.id, agent.Type, agent.Body, agent.Stats, succ, agent.Target, agent.MovingToTarget, agent.CurrentPath, agent.Board, agent.ComOut, agent.ComIn)
+				newHum := NewHuman(agent.id, agent.Race, agent.Body, agent.Stats, succ, agent.Target, agent.MovingToTarget, agent.CurrentPath, agent.Board, agent.ComOut, agent.ComIn)
 
 				g := HauteurNoeud(succ, save)
 				dist := distance(*newHum.Position, *goal)

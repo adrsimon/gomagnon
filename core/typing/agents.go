@@ -14,7 +14,7 @@ type HumanBody struct {
 
 type Human struct {
 	id    string
-	Type  rune
+	Race  string
 	Body  HumanBody
 	Stats HumanStats
 
@@ -28,14 +28,15 @@ type Human struct {
 	ComIn  managerToAgent
 }
 
-func NewHuman(id string, Type rune, body HumanBody, stats HumanStats, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Hexagone, board *Board, comOut agentToManager, comIn managerToAgent) *Human {
-	return &Human{id: id, Type: Type, Body: body, Stats: stats, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn}
+func NewHuman(id string, Race string, body HumanBody, stats HumanStats, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Hexagone, board *Board, comOut agentToManager, comIn managerToAgent) *Human {
+	return &Human{id: id, Race: Race, Body: body, Stats: stats, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn}
 }
 
 const (
 	AnimalFoodValueMultiplier = 3.0
 	FruitFoodValueMultiplier  = 1.0
 	WaterValueMultiplier      = 2.0
+	DistanceMultiplier        = 1
 )
 
 func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
@@ -45,20 +46,46 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 		return score
 	}
 
+	threshold := 80
+
+	distance := distance(*h.Position, *hex)
+	score -= distance * DistanceMultiplier
+
 	switch hex.Resource {
 	case ANIMAL:
-		score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.01
+		if h.Race == "Neanderthal" {
+			score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.5
+		}
+		if h.Race == "Sapiens" {
+			score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.01
+		}
+		if h.Body.Hungriness < threshold {
+			score += 2
+		}
 	case FRUIT:
-		score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.01
+		if h.Race == "Neanderthal" {
+			score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.01
+		}
+		if h.Race == "Sapiens" {
+			score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.5
+		}
+		if h.Body.Hungriness < threshold {
+			score += 1
+		}
 	case ROCK:
-		score += 0.5
+		score += 0.5 //h.NeedForRock() ?
 	case WOOD:
-		score += 0.5
+		score += 0.5 //h.NeedForWood() ?
 	}
 
 	if hex.Biome.BiomeType == WATER {
 		score = (float64(h.Body.Thirstiness) / 100) * WaterValueMultiplier
 	}
+
+	// if h.Body.Energy < LowEnergyThreshold {
+	//     score -= LowEnergyPenalty
+	//  if base != none retourner à la base ?
+	// }
 
 	return score
 }
