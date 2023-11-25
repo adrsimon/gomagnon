@@ -6,10 +6,15 @@ type HumanStats struct {
 }
 
 type HumanBody struct {
-	Age         int
-	Gender      rune
+	Age    int
+	Gender rune
+
 	Hungriness  int
 	Thirstiness int
+
+	Tiredness  float64
+	Sleeping   bool
+	SleepCount int
 }
 
 type Race string
@@ -34,12 +39,14 @@ type Human struct {
 	CurrentPath    []*Hexagone
 	Board          *Board
 
+	Hut *Hut
+
 	ComOut agentToManager
 	ComIn  managerToAgent
 }
 
-func NewHuman(id string, Type rune, Race Race, body HumanBody, stats HumanStats, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Hexagone, board *Board, comOut agentToManager, comIn managerToAgent) *Human {
-	return &Human{ID: id, Type: Type, Race: Race, Body: body, Stats: stats, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn}
+func NewHuman(id string, Type rune, Race Race, body HumanBody, stats HumanStats, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Hexagone, board *Board, comOut agentToManager, comIn managerToAgent, hut *Hut, inventory map[ResourceType]int) *Human {
+	return &Human{ID: id, Type: Type, Race: Race, Body: body, Stats: stats, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn, Hut: hut, Inventory: inventory}
 }
 
 const (
@@ -51,6 +58,11 @@ const (
 
 func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 	var score = 0.0
+	threshold := 85
+
+	distance := distance(*h.Position, *hex)
+	score -= distance * DistanceMultiplier
+
 	if hex.Biome.BiomeType == WATER {
 		return -1
 	}
@@ -58,35 +70,60 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 		return score
 	}
 
-	threshold := 85
-
-	distance := distance(*h.Position, *hex)
-	score -= distance * DistanceMultiplier
-	switch hex.Resource {
-	case ANIMAL:
-		if h.Race == Neandertal {
-			score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.5
+	if h.Hut == nil {
+		switch hex.Resource {
+		case ANIMAL:
+			if h.Race == Neandertal {
+				score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.5
+			}
+			if h.Race == Sapiens {
+				score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 1.0
+			}
+			if h.Body.Hungriness > threshold {
+				score += 1
+			}
+		case FRUIT:
+			if h.Race == Neandertal {
+				score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.01
+			}
+			if h.Race == Sapiens {
+				score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.3
+			}
+			if h.Body.Hungriness > threshold {
+				score += 1
+			}
+		case ROCK:
+			score += 3
+		case WOOD:
+			score += 3
 		}
-		if h.Race == Sapiens {
-			score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 1.0
+	} else {
+		switch hex.Resource {
+		case ANIMAL:
+			if h.Race == Neandertal {
+				score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.5
+			}
+			if h.Race == Sapiens {
+				score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 1.0
+			}
+			if h.Body.Hungriness > threshold {
+				score += 1
+			}
+		case FRUIT:
+			if h.Race == Neandertal {
+				score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.01
+			}
+			if h.Race == Sapiens {
+				score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.3
+			}
+			if h.Body.Hungriness > threshold {
+				score += 1
+			}
+		case ROCK:
+			score += 0.5
+		case WOOD:
+			score += 0.5
 		}
-		if h.Body.Hungriness > threshold {
-			score += 1
-		}
-	case FRUIT:
-		if h.Race == Neandertal {
-			score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.01
-		}
-		if h.Race == Sapiens {
-			score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.3
-		}
-		if h.Body.Hungriness > threshold {
-			score += 1
-		}
-	case ROCK:
-		score += 0.5 //h.NeedForRock() ?
-	case WOOD:
-		score += 0.5 //h.NeedForWood() ?
 	}
 
 	for _, nb := range h.Board.GetNeighbours(hex) {
@@ -96,10 +133,6 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 		}
 	}
 
-	// if h.Body.Energy < LowEnergyThreshold {
-	//     score -= LowEnergyPenalty
-	//  if base != none retourner à la base ?
-	// }
 	return score
 }
 
@@ -122,6 +155,10 @@ func (h *Human) GetNeighborsWithin5() []*Hexagone {
 }
 
 func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
+	if h.Body.Tiredness > 70 && h.Hut != nil {
+		return h.Hut.Position
+	}
+
 	best := 0.
 	indexBest := -1
 	for i, v := range surroundingHexagons {
@@ -152,40 +189,54 @@ func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
 }
 
 func (h *Human) UpdateAgent() {
-	if !h.MovingToTarget {
-		surroundingHexagons := h.GetNeighborsWithin5()
-		targetHexagon := h.BestNeighbor(surroundingHexagons)
-
-		res := AStar(*h, targetHexagon)
-		path := createPath(res, targetHexagon)
-		h.CurrentPath = path
-		h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-2]
-		h.Target = targetHexagon
-		h.MovingToTarget = true
+	if h.Hut == nil && h.Inventory[WOOD] >= Needs["hut"][WOOD] && h.Inventory[ROCK] >= Needs["hut"][ROCK] {
+		h.ComOut = agentToManager{AgentID: h.ID, Action: "build", Pos: h.Position, commOut: make(chan managerToAgent)}
+		h.Board.AgentManager.messIn <- h.ComOut
+		h.ComIn = <-h.ComOut.commOut
+		if h.ComIn.Valid {
+			h.Hut = &Hut{Position: h.Position, Inventory: make(map[ResourceType]int)}
+			h.Inventory[WOOD] -= Needs["hut"][WOOD]
+			h.Inventory[ROCK] -= Needs["hut"][ROCK]
+		}
 	}
 
-	if h.MovingToTarget && len(h.CurrentPath) > 0 {
-		nextHexagon := h.CurrentPath[len(h.CurrentPath)-1]
-		h.MoveToHexagon(h.Board.Cases[nextHexagon.Position.X][nextHexagon.Position.Y])
-		h.Update(h.Position.Resource)
-		h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-1]
-	}
+	if !h.Body.Sleeping {
+		if !h.MovingToTarget {
+			surroundingHexagons := h.GetNeighborsWithin5()
+			targetHexagon := h.BestNeighbor(surroundingHexagons)
 
-	if h.Target.Position == h.Position.Position {
-		h.MovingToTarget = false
-		h.Target = nil
-		if h.Position.Resource != NONE {
-			h.ComOut = agentToManager{AgentID: h.ID, Action: "get", Pos: h.Position, commOut: make(chan managerToAgent)}
-			h.Board.AgentManager.messIn <- h.ComOut
-			h.ComIn = <-h.ComOut.commOut
-			if h.ComIn.Valid {
-				h.Update(h.ComIn.Resource)
+			res := AStar(*h, targetHexagon)
+			path := createPath(res, targetHexagon)
+			h.CurrentPath = path
+			h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-2]
+			h.Target = targetHexagon
+			h.MovingToTarget = true
+		}
+
+		if h.MovingToTarget && len(h.CurrentPath) > 0 {
+			nextHexagon := h.CurrentPath[len(h.CurrentPath)-1]
+			h.MoveToHexagon(h.Board.Cases[nextHexagon.Position.X][nextHexagon.Position.Y])
+			h.UpdateState(h.Position.Resource)
+			h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-1]
+		}
+
+		if h.Target.Position == h.Position.Position {
+			h.MovingToTarget = false
+			h.Target = nil
+			if h.Position.Resource != NONE {
+				h.ComOut = agentToManager{AgentID: h.ID, Action: "get", Pos: h.Position, commOut: make(chan managerToAgent)}
+				h.Board.AgentManager.messIn <- h.ComOut
+				h.ComIn = <-h.ComOut.commOut
+				if h.ComIn.Valid {
+					h.UpdateState(h.ComIn.Resource)
+				}
 			}
 		}
 	}
+	h.UpdateState(NONE)
 }
 
-func (h *Human) Update(resource ResourceType) {
+func (h *Human) UpdateState(resource ResourceType) {
 	switch resource {
 	case ANIMAL:
 		h.Body.Hungriness = int(max(0, float64(h.Body.Hungriness)-10*AnimalFoodValueMultiplier))
@@ -204,7 +255,21 @@ func (h *Human) Update(resource ResourceType) {
 			break
 		}
 	}
-	//println("Thirstiness:", h.Body.Thirstiness, "Hungriness:", h.Body.Hungriness)
+
+	if h.Hut != nil && h.Position.Position == h.Hut.Position.Position {
+		if h.Body.Sleeping && h.Body.SleepCount < 8 {
+			h.Body.Tiredness -= 5
+			h.Body.Hungriness += 2
+			h.Body.Thirstiness += 2
+			h.Body.SleepCount += 1
+		} else if h.Body.Sleeping && h.Body.SleepCount >= 8 {
+			h.Body.Sleeping = false
+		} else if !h.Body.Sleeping {
+			h.Body.Tiredness -= 0.5
+			h.Body.Sleeping = true
+			h.Body.SleepCount = 0
+		}
+	}
 }
 
 func createPath(maps map[*Hexagone]*Hexagone, hexagon *Hexagone) []*Hexagone {
@@ -222,7 +287,7 @@ func (h *Human) MoveToHexagon(hex *Hexagone) {
 	h.Position = hex
 	h.Body.Hungriness += 1
 	h.Body.Thirstiness += 2
-	println("Thirstiness:", h.Body.Thirstiness, "Hungriness:", h.Body.Hungriness)
+	h.Body.Tiredness += 0.5
 }
 
 func (h *Human) Start() {

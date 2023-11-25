@@ -51,13 +51,14 @@ func NewSimulation() Simulation {
 			Body: typing.HumanBody{
 				Thirstiness: 50,
 				Hungriness:  50},
-			Inventory:      make(map[typing.ResourceType]int),
 			Stats:          typing.HumanStats{},
 			Position:       simu.GameMap.Board.Cases[1][1],
 			Target:         nil,
 			MovingToTarget: false,
 			CurrentPath:    nil,
+			Hut:            nil,
 			Board:          simu.GameMap.Board,
+			Inventory:      map[typing.ResourceType]int{},
 		}
 	}
 

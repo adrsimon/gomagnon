@@ -1,6 +1,8 @@
 package drawing
 
 import (
+	"github.com/hajimehoshi/ebiten/v2/vector"
+	"golang.org/x/image/colornames"
 	_ "image/png"
 	"log"
 
@@ -62,7 +64,7 @@ func init() {
 	imgWood = wood
 }
 
-func DrawHex(background *ebiten.Image, xCenter float32, yCenter float32, biome typing.BiomesType, hexSize float32, resource typing.ResourceType) {
+func DrawHex(background *ebiten.Image, xCenter float32, yCenter float32, biome typing.BiomesType, hexSize float32, resource typing.ResourceType, hut bool) {
 	var hexImage *ebiten.Image
 	switch biome {
 	case typing.PLAINS:
@@ -90,6 +92,10 @@ func DrawHex(background *ebiten.Image, xCenter float32, yCenter float32, biome t
 	case typing.WOOD:
 		drawImage(background, xCenter, yCenter, hexSize/1.5, imgWood)
 	case typing.NONE:
+	}
+
+	if hut {
+		vector.DrawFilledRect(background, xCenter-hexSize/4, yCenter-hexSize/4, 20, 20, colornames.Red, false)
 	}
 }
 
