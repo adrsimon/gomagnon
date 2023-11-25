@@ -1,7 +1,5 @@
 package typing
 
-import "math"
-
 type HumanStats struct {
 	Strength    int
 	Sociability int
@@ -52,20 +50,17 @@ const (
 
 func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 	var score = 0.0
-
+	if hex.Biome.BiomeType == WATER {
+		return -1
+	}
 	if hex == nil {
 		return score
 	}
 
-	if hex.Biome.BiomeType == WATER {
-		return math.Inf(-1)
-	}
-
-	threshold := 80
+	threshold := 85
 
 	distance := distance(*h.Position, *hex)
 	score -= distance * DistanceMultiplier
-
 	switch hex.Resource {
 	case ANIMAL:
 		if h.Race == Neandertal {
@@ -93,12 +88,12 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 		score += 0.5 //h.NeedForWood() ?
 	}
 
-	// for _, nb := range h.Board.GetNeighbours(hex) {
-	// 	if nb.Biome.BiomeType == WATER {
-	// 		score = (float64(h.Body.Thirstiness) / 100) * WaterValueMultiplier
-	// 		break
-	// 	}
-	// }
+	for _, nb := range h.Board.GetNeighbours(hex) {
+		if nb.Biome.BiomeType == WATER && h.Body.Thirstiness > threshold {
+			score += (float64(h.Body.Thirstiness)/100)*WaterValueMultiplier + 0.5
+			break
+		}
+	}
 
 	// if h.Body.Energy < LowEnergyThreshold {
 	//     score -= LowEnergyPenalty
@@ -129,6 +124,9 @@ func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
 	best := 0.
 	indexBest := -1
 	for i, v := range surroundingHexagons {
+		if v.Position == h.Position.Position {
+			continue
+		}
 		score := h.EvaluateOneHex(v)
 		if score > best {
 			indexBest = i
@@ -168,6 +166,7 @@ func (h *Human) UpdateAgent() {
 	if h.MovingToTarget && len(h.CurrentPath) > 0 {
 		nextHexagon := h.CurrentPath[len(h.CurrentPath)-1]
 		h.MoveToHexagon(h.Board.Cases[nextHexagon.Position.X][nextHexagon.Position.Y])
+		h.Update(h.Position.Resource)
 		h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-1]
 	}
 
@@ -179,7 +178,7 @@ func (h *Human) UpdateAgent() {
 			h.Board.AgentManager.messIn <- h.ComOut
 			h.ComIn = <-h.ComOut.commOut
 			if h.ComIn.Valid {
-				h.Update(h.Position.Resource)
+				h.Update(h.ComIn.Resource)
 			}
 		}
 	}
@@ -188,22 +187,23 @@ func (h *Human) UpdateAgent() {
 func (h *Human) Update(resource ResourceType) {
 	switch resource {
 	case ANIMAL:
-		h.Body.Hungriness -= 10 * AnimalFoodValueMultiplier
+		h.Body.Hungriness = int(max(0, float64(h.Body.Hungriness)-10*AnimalFoodValueMultiplier))
 	case FRUIT:
-		h.Body.Hungriness -= 10 * FruitFoodValueMultiplier
+		h.Body.Hungriness = int(max(0, float64(h.Body.Hungriness)-10*FruitFoodValueMultiplier))
 	case ROCK, WOOD:
 		h.Inventory[resource] += 1
 	}
-
 	neighbours := h.Board.GetNeighbours(h.Position)
 	for _, neighbour := range neighbours {
 		if neighbour == nil {
 			continue
 		}
 		if neighbour.Biome.BiomeType == WATER {
-			h.Body.Thirstiness -= 10
+			h.Body.Thirstiness = 0
+			break
 		}
 	}
+	//println("Thirstiness:", h.Body.Thirstiness, "Hungriness:", h.Body.Hungriness)
 }
 
 func createPath(maps map[*Hexagone]*Hexagone, hexagon *Hexagone) []*Hexagone {
@@ -221,6 +221,7 @@ func (h *Human) MoveToHexagon(hex *Hexagone) {
 	h.Position = hex
 	h.Body.Hungriness += 1
 	h.Body.Thirstiness += 2
+	println("Thirstiness:", h.Body.Thirstiness, "Hungriness:", h.Body.Hungriness)
 }
 
 func (h *Human) Start() {

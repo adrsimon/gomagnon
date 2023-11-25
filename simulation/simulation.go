@@ -45,10 +45,13 @@ func NewSimulation() Simulation {
 
 	simu.GameMap.Board.AgentManager.Start()
 
-	for i := 0; i < 50; i++ {
+	for i := 0; i < 1; i++ {
 		simu.GameMap.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", i)] = &typing.Human{
-			Race:           typing.Sapiens,
-			Body:           typing.HumanBody{},
+			Race: typing.Sapiens,
+			Body: typing.HumanBody{
+				Thirstiness: 50,
+				Hungriness:  50},
+			Inventory:      make(map[typing.ResourceType]int),
 			Stats:          typing.HumanStats{},
 			Position:       simu.GameMap.Board.Cases[1][1],
 			Target:         nil,
