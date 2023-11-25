@@ -1,5 +1,7 @@
 package typing
 
+import "math"
+
 type HumanStats struct {
 	Strength    int
 	Sociability int
@@ -55,6 +57,10 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 		return score
 	}
 
+	if hex.Biome.BiomeType == WATER {
+		return math.Inf(-1)
+	}
+
 	threshold := 80
 
 	distance := distance(*h.Position, *hex)
@@ -62,23 +68,23 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 
 	switch hex.Resource {
 	case ANIMAL:
-		if h.Race == "Neanderthal" {
+		if h.Race == Neandertal {
 			score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.5
 		}
-		if h.Race == "Sapiens" {
-			score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.01
+		if h.Race == Sapiens {
+			score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 1.0
 		}
-		if h.Body.Hungriness < threshold {
-			score += 2
+		if h.Body.Hungriness > threshold {
+			score += 1
 		}
 	case FRUIT:
-		if h.Race == "Neanderthal" {
-			score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.01
+		if h.Race == Neandertal {
+			score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.01
 		}
-		if h.Race == "Sapiens" {
-			score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.5
+		if h.Race == Sapiens {
+			score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.3
 		}
-		if h.Body.Hungriness < threshold {
+		if h.Body.Hungriness > threshold {
 			score += 1
 		}
 	case ROCK:
@@ -87,9 +93,12 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 		score += 0.5 //h.NeedForWood() ?
 	}
 
-	if hex.Biome.BiomeType == WATER {
-		score = (float64(h.Body.Thirstiness) / 100) * WaterValueMultiplier
-	}
+	// for _, nb := range h.Board.GetNeighbours(hex) {
+	// 	if nb.Biome.BiomeType == WATER {
+	// 		score = (float64(h.Body.Thirstiness) / 100) * WaterValueMultiplier
+	// 		break
+	// 	}
+	// }
 
 	// if h.Body.Energy < LowEnergyThreshold {
 	//     score -= LowEnergyPenalty
