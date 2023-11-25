@@ -100,7 +100,7 @@ func (h *Human) GetNeighborsWithin5() []*Hexagone {
 }
 
 func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
-	if h.Body.Tiredness > 70 {
+	if h.Body.Tiredness > 70 && h.Hut != nil {
 		return h.Hut.Position
 	}
 
