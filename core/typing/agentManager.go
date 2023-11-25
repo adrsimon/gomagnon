@@ -45,6 +45,9 @@ func (agMan *AgentManager) executeRessources(request agentToManager) {
 			(*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Resource = NONE
 			request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: res}
 		}
+	case "build":
+		(*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Hut = &Hut{Position: request.Pos, Inventory: make(map[ResourceType]int)}
+		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 	}
 }
 

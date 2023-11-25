@@ -16,7 +16,7 @@ func DrawBoard(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFact
 			xc, yc = xc-cameraX, yc-cameraY
 			xc, yc = xc*zoomFactor, yc*zoomFactor
 
-			DrawHex(screen, xc, yc, biome.BiomeType, hexSize*zoomFactor, hex.Resource)
+			DrawHex(screen, xc, yc, biome.BiomeType, hexSize*zoomFactor, hex.Resource, hex.Hut != nil)
 		}
 	}
 }
