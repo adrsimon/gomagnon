@@ -2,6 +2,7 @@ package simulation
 
 import (
 	"fmt"
+
 	"github.com/adrsimon/gomagnon/core/typing"
 	"golang.org/x/image/colornames"
 )
@@ -46,8 +47,10 @@ func NewSimulation() Simulation {
 
 	for i := 0; i < 1; i++ {
 		simu.GameMap.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", i)] = &typing.Human{
-			Type:           0,
-			Body:           typing.HumanBody{},
+			Race: typing.Sapiens,
+			Body: typing.HumanBody{
+				Thirstiness: 50,
+				Hungriness:  50},
 			Stats:          typing.HumanStats{},
 			Position:       simu.GameMap.Board.Cases[1][1],
 			Target:         nil,
