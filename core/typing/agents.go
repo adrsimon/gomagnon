@@ -33,9 +33,17 @@ const (
 	CREATECLAN
 )
 
+type Race string
+
+const (
+	Neandertal Race = "Neandertal"
+	Sapiens    Race = "Sapiens"
+)
+
 type Human struct {
 	ID    string
 	Type  rune
+	Race  Race
 	Body  HumanBody
 	Stats HumanStats
 
@@ -71,19 +79,31 @@ type Clan struct {
 	chief   *Human
 }
 
+
+
 const (
 	AnimalFoodValueMultiplier = 3.0
 	FruitFoodValueMultiplier  = 1.0
 	WaterValueMultiplier      = 2.0
+	DistanceMultiplier        = 1
 )
 
-func NewHuman(id string, Type rune, body HumanBody, stats HumanStats, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Hexagone, board *Board, comOut agentToManager, comIn managerToAgent, hut *Hut, inventory map[ResourceType]int) *Human {
-	return &Human{ID: id, Type: Type, Body: body, Stats: stats, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn, Hut: hut, Inventory: inventory, AgentRelation: make(map[string]string)}
+
+func NewHuman(id string, Type rune, Race Race, body HumanBody, stats HumanStats, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Hexagone, board *Board, comOut agentToManager, comIn managerToAgent, hut *Hut, inventory map[ResourceType]int) *Human {
+	return &Human{ID: id, Type: Type,Race: Race, Body: body, Stats: stats, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn, Hut: hut, Inventory: inventory, AgentRelation: make(map[string]string)}
 }
+
 
 func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 	var score = 0.0
+	threshold := 85
 
+	distance := distance(*h.Position, *hex)
+	score -= distance * DistanceMultiplier
+
+	if hex.Biome.BiomeType == WATER {
+		return -1
+	}
 	if hex == nil {
 		return score
 	}
@@ -91,9 +111,25 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 	if h.Hut == nil {
 		switch hex.Resource {
 		case ANIMAL:
-			score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.01
+			if h.Race == Neandertal {
+				score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.5
+			}
+			if h.Race == Sapiens {
+				score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 1.0
+			}
+			if h.Body.Hungriness > threshold {
+				score += 1
+			}
 		case FRUIT:
-			score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.01
+			if h.Race == Neandertal {
+				score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.01
+			}
+			if h.Race == Sapiens {
+				score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.3
+			}
+			if h.Body.Hungriness > threshold {
+				score += 1
+			}
 		case ROCK:
 			score += 3
 		case WOOD:
@@ -102,13 +138,36 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 	} else {
 		switch hex.Resource {
 		case ANIMAL:
-			score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.01
+			if h.Race == Neandertal {
+				score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.5
+			}
+			if h.Race == Sapiens {
+				score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 1.0
+			}
+			if h.Body.Hungriness > threshold {
+				score += 1
+			}
 		case FRUIT:
-			score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.01
+			if h.Race == Neandertal {
+				score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.01
+			}
+			if h.Race == Sapiens {
+				score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.3
+			}
+			if h.Body.Hungriness > threshold {
+				score += 1
+			}
 		case ROCK:
 			score += 0.5
 		case WOOD:
 			score += 0.5
+		}
+	}
+
+	for _, nb := range h.Board.GetNeighbours(hex) {
+		if nb.Biome.BiomeType == WATER && h.Body.Thirstiness > threshold {
+			score += (float64(h.Body.Thirstiness)/100)*WaterValueMultiplier + 0.5
+			break
 		}
 	}
 
