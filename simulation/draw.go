@@ -32,10 +32,18 @@ func (s *Simulation) Draw(screen *ebiten.Image) {
 		s.zoomFactor = 1
 	}
 
+	if ebiten.IsKeyPressed(ebiten.KeyC) {
+		ag := s.GameMap.Board.AgentManager.Agents["ag-0"]
+		camX, camY := drawing.GetHexGraphicalCenter(ag.Position.Position.X, ag.Position.Position.Y, s.GameMap.Board.HexSize)
+		s.cameraX = camX - float32(s.ScreenHeight/2)
+		s.cameraY = camY - float32(s.ScreenWidth/4)
+		s.zoomFactor = 1.5
+	}
+
 	screen.Fill(s.GameMap.BackgroundColor)
 	drawing.DrawBoard(screen, s.GameMap.Board, s.cameraX, s.cameraY, s.zoomFactor)
 	drawing.DrawAgents(screen, s.GameMap.Board, s.cameraX, s.cameraY, s.zoomFactor)
 
-	widgetStats := NewWidget(0, 0, 200, 200, s.GameMap.Board.AgentManager.Agents["ag-0"])
-	widgetStats.Draw(screen)
+	widget := NewWidget(0, 0, 50, 50, s.GameMap.Board.AgentManager.Agents["ag-0"])
+	widget.Draw(screen)
 }

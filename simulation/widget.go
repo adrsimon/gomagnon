@@ -20,8 +20,6 @@ func (w *Widget) Update() error {
 func (w *Widget) Draw(screen *ebiten.Image) {
 	vector.DrawFilledRect(screen, w.X, w.Y, w.Width, w.Height, color.White, false)
 	vector.DrawFilledRect(screen, w.X+3, w.Y+3, w.Width-6, w.Height-6, color.Black, false)
-
-	// TODO : write agent stats here
 }
 
 func (w *Widget) Layout() (int, int) {
