@@ -54,6 +54,7 @@ func NewSimulation() Simulation {
 			MovingToTarget: false,
 			CurrentPath:    nil,
 			Board:          simu.GameMap.Board,
+			AgentRelation:  make(map[string]string),
 		}
 	}
 

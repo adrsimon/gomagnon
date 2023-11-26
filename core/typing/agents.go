@@ -2,7 +2,6 @@ package typing
 
 import (
 	"fmt"
-	"math/rand"
 )
 
 type HumanStats struct {
@@ -23,6 +22,11 @@ type agentComm struct {
 	comm    chan agentComm
 }
 
+type Clan struct {
+	members []string
+	chief   string
+}
+
 type Human struct {
 	id    string
 	Type  rune
@@ -39,11 +43,13 @@ type Human struct {
 	ComIn  managerToAgent
 
 	AgentRelation map[string]string
-	AgentComm     agentComm
+	AgentCommOut  agentComm
+	AgentCommIn   chan agentComm
+	Clan          *Clan
 }
 
 func NewHuman(id string, Type rune, body HumanBody, stats HumanStats, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Hexagone, board *Board, comOut agentToManager, comIn managerToAgent) *Human {
-	return &Human{id: id, Type: Type, Body: body, Stats: stats, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn}
+	return &Human{id: id, Type: Type, Body: body, Stats: stats, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn, AgentRelation: make(map[string]string)}
 }
 
 const (
@@ -95,49 +101,68 @@ func (h *Human) GetNeighborsWithin5() []*Hexagone {
 	return neighbours
 }
 
-func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
+func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) (*Hexagone, *Human) {
 	best := 0.
 	indexBest := -1
+	listFriends := make([]*Human, 0)
 	for i, v := range surroundingHexagons {
 		score := h.EvaluateOneHex(v)
 		if score > best {
 			indexBest = i
 			best = score
 		}
+		if len(listFriends) < 1 {
+			for _, f := range v.Agents {
+				_, ok := h.AgentRelation[f.id]
+				if ok {
+					listFriends = append(listFriends, f)
+				}
+			}
+		}
 	}
 
 	if indexBest != -1 {
-		return surroundingHexagons[indexBest]
+		return surroundingHexagons[indexBest], nil
 	}
 
 	valid := false
 	randHex := &Hexagone{}
 	for !valid {
-		randHex = surroundingHexagons[r.Intn(len(surroundingHexagons))]
-		if h.Board.isValidHex(randHex) && randHex.Biome.BiomeType != WATER {
-			valid = true
+		if h.Clan == nil {
+			if len(listFriends) > 0 {
+				return nil, listFriends[0]
+			}
+		} else {
+			randHex = surroundingHexagons[r.Intn(len(surroundingHexagons))]
+			if h.Board.isValidHex(randHex) && randHex.Biome.BiomeType != WATER {
+				valid = true
+			}
 		}
 	}
 
-	return randHex
+	return randHex, nil
 }
 
 func (h *Human) UpdateAgent() {
 	select {
-	case interruption := <-h.AgentComm.comm:
+	case interruption := <-h.AgentCommIn:
 		fmt.Printf("%s wants to %s", interruption.AgentID, interruption.Action)
 	default:
 		if len(h.Position.Agents) > 1 {
-			copyAgents := make([]*Human, 0)
-			copy(copyAgents, h.Position.Agents)
-			for _, v := range copyAgents {
+			fmt.Println("a")
+			for _, v := range h.Position.Agents {
+				fmt.Println("b")
 				if v != h {
+					fmt.Println("c")
 					_, ok := h.AgentRelation[v.id]
 					if !ok {
-						if rand.Intn(1) == 1 {
+						fmt.Println("D")
+						if r.Intn(2) >= 1 {
 							h.AgentRelation[v.id] = "Friend"
+							fmt.Println("friend")
 						} else {
 							h.AgentRelation[v.id] = "Ennemy"
+							fmt.Println("ennemy")
 						}
 					}
 				}
@@ -145,14 +170,18 @@ func (h *Human) UpdateAgent() {
 		}
 		if !h.MovingToTarget {
 			surroundingHexagons := h.GetNeighborsWithin5()
-			targetHexagon := h.BestNeighbor(surroundingHexagons)
+			targetHexagon, possibleFriend := h.BestNeighbor(surroundingHexagons)
+			if targetHexagon != nil {
+				res := AStar(*h, targetHexagon)
+				path := createPath(res, targetHexagon)
+				h.CurrentPath = path
+				h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-2]
+				h.Target = targetHexagon
+				h.MovingToTarget = true
+			} else {
+				possibleFriend.AgentCommIn <- agentComm{AgentID: h.id, Action: "inviteClan", comm: h.AgentCommIn}
+			}
 
-			res := AStar(*h, targetHexagon)
-			path := createPath(res, targetHexagon)
-			h.CurrentPath = path
-			h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-2]
-			h.Target = targetHexagon
-			h.MovingToTarget = true
 		}
 
 		if h.MovingToTarget && len(h.CurrentPath) > 0 {
