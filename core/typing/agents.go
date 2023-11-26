@@ -1,6 +1,10 @@
 package typing
 
-import "fmt"
+import (
+	"fmt"
+	"math/rand"
+	"time"
+)
 
 type HumanStats struct {
 	Strength    int
@@ -26,6 +30,7 @@ const (
 	GET
 	BUILD
 	SLEEP
+	CREATECLAN
 )
 
 type Human struct {
@@ -48,6 +53,22 @@ type Human struct {
 	ComIn  managerToAgent
 
 	Action Action
+
+	AgentRelation map[string]string
+	AgentCommIn   chan AgentComm
+	Clan          *Clan
+	Terminated    bool
+}
+
+type AgentComm struct {
+	Agent   *Human
+	Action  string
+	commOut chan AgentComm
+}
+
+type Clan struct {
+	members []*Human
+	chief   *Human
 }
 
 const (
@@ -57,7 +78,7 @@ const (
 )
 
 func NewHuman(id string, Type rune, body HumanBody, stats HumanStats, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Hexagone, board *Board, comOut agentToManager, comIn managerToAgent, hut *Hut, inventory map[ResourceType]int) *Human {
-	return &Human{ID: id, Type: Type, Body: body, Stats: stats, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn, Hut: hut, Inventory: inventory}
+	return &Human{ID: id, Type: Type, Body: body, Stats: stats, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn, Hut: hut, Inventory: inventory, AgentRelation: make(map[string]string)}
 }
 
 func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
@@ -171,12 +192,38 @@ func (h *Human) UpdateState(resource ResourceType) {
 	}
 }
 
-func (h *Human) Perceive() {}
+func (h *Human) Perceive() []*Human {
+	listHumans := make([]*Human, 0)
+	cases := make([]*Hexagone, 0)
+	cases = append(cases, h.Position)
+	cases = append(cases, h.Board.GetNeighbours(h.Position)...)
+	for _, v := range cases {
+		for _, p := range v.Agents {
+			if p != h {
+				_, ok := h.AgentRelation[p.ID]
+				listHumans = append(listHumans, p)
+				if !ok {
+					if rand.Intn(2) >= 1 {
+						h.AgentRelation[p.ID] = "Friend"
+					} else {
+						h.AgentRelation[p.ID] = "Ennemy"
+					}
+				}
+			}
+		}
+	}
+	return listHumans
+}
 
-func (h *Human) Deliberate() {
+func (h *Human) Deliberate(humans []*Human) {
 	h.Action = NOOP
 	if h.Hut == nil && h.Inventory[WOOD] >= Needs["hut"][WOOD] && h.Inventory[ROCK] >= Needs["hut"][ROCK] {
 		h.Action = BUILD
+		return
+	}
+
+	if h.Hut != nil && len(humans) > 0 && h.Clan == nil {
+		h.Action = CREATECLAN
 		return
 	}
 
@@ -199,7 +246,7 @@ func (h *Human) Deliberate() {
 	}
 }
 
-func (h *Human) Act() {
+func (h *Human) Act(humans []*Human) {
 	switch h.Action {
 	case NOOP:
 		h.Body.Tiredness -= 1
@@ -258,14 +305,63 @@ func (h *Human) Act() {
 		} else if !h.Body.Sleeping {
 			h.Body.Sleeping = true
 		}
+	case CREATECLAN:
+		var bestH *Human
+		if len(humans) > 1 {
+			//TO DEVELOPP bestH=find bestMatchHuman(humans)
+			bestH = humans[0] // waiting function
+		} else {
+			bestH = humans[0]
+		}
+		if bestH.Terminated == false {
+			select {
+			case bestH.AgentCommIn <- AgentComm{Agent: h, Action: "CREATECLAN", commOut: h.AgentCommIn}:
+				select {
+				case res := <-h.AgentCommIn:
+					if res.Action == "ACCEPTCLAN" {
+						clan := &Clan{members: []*Human{bestH}, chief: h}
+						h.Clan = clan
+						bestH.AgentCommIn <- AgentComm{Agent: h, Action: "INVITECLAN", commOut: h.AgentCommIn}
+					}
+				case <-time.After(10 * time.Millisecond):
+				}
+			case <-time.After(10 * time.Millisecond):
+
+			}
+		}
 	default:
 		fmt.Println("Should not be here")
 	}
 }
 
+func (h *Human) AnswerAgents(res AgentComm) {
+	switch res.Action {
+	case "CREATECLAN":
+		if h.Clan != nil {
+			res.commOut <- AgentComm{Agent: h, Action: "REFUSECLAN", commOut: h.AgentCommIn}
+		} else {
+			res.commOut <- AgentComm{Agent: h, Action: "ACCEPTCLAN", commOut: h.AgentCommIn}
+			res2 := <-h.AgentCommIn
+			if res2.Action == "INVITECLAN" {
+				h.Clan = res2.Agent.Clan
+				h.Hut = res2.Agent.Hut
+				fmt.Println("a")
+			}
+		}
+	}
+}
+
 func (h *Human) UpdateAgent() {
-	h.Perceive()
-	h.Deliberate()
-	h.Act()
-	h.UpdateState(NONE)
+	h.Terminated = false
+	listHumans := h.Perceive()
+	h.Deliberate(listHumans)
+	h.Act(listHumans)
+	select {
+	case res := <-h.AgentCommIn:
+		h.Terminated = true
+		h.AnswerAgents(res)
+	default:
+		h.Terminated = true
+	}
+
 }
