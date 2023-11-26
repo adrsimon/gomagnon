@@ -36,6 +36,6 @@ func (s *Simulation) Draw(screen *ebiten.Image) {
 	drawing.DrawBoard(screen, s.GameMap.Board, s.cameraX, s.cameraY, s.zoomFactor)
 	drawing.DrawAgents(screen, s.GameMap.Board, s.cameraX, s.cameraY, s.zoomFactor)
 
-	// widgetStats := NewWidget(0, 0, 200, 200, s.GameMap.Board.AgentManager.Agents["ag-0"])
-	// widgetStats.Draw(screen)
+	widgetStats := NewWidget(0, 0, 200, 200, s.GameMap.Board.AgentManager.Agents["ag-0"])
+	widgetStats.Draw(screen)
 }

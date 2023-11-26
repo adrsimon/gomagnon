@@ -1,67 +1,57 @@
 package typing
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type agentToManager struct {
 	AgentID string
 	Action  string
-	Pos     string
+	Pos     *Hexagone
 	commOut chan managerToAgent
 }
 
 type managerToAgent struct {
 	Valid    bool
-	Map      map[string]*Hexagone
+	Map      [][]*Hexagone
 	Resource ResourceType
 }
 
 type AgentManager struct {
-	Map          map[string]*Hexagone
-	messIn       chan agentToManager
-	stackRequest []agentToManager
-	Agents       map[string]*Human
-	signal       chan struct{}
+	Map    *[][]*Hexagone
+	messIn chan agentToManager
+	Agents map[string]*Human
 }
 
-func NewAgentManager(Map map[string]*Hexagone, messIn chan agentToManager, stackRequest []agentToManager, agents map[string]*Human) *AgentManager {
-	return &AgentManager{Map: Map, messIn: messIn, stackRequest: stackRequest, Agents: agents, signal: make(chan struct{})}
+func NewAgentManager(Map [][]*Hexagone, messIn chan agentToManager, agents map[string]*Human) *AgentManager {
+	return &AgentManager{Map: &Map, messIn: messIn, Agents: agents}
 }
 
-func (agMan *AgentManager) startListening() {
+func (agMan *AgentManager) startRessources() {
 	for {
 		request := <-agMan.messIn
-		agMan.stackRequest = append(agMan.stackRequest, request)
-		agMan.signal <- struct{}{}
+		agMan.executeRessources(request)
 	}
 }
 
-func (agMan *AgentManager) startAnswering() {
-	for {
-		select {
-		case <-agMan.signal:
-			request := agMan.stackRequest[0]
-			agMan.execute(request)
-			agMan.stackRequest = agMan.stackRequest[1:]
-		}
-	}
-}
-
-func (agMan *AgentManager) execute(request agentToManager) {
+func (agMan *AgentManager) executeRessources(request agentToManager) {
 	switch request.Action {
 	case "get":
-		switch agMan.Map[request.Pos].Resource {
+		switch (*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Resource {
 		case NONE:
-			request.commOut <- managerToAgent{Valid: false, Map: agMan.Map, Resource: NONE}
+			request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
 		default:
-			res := agMan.Map[request.Pos].Resource
-			agMan.Map[request.Pos].Resource = NONE
-			request.commOut <- managerToAgent{Valid: true, Map: agMan.Map, Resource: res}
+			res := (*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Resource
+			(*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Resource = NONE
+			request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: res}
 		}
+	case "build":
+		(*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Hut = &Hut{Position: request.Pos, Inventory: make(map[ResourceType]int)}
+		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 	}
 }
 
 func (agMan *AgentManager) Start() {
 	fmt.Println("Starting agent manager")
-	go agMan.startListening()
-	go agMan.startAnswering()
+	go agMan.startRessources()
 }

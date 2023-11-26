@@ -32,10 +32,11 @@ type Hexagone struct {
 	Resource ResourceType
 	Biome    *Biome
 	Agents   []*Human
+	Hut      *Hut
 }
 
-func (h *Hexagone) OddRToAxial() (int, int) {
-	q := h.Position.X - (h.Position.Y-(h.Position.Y&1))/2
+func (h *Hexagone) EvenRToAxial() (int, int) {
+	q := h.Position.X - ((h.Position.Y + (h.Position.Y & 1)) / 2)
 	r := h.Position.Y
 	return q, r
 }
