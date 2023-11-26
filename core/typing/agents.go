@@ -1,5 +1,7 @@
 package typing
 
+import "fmt"
+
 type HumanStats struct {
 	Strength    int
 	Sociability int
@@ -12,10 +14,19 @@ type HumanBody struct {
 	Hungriness  int
 	Thirstiness int
 
-	Tiredness  float64
-	Sleeping   bool
-	SleepCount int
+	Tiredness float64
+	Sleeping  bool
 }
+
+type Action int
+
+const (
+	NOOP Action = iota
+	MOVE
+	GET
+	BUILD
+	SLEEP
+)
 
 type Human struct {
 	ID    string
@@ -35,10 +46,8 @@ type Human struct {
 
 	ComOut agentToManager
 	ComIn  managerToAgent
-}
 
-func NewHuman(id string, Type rune, body HumanBody, stats HumanStats, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Hexagone, board *Board, comOut agentToManager, comIn managerToAgent, hut *Hut, inventory map[ResourceType]int) *Human {
-	return &Human{ID: id, Type: Type, Body: body, Stats: stats, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn, Hut: hut, Inventory: inventory}
+	Action Action
 }
 
 const (
@@ -46,6 +55,10 @@ const (
 	FruitFoodValueMultiplier  = 1.0
 	WaterValueMultiplier      = 2.0
 )
+
+func NewHuman(id string, Type rune, body HumanBody, stats HumanStats, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Hexagone, board *Board, comOut agentToManager, comIn managerToAgent, hut *Hut, inventory map[ResourceType]int) *Human {
+	return &Human{ID: id, Type: Type, Body: body, Stats: stats, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn, Hut: hut, Inventory: inventory}
+}
 
 func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 	var score = 0.0
@@ -130,51 +143,11 @@ func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
 	return randHex
 }
 
-func (h *Human) UpdateAgent() {
-	if h.Hut == nil && h.Inventory[WOOD] >= Needs["hut"][WOOD] && h.Inventory[ROCK] >= Needs["hut"][ROCK] {
-		h.ComOut = agentToManager{AgentID: h.ID, Action: "build", Pos: h.Position, commOut: make(chan managerToAgent)}
-		h.Board.AgentManager.messIn <- h.ComOut
-		h.ComIn = <-h.ComOut.commOut
-		if h.ComIn.Valid {
-			h.Hut = &Hut{Position: h.Position, Inventory: make(map[ResourceType]int)}
-			h.Inventory[WOOD] -= Needs["hut"][WOOD]
-			h.Inventory[ROCK] -= Needs["hut"][ROCK]
-		}
-	}
-
-	if !h.Body.Sleeping {
-		if !h.MovingToTarget {
-			surroundingHexagons := h.GetNeighborsWithin5()
-			targetHexagon := h.BestNeighbor(surroundingHexagons)
-
-			res := AStar(*h, targetHexagon)
-			path := createPath(res, targetHexagon)
-			h.CurrentPath = path
-			h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-2]
-			h.Target = targetHexagon
-			h.MovingToTarget = true
-		}
-
-		if h.MovingToTarget && len(h.CurrentPath) > 0 {
-			nextHexagon := h.CurrentPath[len(h.CurrentPath)-1]
-			h.MoveToHexagon(h.Board.Cases[nextHexagon.Position.X][nextHexagon.Position.Y])
-			h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-1]
-		}
-
-		if h.Target.Position == h.Position.Position {
-			h.MovingToTarget = false
-			h.Target = nil
-			if h.Position.Resource != NONE {
-				h.ComOut = agentToManager{AgentID: h.ID, Action: "get", Pos: h.Position, commOut: make(chan managerToAgent)}
-				h.Board.AgentManager.messIn <- h.ComOut
-				h.ComIn = <-h.ComOut.commOut
-				if h.ComIn.Valid {
-					h.UpdateState(h.ComIn.Resource)
-				}
-			}
-		}
-	}
-	h.UpdateState(NONE)
+func (h *Human) MoveToHexagon(hex *Hexagone) {
+	h.Position = hex
+	h.Body.Hungriness += 1
+	h.Body.Thirstiness += 2
+	h.Body.Tiredness += 0.5
 }
 
 func (h *Human) UpdateState(resource ResourceType) {
@@ -196,41 +169,103 @@ func (h *Human) UpdateState(resource ResourceType) {
 			h.Body.Thirstiness -= 10
 		}
 	}
+}
 
-	if h.Hut != nil && h.Position.Position == h.Hut.Position.Position {
-		if h.Body.Sleeping && h.Body.SleepCount < 8 {
+func (h *Human) Perceive() {}
+
+func (h *Human) Deliberate() {
+	h.Action = NOOP
+	if h.Hut == nil && h.Inventory[WOOD] >= Needs["hut"][WOOD] && h.Inventory[ROCK] >= Needs["hut"][ROCK] {
+		h.Action = BUILD
+		return
+	}
+
+	if h.Hut != nil && h.Position.Position == h.Hut.Position.Position && h.Body.Tiredness > 0 {
+		h.Action = SLEEP
+		return
+	}
+
+	if !h.MovingToTarget {
+		h.Action = MOVE
+		return
+	}
+	if h.MovingToTarget && len(h.CurrentPath) > 0 {
+		h.Action = MOVE
+		return
+	}
+	if h.Target.Position == h.Position.Position {
+		h.Action = GET
+		return
+	}
+}
+
+func (h *Human) Act() {
+	switch h.Action {
+	case NOOP:
+		h.Body.Tiredness -= 1
+	case MOVE:
+		if !h.MovingToTarget {
+			var targetHexagon *Hexagone
+
+			if h.Body.Tiredness > 70 && h.Hut != nil {
+				targetHexagon = h.Hut.Position
+			} else {
+				surroundingHexagons := h.GetNeighborsWithin5()
+				targetHexagon = h.BestNeighbor(surroundingHexagons)
+			}
+
+			res := AStar(*h, targetHexagon)
+			h.CurrentPath = createPath(res, targetHexagon)
+			h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-2]
+			h.Target = targetHexagon
+			h.MovingToTarget = true
+		}
+
+		if h.MovingToTarget && len(h.CurrentPath) > 0 {
+			nextHexagon := h.CurrentPath[len(h.CurrentPath)-1]
+			h.MoveToHexagon(h.Board.Cases[nextHexagon.Position.X][nextHexagon.Position.Y])
+			h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-1]
+		}
+	case GET:
+		if h.Target.Position == h.Position.Position {
+			h.MovingToTarget = false
+			h.Target = nil
+			if h.Position.Resource != NONE {
+				h.ComOut = agentToManager{AgentID: h.ID, Action: "get", Pos: h.Position, commOut: make(chan managerToAgent)}
+				h.Board.AgentManager.messIn <- h.ComOut
+				h.ComIn = <-h.ComOut.commOut
+				if h.ComIn.Valid {
+					h.UpdateState(h.ComIn.Resource)
+				}
+			}
+		}
+	case BUILD:
+		h.ComOut = agentToManager{AgentID: h.ID, Action: "build", Pos: h.Position, commOut: make(chan managerToAgent)}
+		h.Board.AgentManager.messIn <- h.ComOut
+		h.ComIn = <-h.ComOut.commOut
+		if h.ComIn.Valid {
+			h.Hut = &Hut{Position: h.Position, Inventory: make(map[ResourceType]int)}
+			h.Inventory[WOOD] -= Needs["hut"][WOOD]
+			h.Inventory[ROCK] -= Needs["hut"][ROCK]
+		}
+	case SLEEP:
+		if h.Body.Sleeping && h.Body.Tiredness > 0 {
 			h.Body.Tiredness -= 5
-			h.Body.Hungriness += 2
-			h.Body.Thirstiness += 2
-			h.Body.SleepCount += 1
-		} else if h.Body.Sleeping && h.Body.SleepCount >= 8 {
+			h.Body.Hungriness += 1
+			h.Body.Thirstiness += 1
+		} else if h.Body.Sleeping && h.Body.Tiredness <= 0 {
 			h.Body.Sleeping = false
 		} else if !h.Body.Sleeping {
-			h.Body.Tiredness -= 0.5
 			h.Body.Sleeping = true
-			h.Body.SleepCount = 0
 		}
+	default:
+		fmt.Println("Should not be here")
 	}
 }
 
-func createPath(maps map[*Hexagone]*Hexagone, hexagon *Hexagone) []*Hexagone {
-	path := make([]*Hexagone, 0)
-	path = append(path, hexagon)
-	val, ok := maps[hexagon]
-	for ok {
-		path = append(path, val)
-		val, ok = maps[val]
-	}
-	return path
-}
-
-func (h *Human) MoveToHexagon(hex *Hexagone) {
-	h.Position = hex
-	h.Body.Hungriness += 1
-	h.Body.Thirstiness += 2
-	h.Body.Tiredness += 0.5
-}
-
-func (h *Human) Start() {
-
+func (h *Human) UpdateAgent() {
+	h.Perceive()
+	h.Deliberate()
+	h.Act()
+	h.UpdateState(NONE)
 }

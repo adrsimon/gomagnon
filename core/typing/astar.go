@@ -12,6 +12,17 @@ func distance(from Hexagone, to Hexagone) float64 {
 	return (math.Abs(float64(q3)) + math.Abs(float64(q3+r3)) + math.Abs(float64(r3))) / 2
 }
 
+func createPath(maps map[*Hexagone]*Hexagone, hexagon *Hexagone) []*Hexagone {
+	path := make([]*Hexagone, 0)
+	path = append(path, hexagon)
+	val, ok := maps[hexagon]
+	for ok {
+		path = append(path, val)
+		val, ok = maps[val]
+	}
+	return path
+}
+
 func HauteurNoeud(node *Hexagone, save map[*Hexagone]*Hexagone) int {
 	cnt := 1
 	for save[node] != nil {
