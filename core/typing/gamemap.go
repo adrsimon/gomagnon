@@ -32,6 +32,7 @@ type Hexagone struct {
 	Resource ResourceType
 	Biome    *Biome
 	Agents   []*Human
+	Hut      *Hut
 }
 
 func (h *Hexagone) EvenRToAxial() (int, int) {
