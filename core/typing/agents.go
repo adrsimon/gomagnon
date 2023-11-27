@@ -85,7 +85,7 @@ const (
 	AnimalFoodValueMultiplier = 3.0
 	FruitFoodValueMultiplier  = 1.0
 	WaterValueMultiplier      = 2.0
-	DistanceMultiplier        = 1
+	DistanceMultiplier        = 0.2
 )
 
 func NewHuman(id string, Type rune, Race Race, body HumanBody, stats HumanStats, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Hexagone, board *Board, comOut agentToManager, comIn managerToAgent, hut *Hut, inventory map[ResourceType]int, agentRelation map[string]string) *Human {
@@ -116,7 +116,7 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 				score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 1.0
 			}
 			if h.Body.Hungriness > threshold {
-				score += 1
+				score += 3
 			}
 		case FRUIT:
 			if h.Race == Neandertal {
@@ -126,7 +126,7 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 				score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.3
 			}
 			if h.Body.Hungriness > threshold {
-				score += 1
+				score += 3
 			}
 		case ROCK:
 			score += 3
