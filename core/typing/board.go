@@ -83,7 +83,7 @@ func (b *Board) GenerateBiomes() {
 				continue
 			}
 
-			biomeType := BiomesType(r.Intn(4))
+			biomeType := BiomesType(Randomizer.Intn(4))
 			biome := Biome{
 				BiomeType: biomeType,
 				Hexs:      make([]*Hexagone, 0),
@@ -98,7 +98,7 @@ func (b *Board) GenerateBiomes() {
 					continue
 				}
 				neighbourHex := availableHexs[neighbour.Position.X][neighbour.Position.Y]
-				if try := r.Intn(100); try > 1 && neighbourHex != nil && neighbourHex.Biome == nil {
+				if try := Randomizer.Intn(100); try > 1 && neighbourHex != nil && neighbourHex.Biome == nil {
 					biome.Hexs = append(biome.Hexs, neighbour)
 					neighbour.Biome = &biome
 					availableHexs[neighbour.Position.X][neighbour.Position.Y] = nil
@@ -113,14 +113,14 @@ func (b *Board) GenerateBiomes() {
 func (b *Board) GenerateResources() {
 	for _, biome := range b.Biomes {
 		resourceType := NONE
-		hex := biome.Hexs[r.Intn(len(biome.Hexs))]
+		hex := biome.Hexs[Randomizer.Intn(len(biome.Hexs))]
 		switch biome.BiomeType {
 		case PLAINS:
 			if b.ResourceManager.MaxAnimalQuantity > b.ResourceManager.AnimalQuantity {
 				resourceType = ANIMAL
 			}
 		case FOREST:
-			if r.Intn(2) == 0 && b.ResourceManager.MaxFruitQuantity > b.ResourceManager.FruitQuantity {
+			if Randomizer.Intn(2) == 0 && b.ResourceManager.MaxFruitQuantity > b.ResourceManager.FruitQuantity {
 				resourceType = FRUIT
 			} else if b.ResourceManager.MaxWoodQuantity > b.ResourceManager.WoodQuantity {
 				resourceType = WOOD

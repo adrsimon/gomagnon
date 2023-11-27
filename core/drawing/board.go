@@ -37,7 +37,7 @@ func DrawAgents(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFac
 		xA, yA = xA*zoomFactor, yA*zoomFactor
 		DrawAgent(screen, xA, yA, hexSize*zoomFactor)
 
-		for _, neighbor := range agent.GetNeighborsWithin5() {
+		for _, neighbor := range agent.GetNeighboursWithinAcuity() {
 			if neighbor == nil {
 				continue
 			}

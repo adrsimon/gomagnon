@@ -10,6 +10,7 @@ import (
 type HumanStats struct {
 	Strength    int
 	Sociability int
+	Acuity      int
 }
 
 type HumanBody struct {
@@ -172,10 +173,10 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 	return score
 }
 
-func (h *Human) GetNeighborsWithin5() []*Hexagone {
+func (h *Human) GetNeighboursWithinAcuity() []*Hexagone {
 	neighbours := h.Board.GetNeighbours(h.Position)
 	visited := make(map[*Hexagone]bool)
-	for i := 0; i < 4; i++ {
+	for i := 1; i < h.Stats.Acuity; i++ {
 		for _, neighbour := range neighbours {
 			if neighbour == nil {
 				continue
@@ -212,7 +213,7 @@ func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
 	valid := false
 	randHex := &Hexagone{}
 	for !valid {
-		randHex = surroundingHexagons[r.Intn(len(surroundingHexagons))]
+		randHex = surroundingHexagons[Randomizer.Intn(len(surroundingHexagons))]
 		if h.Board.isValidHex(randHex) && randHex.Biome.BiomeType != WATER {
 			valid = true
 		}
@@ -314,7 +315,7 @@ func (h *Human) Act() {
 			if h.Body.Tiredness > 70 && h.Hut != nil {
 				targetHexagon = h.Hut.Position
 			} else {
-				surroundingHexagons := h.GetNeighborsWithin5()
+				surroundingHexagons := h.GetNeighboursWithinAcuity()
 				targetHexagon = h.BestNeighbor(surroundingHexagons)
 			}
 
