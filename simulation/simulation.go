@@ -64,7 +64,7 @@ func NewSimulation() Simulation {
 			CurrentPath:    nil,
 			Hut:            nil,
 			Board:          simu.GameMap.Board,
-			Inventory:      map[typing.ResourceType]int{},
+			Inventory:      typing.Inventory{Weight: 0, Object: make(map[typing.ResourceType]int)},
 			AgentRelation:  make(map[string]string),
 			AgentCommIn:    make(chan typing.AgentComm),
 			Clan:           nil,
