@@ -155,69 +155,6 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 			score -= 1
 		}
 	}
-	if h.Hut == nil {
-		switch hex.Resource {
-		case ANIMAL:
-			if h.Race == Neandertal {
-				score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.5
-			}
-			if h.Race == Sapiens {
-				score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 1.0
-			}
-			if h.Body.Hungriness > threshold {
-				score += 3
-			}
-		case FRUIT:
-			if h.Race == Neandertal {
-				score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.01
-			}
-			if h.Race == Sapiens {
-				score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.3
-			}
-			if h.Body.Hungriness > threshold {
-				score += 3
-			}
-		case ROCK:
-			if h.Inventory.Weight <= MaxWeightInv-WeightRock {
-				score += 3
-			}
-		case WOOD:
-			if h.Inventory.Weight <= MaxWeightInv-WeighWood {
-				score += 3
-			}
-		}
-	} else {
-		switch hex.Resource {
-		case ANIMAL:
-			if h.Race == Neandertal {
-				score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.5
-			}
-			if h.Race == Sapiens {
-				score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 1.0
-			}
-			if h.Body.Hungriness > threshold {
-				score += 1
-			}
-		case FRUIT:
-			if h.Race == Neandertal {
-				score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.01
-			}
-			if h.Race == Sapiens {
-				score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.3
-			}
-			if h.Body.Hungriness > threshold {
-				score += 1
-			}
-		case ROCK:
-			if h.Inventory.Weight <= MaxWeightInv-WeightRock {
-				score += 0.5
-			}
-		case WOOD:
-			if h.Inventory.Weight <= MaxWeightInv-WeighWood {
-				score += 0.5
-			}
-		}
-	}
 
 	for _, nb := range h.Board.GetNeighbours(hex) {
 		if nb.Biome.BiomeType == WATER && h.Body.Thirstiness > threshold {
