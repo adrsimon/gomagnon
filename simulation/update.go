@@ -17,6 +17,8 @@ func (s *Simulation) Update() error {
 		}
 	}
 
+	s.GameMap.Board.GenerateResources()
+
 	var wg sync.WaitGroup
 	for _, agent := range s.GameMap.Board.AgentManager.Agents {
 		wg.Add(1)

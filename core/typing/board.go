@@ -16,14 +16,15 @@ func NewBoard(xmax, ymax int, hexSize float32, fruits, animals, rocks, woods int
 		cases = append(cases, make([]*Hexagone, ymax))
 	}
 	agents := make(map[string]*Human)
+	resMan := NewResourceManager(fruits, animals, rocks, woods)
 	return &Board{
 		Cases:           cases,
 		XMax:            xmax,
 		YMax:            ymax,
 		HexSize:         hexSize,
 		Biomes:          make([]*Biome, 0),
-		ResourceManager: NewResourceManager(fruits, animals, rocks, woods),
-		AgentManager:    NewAgentManager(cases, make(chan agentToManager, 100), agents),
+		ResourceManager: resMan,
+		AgentManager:    NewAgentManager(cases, make(chan agentToManager, 100), agents, resMan),
 	}
 }
 
@@ -111,35 +112,34 @@ func (b *Board) GenerateBiomes() {
 }
 
 func (b *Board) GenerateResources() {
-	for _, biome := range b.Biomes {
-		resourceType := NONE
-		hex := biome.Hexs[r.Intn(len(biome.Hexs))]
-		switch biome.BiomeType {
-		case PLAINS:
-			if b.ResourceManager.MaxAnimalQuantity > b.ResourceManager.AnimalQuantity {
-				resourceType = ANIMAL
-			}
-		case FOREST:
-			if r.Intn(2) == 0 && b.ResourceManager.MaxFruitQuantity > b.ResourceManager.FruitQuantity {
-				resourceType = FRUIT
-			} else if b.ResourceManager.MaxWoodQuantity > b.ResourceManager.WoodQuantity {
-				resourceType = WOOD
-			}
-		case CAVE:
-			if b.ResourceManager.MaxRockQuantity > b.ResourceManager.RockQuantity {
-				resourceType = ROCK
-			}
-		}
-		hex.Resource = resourceType
-		b.ResourceManager.Resources = append(b.ResourceManager.Resources, resourceType)
-		switch resourceType {
-		case FRUIT:
+	for b.ResourceManager.FruitQuantity < b.ResourceManager.MaxFruitQuantity {
+		hex := b.Cases[r.Intn(b.XMax)][r.Intn(b.YMax)]
+		if hex.Biome.BiomeType == FOREST {
+			hex.Resource = FRUIT
 			b.ResourceManager.FruitQuantity++
-		case ANIMAL:
+		}
+	}
+
+	for b.ResourceManager.AnimalQuantity < b.ResourceManager.MaxAnimalQuantity {
+		hex := b.Cases[r.Intn(b.XMax)][r.Intn(b.YMax)]
+		if hex.Biome.BiomeType == PLAINS {
+			hex.Resource = ANIMAL
 			b.ResourceManager.AnimalQuantity++
-		case ROCK:
+		}
+	}
+
+	for b.ResourceManager.RockQuantity < b.ResourceManager.MaxRockQuantity {
+		hex := b.Cases[r.Intn(b.XMax)][r.Intn(b.YMax)]
+		if hex.Biome.BiomeType == CAVE {
+			hex.Resource = ROCK
 			b.ResourceManager.RockQuantity++
-		case WOOD:
+		}
+	}
+
+	for b.ResourceManager.WoodQuantity < b.ResourceManager.MaxWoodQuantity {
+		hex := b.Cases[r.Intn(b.XMax)][r.Intn(b.YMax)]
+		if hex.Biome.BiomeType == FOREST {
+			hex.Resource = WOOD
 			b.ResourceManager.WoodQuantity++
 		}
 	}

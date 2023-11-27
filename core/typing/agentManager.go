@@ -18,13 +18,14 @@ type managerToAgent struct {
 }
 
 type AgentManager struct {
-	Map    *[][]*Hexagone
-	messIn chan agentToManager
-	Agents map[string]*Human
+	Map              *[][]*Hexagone
+	messIn           chan agentToManager
+	Agents           map[string]*Human
+	RessourceManager *ResourceManager
 }
 
-func NewAgentManager(Map [][]*Hexagone, messIn chan agentToManager, agents map[string]*Human) *AgentManager {
-	return &AgentManager{Map: &Map, messIn: messIn, Agents: agents}
+func NewAgentManager(Map [][]*Hexagone, messIn chan agentToManager, agents map[string]*Human, ressourceManager *ResourceManager) *AgentManager {
+	return &AgentManager{Map: &Map, messIn: messIn, Agents: agents, RessourceManager: ressourceManager}
 }
 
 func (agMan *AgentManager) startRessources() {
@@ -43,6 +44,16 @@ func (agMan *AgentManager) executeRessources(request agentToManager) {
 		default:
 			res := (*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Resource
 			(*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Resource = NONE
+			switch res {
+			case FRUIT:
+				agMan.RessourceManager.FruitQuantity--
+			case ANIMAL:
+				agMan.RessourceManager.AnimalQuantity--
+			case ROCK:
+				agMan.RessourceManager.RockQuantity--
+			case WOOD:
+				agMan.RessourceManager.WoodQuantity--
+			}
 			request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: res}
 		}
 	case "build":
