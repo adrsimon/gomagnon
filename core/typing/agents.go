@@ -2,6 +2,7 @@ package typing
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"time"
 )
@@ -62,6 +63,7 @@ type Human struct {
 
 	Action Action
 
+	Neighbours    []*Human
 	AgentRelation map[string]string
 	AgentCommIn   chan AgentComm
 	Clan          *Clan
@@ -79,8 +81,6 @@ type Clan struct {
 	chief   *Human
 }
 
-
-
 const (
 	AnimalFoodValueMultiplier = 3.0
 	FruitFoodValueMultiplier  = 1.0
@@ -88,21 +88,19 @@ const (
 	DistanceMultiplier        = 1
 )
 
-
-func NewHuman(id string, Type rune, Race Race, body HumanBody, stats HumanStats, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Hexagone, board *Board, comOut agentToManager, comIn managerToAgent, hut *Hut, inventory map[ResourceType]int) *Human {
-	return &Human{ID: id, Type: Type,Race: Race, Body: body, Stats: stats, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn, Hut: hut, Inventory: inventory, AgentRelation: make(map[string]string)}
+func NewHuman(id string, Type rune, Race Race, body HumanBody, stats HumanStats, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Hexagone, board *Board, comOut agentToManager, comIn managerToAgent, hut *Hut, inventory map[ResourceType]int, agentRelation map[string]string) *Human {
+	return &Human{ID: id, Type: Type, Race: Race, Body: body, Stats: stats, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn, Hut: hut, Inventory: inventory, AgentRelation: agentRelation}
 }
-
 
 func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 	var score = 0.0
 	threshold := 85
 
-	distance := distance(*h.Position, *hex)
-	score -= distance * DistanceMultiplier
+	dist := distance(*h.Position, *hex)
+	score -= dist * DistanceMultiplier
 
 	if hex.Biome.BiomeType == WATER {
-		return -1
+		return math.Inf(-1)
 	}
 	if hex == nil {
 		return score
@@ -207,7 +205,7 @@ func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
 		}
 	}
 
-	if indexBest != -1 {
+	if indexBest != -1 && surroundingHexagons[indexBest] != h.Position {
 		return surroundingHexagons[indexBest]
 	}
 
@@ -251,7 +249,7 @@ func (h *Human) UpdateState(resource ResourceType) {
 	}
 }
 
-func (h *Human) Perceive() []*Human {
+func (h *Human) Perceive() {
 	listHumans := make([]*Human, 0)
 	cases := make([]*Hexagone, 0)
 	cases = append(cases, h.Position)
@@ -265,23 +263,23 @@ func (h *Human) Perceive() []*Human {
 					if rand.Intn(2) >= 1 {
 						h.AgentRelation[p.ID] = "Friend"
 					} else {
-						h.AgentRelation[p.ID] = "Ennemy"
+						h.AgentRelation[p.ID] = "Enemy"
 					}
 				}
 			}
 		}
 	}
-	return listHumans
+	h.Neighbours = listHumans
 }
 
-func (h *Human) Deliberate(humans []*Human) {
+func (h *Human) Deliberate() {
 	h.Action = NOOP
 	if h.Hut == nil && h.Inventory[WOOD] >= Needs["hut"][WOOD] && h.Inventory[ROCK] >= Needs["hut"][ROCK] {
 		h.Action = BUILD
 		return
 	}
 
-	if h.Hut != nil && len(humans) > 0 && h.Clan == nil {
+	if h.Hut != nil && len(h.Neighbours) > 0 && h.Clan == nil {
 		h.Action = CREATECLAN
 		return
 	}
@@ -305,7 +303,7 @@ func (h *Human) Deliberate(humans []*Human) {
 	}
 }
 
-func (h *Human) Act(humans []*Human) {
+func (h *Human) Act() {
 	switch h.Action {
 	case NOOP:
 		h.Body.Tiredness -= 1
@@ -366,11 +364,11 @@ func (h *Human) Act(humans []*Human) {
 		}
 	case CREATECLAN:
 		var bestH *Human
-		if len(humans) > 1 {
+		if len(h.Neighbours) > 1 {
 			//TO DEVELOPP bestH=find bestMatchHuman(humans)
-			bestH = humans[0] // waiting function
+			bestH = h.Neighbours[0] // waiting function
 		} else {
-			bestH = humans[0]
+			bestH = h.Neighbours[0]
 		}
 		if bestH.Terminated == false {
 			select {
@@ -404,7 +402,6 @@ func (h *Human) AnswerAgents(res AgentComm) {
 			if res2.Action == "INVITECLAN" {
 				h.Clan = res2.Agent.Clan
 				h.Hut = res2.Agent.Hut
-				fmt.Println("a")
 			}
 		}
 	}
@@ -412,9 +409,9 @@ func (h *Human) AnswerAgents(res AgentComm) {
 
 func (h *Human) UpdateAgent() {
 	h.Terminated = false
-	listHumans := h.Perceive()
-	h.Deliberate(listHumans)
-	h.Act(listHumans)
+	h.Perceive()
+	h.Deliberate()
+	h.Act()
 	select {
 	case res := <-h.AgentCommIn:
 		h.Terminated = true
@@ -422,5 +419,4 @@ func (h *Human) UpdateAgent() {
 	default:
 		h.Terminated = true
 	}
-
 }
