@@ -84,7 +84,7 @@ func (b *Board) GenerateBiomes() {
 				continue
 			}
 
-			biomeType := BiomesType(r.Intn(4))
+			biomeType := BiomesType(Randomizer.Intn(4))
 			biome := Biome{
 				BiomeType: biomeType,
 				Hexs:      make([]*Hexagone, 0),
@@ -99,7 +99,7 @@ func (b *Board) GenerateBiomes() {
 					continue
 				}
 				neighbourHex := availableHexs[neighbour.Position.X][neighbour.Position.Y]
-				if try := r.Intn(100); try > 1 && neighbourHex != nil && neighbourHex.Biome == nil {
+				if try := Randomizer.Intn(100); try > 1 && neighbourHex != nil && neighbourHex.Biome == nil {
 					biome.Hexs = append(biome.Hexs, neighbour)
 					neighbour.Biome = &biome
 					availableHexs[neighbour.Position.X][neighbour.Position.Y] = nil
@@ -113,7 +113,7 @@ func (b *Board) GenerateBiomes() {
 
 func (b *Board) GenerateResources() {
 	for b.ResourceManager.FruitQuantity < b.ResourceManager.MaxFruitQuantity {
-		hex := b.Cases[r.Intn(b.XMax)][r.Intn(b.YMax)]
+		hex := b.Cases[Randomizer.Intn(b.XMax)][Randomizer.Intn(b.YMax)]
 		if hex.Biome.BiomeType == FOREST {
 			hex.Resource = FRUIT
 			b.ResourceManager.FruitQuantity++
@@ -121,7 +121,7 @@ func (b *Board) GenerateResources() {
 	}
 
 	for b.ResourceManager.AnimalQuantity < b.ResourceManager.MaxAnimalQuantity {
-		hex := b.Cases[r.Intn(b.XMax)][r.Intn(b.YMax)]
+		hex := b.Cases[Randomizer.Intn(b.XMax)][Randomizer.Intn(b.YMax)]
 		if hex.Biome.BiomeType == PLAINS {
 			hex.Resource = ANIMAL
 			b.ResourceManager.AnimalQuantity++
@@ -129,7 +129,7 @@ func (b *Board) GenerateResources() {
 	}
 
 	for b.ResourceManager.RockQuantity < b.ResourceManager.MaxRockQuantity {
-		hex := b.Cases[r.Intn(b.XMax)][r.Intn(b.YMax)]
+		hex := b.Cases[Randomizer.Intn(b.XMax)][Randomizer.Intn(b.YMax)]
 		if hex.Biome.BiomeType == CAVE {
 			hex.Resource = ROCK
 			b.ResourceManager.RockQuantity++
@@ -137,7 +137,7 @@ func (b *Board) GenerateResources() {
 	}
 
 	for b.ResourceManager.WoodQuantity < b.ResourceManager.MaxWoodQuantity {
-		hex := b.Cases[r.Intn(b.XMax)][r.Intn(b.YMax)]
+		hex := b.Cases[Randomizer.Intn(b.XMax)][Randomizer.Intn(b.YMax)]
 		if hex.Biome.BiomeType == FOREST {
 			hex.Resource = WOOD
 			b.ResourceManager.WoodQuantity++

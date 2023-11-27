@@ -47,19 +47,24 @@ func NewSimulation() Simulation {
 
 	for i := 0; i < 4; i++ {
 		simu.GameMap.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", i)] = &typing.Human{
-			ID:             fmt.Sprintf("ag-%d", i),
+			ID:   fmt.Sprintf("ag-%d", i),
 			Race: typing.Sapiens,
 			Body: typing.HumanBody{
 				Thirstiness: 50,
-				Hungriness:  50},
-			Stats:          typing.HumanStats{},
+				Hungriness:  50,
+			},
+			Stats: typing.HumanStats{
+				Strength:    10,
+				Sociability: 10,
+				Acuity:      typing.Randomizer.Intn(2) + 4,
+			},
 			Position:       simu.GameMap.Board.Cases[1][1],
 			Target:         nil,
 			MovingToTarget: false,
 			CurrentPath:    nil,
 			Hut:            nil,
 			Board:          simu.GameMap.Board,
-			Inventory:      map[typing.ResourceType]int{},
+			Inventory:      typing.Inventory{Weight: 0, Object: make(map[typing.ResourceType]int)},
 			AgentRelation:  make(map[string]string),
 			AgentCommIn:    make(chan typing.AgentComm),
 			Clan:           nil,

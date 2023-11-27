@@ -4,8 +4,8 @@ import (
 	"math/rand"
 )
 
-var r *rand.Rand
+var Randomizer *rand.Rand
 
 func init() {
-	r = rand.New(rand.NewSource(1))
+	Randomizer = rand.New(rand.NewSource(1))
 }
