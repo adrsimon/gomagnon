@@ -41,6 +41,17 @@ const (
 	Sapiens    Race = "Sapiens"
 )
 
+const (
+	MaxWeightInv = 10
+	WeightRock   = 2
+	WeighWood    = 1
+)
+
+type Inventory struct {
+	Object map[ResourceType]int
+	Weight int
+}
+
 type Human struct {
 	ID    string
 	Type  rune
@@ -48,7 +59,7 @@ type Human struct {
 	Body  HumanBody
 	Stats HumanStats
 
-	Inventory map[ResourceType]int
+	Inventory Inventory
 
 	Position       *Hexagone
 	Target         *Hexagone
@@ -88,7 +99,7 @@ const (
 	DistanceMultiplier        = 0.2
 )
 
-func NewHuman(id string, Type rune, Race Race, body HumanBody, stats HumanStats, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Hexagone, board *Board, comOut agentToManager, comIn managerToAgent, hut *Hut, inventory map[ResourceType]int, agentRelation map[string]string) *Human {
+func NewHuman(id string, Type rune, Race Race, body HumanBody, stats HumanStats, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Hexagone, board *Board, comOut agentToManager, comIn managerToAgent, hut *Hut, inventory Inventory, agentRelation map[string]string) *Human {
 	return &Human{ID: id, Type: Type, Race: Race, Body: body, Stats: stats, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn, Hut: hut, Inventory: inventory, AgentRelation: agentRelation}
 }
 
@@ -106,6 +117,44 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 		return score
 	}
 
+	switch hex.Resource {
+	case ANIMAL:
+		if h.Race == Neandertal {
+			score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.5
+		}
+		if h.Race == Sapiens {
+			score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 1.0
+		}
+		if h.Body.Hungriness > threshold {
+			score += 3
+		}
+	case FRUIT:
+		if h.Race == Neandertal {
+			score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.01
+		}
+		if h.Race == Sapiens {
+			score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.3
+		}
+		if h.Body.Hungriness > threshold {
+			score += 3
+		}
+	case ROCK:
+		if h.Hut == nil && h.Inventory.Object[ROCK] < Needs["hut"][ROCK] && h.Inventory.Weight <= MaxWeightInv-WeightRock {
+			score += 3
+		} else if (h.Hut != nil || h.Inventory.Object[ROCK] > Needs["hut"][ROCK]) && h.Inventory.Weight <= MaxWeightInv-WeightRock {
+			score += 0.5
+		} else {
+			score -= 1
+		}
+	case WOOD:
+		if h.Hut == nil && h.Inventory.Object[WOOD] < Needs["hut"][WOOD] && h.Inventory.Weight <= MaxWeightInv-WeighWood {
+			score += 3
+		} else if (h.Hut != nil || h.Inventory.Object[WOOD] > Needs["hut"][WOOD]) && h.Inventory.Weight <= MaxWeightInv-WeighWood {
+			score += 0.5
+		} else {
+			score -= 1
+		}
+	}
 	if h.Hut == nil {
 		switch hex.Resource {
 		case ANIMAL:
@@ -129,9 +178,13 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 				score += 3
 			}
 		case ROCK:
-			score += 3
+			if h.Inventory.Weight <= MaxWeightInv-WeightRock {
+				score += 3
+			}
 		case WOOD:
-			score += 3
+			if h.Inventory.Weight <= MaxWeightInv-WeighWood {
+				score += 3
+			}
 		}
 	} else {
 		switch hex.Resource {
@@ -156,9 +209,13 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 				score += 1
 			}
 		case ROCK:
-			score += 0.5
+			if h.Inventory.Weight <= MaxWeightInv-WeightRock {
+				score += 0.5
+			}
 		case WOOD:
-			score += 0.5
+			if h.Inventory.Weight <= MaxWeightInv-WeighWood {
+				score += 0.5
+			}
 		}
 	}
 
@@ -234,8 +291,12 @@ func (h *Human) UpdateState(resource ResourceType) {
 		h.Body.Hungriness -= 10 * AnimalFoodValueMultiplier
 	case FRUIT:
 		h.Body.Hungriness -= 10 * FruitFoodValueMultiplier
-	case ROCK, WOOD:
-		h.Inventory[resource] += 1
+	case ROCK:
+		h.Inventory.Object[resource] += 1
+		h.Inventory.Weight += WeightRock
+	case WOOD:
+		h.Inventory.Object[resource] += 1
+		h.Inventory.Weight += WeighWood
 	}
 
 	neighbours := h.Board.GetNeighbours(h.Position)
@@ -274,7 +335,7 @@ func (h *Human) Perceive() {
 
 func (h *Human) Deliberate() {
 	h.Action = NOOP
-	if h.Hut == nil && h.Inventory[WOOD] >= Needs["hut"][WOOD] && h.Inventory[ROCK] >= Needs["hut"][ROCK] {
+	if h.Hut == nil && h.Inventory.Object[WOOD] >= Needs["hut"][WOOD] && h.Inventory.Object[ROCK] >= Needs["hut"][ROCK] {
 		h.Action = BUILD
 		return
 	}
@@ -349,8 +410,10 @@ func (h *Human) Act() {
 		h.ComIn = <-h.ComOut.commOut
 		if h.ComIn.Valid {
 			h.Hut = &Hut{Position: h.Position, Inventory: make(map[ResourceType]int)}
-			h.Inventory[WOOD] -= Needs["hut"][WOOD]
-			h.Inventory[ROCK] -= Needs["hut"][ROCK]
+			h.Inventory.Object[WOOD] -= Needs["hut"][WOOD]
+			h.Inventory.Object[ROCK] -= Needs["hut"][ROCK]
+			h.Inventory.Weight -= WeighWood * Needs["hut"][WOOD]
+			h.Inventory.Weight -= WeightRock * Needs["hut"][ROCK]
 		}
 	case SLEEP:
 		if h.Body.Sleeping && h.Body.Tiredness > 0 {
