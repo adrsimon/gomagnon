@@ -17,10 +17,10 @@ func NewGame(
 	backgroundColor color.RGBA,
 	xmax, ymax int,
 	hexSize float32,
-	fruits, animals, rocks, woods int,
+	maxResources map[ResourceType]int,
 ) *GameMap {
 	return &GameMap{
-		Board:           NewBoard(xmax, ymax, hexSize, fruits, animals, rocks, woods),
+		Board:           NewBoard(xmax, ymax, hexSize, maxResources),
 		ScreenWidth:     screenWidth,
 		ScreenHeight:    screenHeight,
 		BackgroundColor: backgroundColor,

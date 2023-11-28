@@ -29,7 +29,12 @@ func NewSimulation() Simulation {
 		colornames.Black,
 		28, 25,
 		40,
-		10, 10, 10, 10,
+		map[typing.ResourceType]int{
+			typing.FRUIT:  10,
+			typing.ANIMAL: 10,
+			typing.ROCK:   10,
+			typing.WOOD:   10,
+		},
 	)
 
 	simu.cameraX = 0
