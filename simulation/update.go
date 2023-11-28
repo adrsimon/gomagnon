@@ -20,15 +20,15 @@ func (s *Simulation) Update() error {
 		}
 	}
 
-	for i := 0; i < len(s.GameMap.Board.AgentManager.RessourceManager.RespawnCDs); i++ {
-		res := s.GameMap.Board.AgentManager.RessourceManager.RespawnCDs[i]
+	for i := 0; i < len(s.GameMap.Board.AgentManager.ResourceManager.RespawnCDs); i++ {
+		res := s.GameMap.Board.AgentManager.ResourceManager.RespawnCDs[i]
 		res.Current--
 		if res.Current == 0 {
-			s.GameMap.Board.AgentManager.RessourceManager.CurrentQuantities[res.Resource]--
-			s.GameMap.Board.AgentManager.RessourceManager.RespawnCDs = append(s.GameMap.Board.AgentManager.RessourceManager.RespawnCDs[:i], s.GameMap.Board.AgentManager.RessourceManager.RespawnCDs[i+1:]...)
+			s.GameMap.Board.AgentManager.ResourceManager.CurrentQuantities[res.Resource]--
+			s.GameMap.Board.AgentManager.ResourceManager.RespawnCDs = append(s.GameMap.Board.AgentManager.ResourceManager.RespawnCDs[:i], s.GameMap.Board.AgentManager.ResourceManager.RespawnCDs[i+1:]...)
 			i--
 		} else {
-			s.GameMap.Board.AgentManager.RessourceManager.RespawnCDs[i] = res
+			s.GameMap.Board.AgentManager.ResourceManager.RespawnCDs[i] = res
 		}
 	}
 

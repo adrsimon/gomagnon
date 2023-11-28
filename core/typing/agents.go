@@ -35,11 +35,11 @@ const (
 	CREATECLAN
 )
 
-type Race string
+type Race int
 
 const (
-	Neandertal Race = "Neandertal"
-	Sapiens    Race = "Sapiens"
+	NEANDERTHAL Race = iota
+	SAPIENS
 )
 
 const (
@@ -120,20 +120,20 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 
 	switch hex.Resource {
 	case ANIMAL:
-		if h.Race == Neandertal {
+		if h.Race == NEANDERTHAL {
 			score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.5
 		}
-		if h.Race == Sapiens {
+		if h.Race == SAPIENS {
 			score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 1.0
 		}
 		if h.Body.Hungriness > threshold {
 			score += 3
 		}
 	case FRUIT:
-		if h.Race == Neandertal {
+		if h.Race == NEANDERTHAL {
 			score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.01
 		}
-		if h.Race == Sapiens {
+		if h.Race == SAPIENS {
 			score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.3
 		}
 		if h.Body.Hungriness > threshold {
@@ -319,6 +319,10 @@ func (h *Human) Act() {
 
 			res := AStar(*h, targetHexagon)
 			h.CurrentPath = createPath(res, targetHexagon)
+			if len(h.CurrentPath) < 2 {
+				h.CurrentPath = nil
+				break
+			}
 			h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-2]
 			h.Target = targetHexagon
 			h.MovingToTarget = true
@@ -347,7 +351,7 @@ func (h *Human) Act() {
 		h.Board.AgentManager.messIn <- h.ComOut
 		h.ComIn = <-h.ComOut.commOut
 		if h.ComIn.Valid {
-			h.Hut = &Hut{Position: h.Position, Inventory: make(map[ResourceType]int)}
+			h.Hut = &Hut{Position: h.Position, Inventory: make(map[ResourceType]int), Owner: h}
 			h.Inventory.Object[WOOD] -= Needs["hut"][WOOD]
 			h.Inventory.Object[ROCK] -= Needs["hut"][ROCK]
 			h.Inventory.Weight -= WeighWood * Needs["hut"][WOOD]
@@ -402,6 +406,14 @@ func (h *Human) AnswerAgents(res AgentComm) {
 			res2 := <-h.AgentCommIn
 			if res2.Action == "INVITECLAN" {
 				h.Clan = res2.Agent.Clan
+				if h.Hut != nil && h.Hut.Owner != nil {
+					h.ComOut = agentToManager{AgentID: h.ID, Action: "leave-house", Pos: h.Position, commOut: make(chan managerToAgent)}
+					h.Board.AgentManager.messIn <- h.ComOut
+					h.ComIn = <-h.ComOut.commOut
+					if h.ComIn.Valid {
+						h.Hut = nil
+					}
+				}
 				h.Hut = res2.Agent.Hut
 			}
 		}
