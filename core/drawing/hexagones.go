@@ -64,7 +64,7 @@ func init() {
 	imgWood = wood
 }
 
-func DrawHex(background *ebiten.Image, xCenter float32, yCenter float32, biome typing.BiomesType, hexSize float32, resource typing.ResourceType, hut bool) {
+func DrawHex(background *ebiten.Image, xCenter float32, yCenter float32, biome typing.BiomesType, hexSize float32, resource typing.ResourceType, hut *typing.Hut) {
 	var hexImage *ebiten.Image
 	switch biome {
 	case typing.PLAINS:
@@ -94,8 +94,14 @@ func DrawHex(background *ebiten.Image, xCenter float32, yCenter float32, biome t
 	case typing.NONE:
 	}
 
-	if hut {
-		vector.DrawFilledRect(background, xCenter-hexSize/4, yCenter-hexSize/4, 20, 20, colornames.Red, false)
+	if hut != nil {
+		if hut.Owner == nil {
+			vector.DrawFilledRect(background, xCenter-hexSize/4, yCenter-hexSize/4, 20, 20, colornames.Black, false)
+		} else if hut.Owner.Race == typing.SAPIENS {
+			vector.DrawFilledRect(background, xCenter-hexSize/4, yCenter-hexSize/4, 20, 20, colornames.Blue, false)
+		} else if hut.Owner.Race == typing.NEANDERTHAL {
+			vector.DrawFilledRect(background, xCenter-hexSize/4, yCenter-hexSize/4, 20, 20, colornames.Red, false)
+		}
 	}
 }
 

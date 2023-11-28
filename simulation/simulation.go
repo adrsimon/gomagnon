@@ -53,7 +53,7 @@ func NewSimulation() Simulation {
 	for i := 0; i < 4; i++ {
 		simu.GameMap.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", i)] = &typing.Human{
 			ID:   fmt.Sprintf("ag-%d", i),
-			Race: typing.Sapiens,
+			Race: typing.Race(typing.Randomizer.Intn(2)),
 			Body: typing.HumanBody{
 				Thirstiness: 50,
 				Hungriness:  50,
