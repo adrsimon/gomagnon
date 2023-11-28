@@ -10,13 +10,13 @@ type Board struct {
 	AgentManager    *AgentManager
 }
 
-func NewBoard(xmax, ymax int, hexSize float32, fruits, animals, rocks, woods int) *Board {
+func NewBoard(xmax, ymax int, hexSize float32, maxResources map[ResourceType]int) *Board {
 	cases := make([][]*Hexagone, 0)
 	for x := 0; x < xmax; x++ {
 		cases = append(cases, make([]*Hexagone, ymax))
 	}
 	agents := make(map[string]*Human)
-	resMan := NewResourceManager(fruits, animals, rocks, woods)
+	resMan := NewResourceManager(maxResources)
 	return &Board{
 		Cases:           cases,
 		XMax:            xmax,
@@ -112,35 +112,24 @@ func (b *Board) GenerateBiomes() {
 }
 
 func (b *Board) GenerateResources() {
-	for b.ResourceManager.FruitQuantity < b.ResourceManager.MaxFruitQuantity {
-		hex := b.Cases[Randomizer.Intn(b.XMax)][Randomizer.Intn(b.YMax)]
-		if hex.Biome.BiomeType == FOREST {
-			hex.Resource = FRUIT
-			b.ResourceManager.FruitQuantity++
-		}
-	}
-
-	for b.ResourceManager.AnimalQuantity < b.ResourceManager.MaxAnimalQuantity {
-		hex := b.Cases[Randomizer.Intn(b.XMax)][Randomizer.Intn(b.YMax)]
-		if hex.Biome.BiomeType == PLAINS {
-			hex.Resource = ANIMAL
-			b.ResourceManager.AnimalQuantity++
-		}
-	}
-
-	for b.ResourceManager.RockQuantity < b.ResourceManager.MaxRockQuantity {
-		hex := b.Cases[Randomizer.Intn(b.XMax)][Randomizer.Intn(b.YMax)]
-		if hex.Biome.BiomeType == CAVE {
-			hex.Resource = ROCK
-			b.ResourceManager.RockQuantity++
-		}
-	}
-
-	for b.ResourceManager.WoodQuantity < b.ResourceManager.MaxWoodQuantity {
-		hex := b.Cases[Randomizer.Intn(b.XMax)][Randomizer.Intn(b.YMax)]
-		if hex.Biome.BiomeType == FOREST {
-			hex.Resource = WOOD
-			b.ResourceManager.WoodQuantity++
+	for i := 0; i < int(NUM_RESOURCE_TYPES); i++ {
+		res := ResourceType(i)
+		for b.ResourceManager.currentQuantities[res] < b.ResourceManager.maxQuantities[res] {
+			hex := b.Cases[Randomizer.Intn(b.XMax)][Randomizer.Intn(b.YMax)]
+			if hex.Resource != NONE {
+				continue
+			}
+			if res == ANIMAL && hex.Biome.BiomeType != PLAINS {
+				continue
+			} else if res == FRUIT && hex.Biome.BiomeType != FOREST {
+				continue
+			} else if res == WOOD && hex.Biome.BiomeType != FOREST {
+				continue
+			} else if res == ROCK && hex.Biome.BiomeType != CAVE {
+				continue
+			}
+			hex.Resource = res
+			b.ResourceManager.currentQuantities[res]++
 		}
 	}
 }

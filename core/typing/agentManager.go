@@ -44,16 +44,7 @@ func (agMan *AgentManager) executeRessources(request agentToManager) {
 		default:
 			res := (*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Resource
 			(*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Resource = NONE
-			switch res {
-			case FRUIT:
-				agMan.RessourceManager.FruitQuantity--
-			case ANIMAL:
-				agMan.RessourceManager.AnimalQuantity--
-			case ROCK:
-				agMan.RessourceManager.RockQuantity--
-			case WOOD:
-				agMan.RessourceManager.WoodQuantity--
-			}
+			agMan.RessourceManager.currentQuantities[res]--
 			request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: res}
 		}
 	case "build":
