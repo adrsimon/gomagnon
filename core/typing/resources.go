@@ -11,14 +11,21 @@ const (
 	NUM_RESOURCE_TYPES
 )
 
+type CoolDown struct {
+	Current  int
+	Resource ResourceType
+}
+
 type ResourceManager struct {
 	maxQuantities     map[ResourceType]int
-	currentQuantities map[ResourceType]int
+	CurrentQuantities map[ResourceType]int
+	RespawnCDs        []CoolDown
 }
 
 func NewResourceManager(maxs map[ResourceType]int) *ResourceManager {
 	return &ResourceManager{
 		maxQuantities:     maxs,
-		currentQuantities: make(map[ResourceType]int),
+		CurrentQuantities: make(map[ResourceType]int),
+		RespawnCDs:        make([]CoolDown, 0),
 	}
 }

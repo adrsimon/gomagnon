@@ -114,7 +114,7 @@ func (b *Board) GenerateBiomes() {
 func (b *Board) GenerateResources() {
 	for i := 0; i < int(NUM_RESOURCE_TYPES); i++ {
 		res := ResourceType(i)
-		for b.ResourceManager.currentQuantities[res] < b.ResourceManager.maxQuantities[res] {
+		for b.ResourceManager.CurrentQuantities[res] < b.ResourceManager.maxQuantities[res] {
 			hex := b.Cases[Randomizer.Intn(b.XMax)][Randomizer.Intn(b.YMax)]
 			if hex.Resource != NONE {
 				continue
@@ -129,7 +129,7 @@ func (b *Board) GenerateResources() {
 				continue
 			}
 			hex.Resource = res
-			b.ResourceManager.currentQuantities[res]++
+			b.ResourceManager.CurrentQuantities[res]++
 		}
 	}
 }
