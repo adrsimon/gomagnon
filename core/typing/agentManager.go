@@ -21,10 +21,11 @@ type AgentManager struct {
 	Map    *[][]*Hexagone
 	messIn chan agentToManager
 	Agents map[string]*Human
+	Count  int
 }
 
-func NewAgentManager(Map [][]*Hexagone, messIn chan agentToManager, agents map[string]*Human) *AgentManager {
-	return &AgentManager{Map: &Map, messIn: messIn, Agents: agents}
+func NewAgentManager(Map [][]*Hexagone, messIn chan agentToManager, agents map[string]*Human, Count int) *AgentManager {
+	return &AgentManager{Map: &Map, messIn: messIn, Agents: agents, Count: Count}
 }
 
 func (agMan *AgentManager) startRessources() {

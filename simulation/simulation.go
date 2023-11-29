@@ -45,8 +45,9 @@ func NewSimulation() Simulation {
 
 	simu.GameMap.Board.AgentManager.Start()
 
-	for i := 0; i < 4; i++ {
-		simu.GameMap.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", i)] = &typing.Human{
+	for i := 0; i < 3; i++ {
+		simu.GameMap.Board.AgentManager.Count++
+		simu.GameMap.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", simu.GameMap.Board.AgentManager.Count)] = &typing.Human{
 			ID:   fmt.Sprintf("ag-%d", i),
 			Race: typing.Sapiens,
 			Body: typing.HumanBody{
@@ -68,6 +69,7 @@ func NewSimulation() Simulation {
 			AgentRelation:  make(map[string]string),
 			AgentCommIn:    make(chan typing.AgentComm),
 			Clan:           nil,
+			Procreate:      typing.Procreate{Partner: nil, Timer: 100, Potential: true},
 		}
 	}
 

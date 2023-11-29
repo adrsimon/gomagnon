@@ -33,6 +33,7 @@ const (
 	BUILD
 	SLEEP
 	CREATECLAN
+	PROCREATE
 )
 
 type Race string
@@ -51,6 +52,12 @@ const (
 type Inventory struct {
 	Object map[ResourceType]int
 	Weight int
+}
+
+type Procreate struct {
+	Partner   *Human
+	Timer     int
+	Potential bool
 }
 
 type Human struct {
@@ -79,6 +86,7 @@ type Human struct {
 	AgentRelation map[string]string
 	AgentCommIn   chan AgentComm
 	Clan          *Clan
+	Procreate     Procreate
 	Terminated    bool
 }
 
@@ -221,6 +229,7 @@ func (h *Human) MoveToHexagon(hex *Hexagone) {
 	h.Body.Hungriness += 1
 	h.Body.Thirstiness += 2
 	h.Body.Tiredness += 0.5
+	h.Procreate.Timer -= 1
 }
 
 func (h *Human) UpdateState(resource ResourceType) {
@@ -292,10 +301,22 @@ func (h *Human) Deliberate() {
 		h.Action = MOVE
 		return
 	}
+
 	if h.MovingToTarget && len(h.CurrentPath) > 0 {
 		h.Action = MOVE
 		return
 	}
+
+	if h.Procreate.Partner != nil && h.Position.Position == h.Hut.Position.Position && h.Procreate.Partner.Position.Position == h.Hut.Position.Position {
+		h.Action = PROCREATE
+		return
+	}
+
+	if h.Hut != nil && h.Clan != nil && h.Procreate.Potential && h.Procreate.Partner == nil && h.Procreate.Timer <= 0 && h.Neighbours != nil && len(h.Neighbours) > 0 {
+		h.Action = PROCREATE
+		return
+	}
+
 	if h.Target.Position == h.Position.Position {
 		h.Action = GET
 		return
@@ -310,7 +331,7 @@ func (h *Human) Act() {
 		if !h.MovingToTarget {
 			var targetHexagon *Hexagone
 
-			if h.Body.Tiredness > 70 && h.Hut != nil {
+			if (h.Body.Tiredness > 70 && h.Hut != nil) || h.Procreate.Partner != nil {
 				targetHexagon = h.Hut.Position
 			} else {
 				surroundingHexagons := h.GetNeighboursWithinAcuity()
@@ -329,6 +350,11 @@ func (h *Human) Act() {
 			h.MoveToHexagon(h.Board.Cases[nextHexagon.Position.X][nextHexagon.Position.Y])
 			h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-1]
 		}
+
+		if h.Neighbours != nil {
+			h.Procreate.Potential = true
+		}
+
 	case GET:
 		if h.Target.Position == h.Position.Position {
 			h.MovingToTarget = false
@@ -387,9 +413,59 @@ func (h *Human) Act() {
 
 			}
 		}
+	case PROCREATE:
+		if h.Procreate.Partner == nil && h.Procreate.Potential {
+			for _, neighbour := range h.Neighbours {
+				if neighbour.Clan == h.Clan {
+					h.Procreate.Partner = neighbour
+					neighbour.Procreate.Partner = h
+					h.Procreate.Potential = true
+					break
+				} else {
+					h.Procreate.Potential = false
+				}
+			}
+		} else if h.Procreate.Partner != nil && h.Procreate.Partner.Position.Position == h.Position.Position && h.Position.Position == h.Hut.Position.Position {
+			h.Board.AgentManager.Count++
+			h.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", h.Board.AgentManager.Count)] = &Human{
+				ID: fmt.Sprintf("ag-%d", h.Board.AgentManager.Count),
+				Type: func() rune {
+					if rand.Intn(2) == 0 {
+						return 'M'
+					} else {
+						return 'F'
+					}
+				}(),
+				Race: Sapiens,
+				Body: HumanBody{
+					Thirstiness: 50,
+					Hungriness:  50,
+				},
+				Stats: HumanStats{
+					Strength:    int((h.Stats.Strength + h.Procreate.Partner.Stats.Strength) / 2),
+					Sociability: int((h.Stats.Sociability + h.Procreate.Partner.Stats.Sociability) / 2),
+					Acuity:      int((h.Stats.Acuity + h.Procreate.Partner.Stats.Acuity) / 2),
+				},
+				Position:       h.Position,
+				Target:         nil,
+				MovingToTarget: false,
+				CurrentPath:    nil,
+				Hut:            nil,
+				Board:          h.Board,
+				Inventory:      Inventory{Weight: 0, Object: make(map[ResourceType]int)},
+				AgentRelation:  make(map[string]string),
+				AgentCommIn:    make(chan AgentComm),
+				Clan:           nil,
+				Procreate:      Procreate{Partner: nil, Timer: 100, Potential: true},
+			}
+			fmt.Println("Procreated", h.Board.AgentManager.Count)
+			h.Procreate.Partner = nil
+			h.Procreate.Timer = 100
+		}
 	default:
 		fmt.Println("Should not be here")
 	}
+
 }
 
 func (h *Human) AnswerAgents(res AgentComm) {
