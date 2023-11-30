@@ -6,6 +6,9 @@ import (
 )
 
 func (s *Simulation) Update() error {
+	/**
+	 * ENVIRONMENT UPDATE
+	 */
 	for _, line := range s.GameMap.Board.Cases {
 		for _, hex := range line {
 			hex.Agents = nil
@@ -17,6 +20,23 @@ func (s *Simulation) Update() error {
 		}
 	}
 
+	for i := 0; i < len(s.GameMap.Board.AgentManager.ResourceManager.RespawnCDs); i++ {
+		res := s.GameMap.Board.AgentManager.ResourceManager.RespawnCDs[i]
+		res.Current--
+		if res.Current == 0 {
+			s.GameMap.Board.AgentManager.ResourceManager.CurrentQuantities[res.Resource]--
+			s.GameMap.Board.AgentManager.ResourceManager.RespawnCDs = append(s.GameMap.Board.AgentManager.ResourceManager.RespawnCDs[:i], s.GameMap.Board.AgentManager.ResourceManager.RespawnCDs[i+1:]...)
+			i--
+		} else {
+			s.GameMap.Board.AgentManager.ResourceManager.RespawnCDs[i] = res
+		}
+	}
+
+	s.GameMap.Board.GenerateResources()
+
+	/**
+	 * AGENTS UPDATE
+	 */
 	var wg sync.WaitGroup
 	for _, agent := range s.GameMap.Board.AgentManager.Agents {
 		wg.Add(1)

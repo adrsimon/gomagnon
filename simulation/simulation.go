@@ -29,7 +29,12 @@ func NewSimulation() Simulation {
 		colornames.Black,
 		28, 25,
 		40,
-		10, 10, 10, 10,
+		map[typing.ResourceType]int{
+			typing.FRUIT:  10,
+			typing.ANIMAL: 10,
+			typing.ROCK:   10,
+			typing.WOOD:   10,
+		},
 	)
 
 	simu.cameraX = 0
@@ -49,7 +54,7 @@ func NewSimulation() Simulation {
 		simu.GameMap.Board.AgentManager.Count++
 		simu.GameMap.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", simu.GameMap.Board.AgentManager.Count)] = &typing.Human{
 			ID:   fmt.Sprintf("ag-%d", i),
-			Race: typing.Sapiens,
+			Race: typing.Race(typing.Randomizer.Intn(2)),
 			Body: typing.HumanBody{
 				Thirstiness: 50,
 				Hungriness:  50,
