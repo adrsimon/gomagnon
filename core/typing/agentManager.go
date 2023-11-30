@@ -35,6 +35,14 @@ func (agMan *AgentManager) startRessources() {
 	}
 }
 
+func (agMan *AgentManager) RemoveAgent(agentID string) {
+	if _, ok := agMan.Agents[agentID]; ok {
+		delete(agMan.Agents, agentID)
+	} else {
+		fmt.Printf("Agent with ID %s not found.\n", agentID)
+	}
+}
+
 func (agMan *AgentManager) executeRessources(request agentToManager) {
 	switch request.Action {
 	case "get":

@@ -420,11 +420,19 @@ func (h *Human) AnswerAgents(res AgentComm) {
 	}
 }
 
+func (h *Human) IsDead() bool {
+	return h.Body.Hungriness >= 100 || h.Body.Thirstiness >= 100 || h.Stats.Strength <= 0
+}
+
 func (h *Human) UpdateAgent() {
 	h.Terminated = false
 	h.Perceive()
 	h.Deliberate()
 	h.Act()
+	if h.IsDead() {
+		fmt.Printf("Agent %s is dead.\n", h.ID)
+		h.Board.AgentManager.RemoveAgent(h.ID)
+	}
 	select {
 	case res := <-h.AgentCommIn:
 		h.Terminated = true
