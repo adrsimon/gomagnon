@@ -422,7 +422,7 @@ func (h *Human) Act() {
 	case PROCREATE:
 		if h.Procreate.Partner == nil && h.Procreate.Potential {
 			for _, neighbour := range h.Neighbours {
-				if neighbour.Clan == h.Clan {
+				if neighbour.Clan == h.Clan && neighbour.Procreate.Partner == nil && neighbour.Hut != nil /*&& h.Type != neighbour.Type */ {
 					h.Procreate.Partner = neighbour
 					neighbour.Procreate.Partner = h
 					h.Procreate.Potential = true
@@ -432,39 +432,79 @@ func (h *Human) Act() {
 				}
 			}
 		} else if h.Procreate.Partner != nil && h.Procreate.Partner.Position.Position == h.Position.Position && h.Position.Position == h.Hut.Position.Position {
-			h.Board.AgentManager.Count++
-			h.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", h.Board.AgentManager.Count)] = &Human{
-				ID: fmt.Sprintf("ag-%d", h.Board.AgentManager.Count),
-				Type: func() rune {
-					if rand.Intn(2) == 0 {
-						return 'M'
-					} else {
-						return 'F'
+			if h.Race == NEANDERTHAL {
+				if rand.Intn(4) == 0 {
+					h.Board.AgentManager.Count++
+					h.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", h.Board.AgentManager.Count)] = &Human{
+						ID: fmt.Sprintf("ag-%d", h.Board.AgentManager.Count),
+						Type: func() rune {
+							if rand.Intn(2) == 0 {
+								return 'M'
+							} else {
+								return 'F'
+							}
+						}(),
+						Race: h.Race,
+						Body: HumanBody{
+							Thirstiness: 50,
+							Hungriness:  50,
+						},
+						Stats: HumanStats{
+							Strength:    int((h.Stats.Strength + h.Procreate.Partner.Stats.Strength) / 2),
+							Sociability: int((h.Stats.Sociability + h.Procreate.Partner.Stats.Sociability) / 2),
+							Acuity:      int((h.Stats.Acuity + h.Procreate.Partner.Stats.Acuity) / 2),
+						},
+						Position:       h.Position,
+						Target:         nil,
+						MovingToTarget: false,
+						CurrentPath:    nil,
+						Hut:            nil,
+						Board:          h.Board,
+						Inventory:      Inventory{Weight: 0, Object: make(map[ResourceType]int)},
+						AgentRelation:  make(map[string]string),
+						AgentCommIn:    make(chan AgentComm),
+						Clan:           nil,
+						Procreate:      Procreate{Partner: nil, Timer: 100, Potential: true},
 					}
-				}(),
-				Race: h.Race,
-				Body: HumanBody{
-					Thirstiness: 50,
-					Hungriness:  50,
-				},
-				Stats: HumanStats{
-					Strength:    int((h.Stats.Strength + h.Procreate.Partner.Stats.Strength) / 2),
-					Sociability: int((h.Stats.Sociability + h.Procreate.Partner.Stats.Sociability) / 2),
-					Acuity:      int((h.Stats.Acuity + h.Procreate.Partner.Stats.Acuity) / 2),
-				},
-				Position:       h.Position,
-				Target:         nil,
-				MovingToTarget: false,
-				CurrentPath:    nil,
-				Hut:            nil,
-				Board:          h.Board,
-				Inventory:      Inventory{Weight: 0, Object: make(map[ResourceType]int)},
-				AgentRelation:  make(map[string]string),
-				AgentCommIn:    make(chan AgentComm),
-				Clan:           nil,
-				Procreate:      Procreate{Partner: nil, Timer: 100, Potential: true},
+					fmt.Println("Procreated Neand", h.Board.AgentManager.Count, h.ID)
+				}
+			} else if h.Race == SAPIENS {
+				if rand.Intn(2) == 0 {
+					h.Board.AgentManager.Count++
+					h.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", h.Board.AgentManager.Count)] = &Human{
+						ID: fmt.Sprintf("ag-%d", h.Board.AgentManager.Count),
+						Type: func() rune {
+							if rand.Intn(2) == 0 {
+								return 'M'
+							} else {
+								return 'F'
+							}
+						}(),
+						Race: h.Race,
+						Body: HumanBody{
+							Thirstiness: 50,
+							Hungriness:  50,
+						},
+						Stats: HumanStats{
+							Strength:    int((h.Stats.Strength + h.Procreate.Partner.Stats.Strength) / 2),
+							Sociability: int((h.Stats.Sociability + h.Procreate.Partner.Stats.Sociability) / 2),
+							Acuity:      int((h.Stats.Acuity + h.Procreate.Partner.Stats.Acuity) / 2),
+						},
+						Position:       h.Position,
+						Target:         nil,
+						MovingToTarget: false,
+						CurrentPath:    nil,
+						Hut:            nil,
+						Board:          h.Board,
+						Inventory:      Inventory{Weight: 0, Object: make(map[ResourceType]int)},
+						AgentRelation:  make(map[string]string),
+						AgentCommIn:    make(chan AgentComm),
+						Clan:           nil,
+						Procreate:      Procreate{Partner: nil, Timer: 100, Potential: true},
+					}
+					fmt.Println("Procreated Sapiens", h.Board.AgentManager.Count, h.ID)
+				}
 			}
-			fmt.Println("Procreated", h.Board.AgentManager.Count, h.ID)
 			h.Procreate.Partner = nil
 			h.Procreate.Timer = 100
 		}
