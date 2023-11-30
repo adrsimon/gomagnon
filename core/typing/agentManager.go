@@ -54,7 +54,6 @@ func (agMan *AgentManager) executeRessources(request agentToManager) {
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 	case "leave-house":
 		ag := agMan.Agents[request.AgentID]
-		fmt.Println("Agent", ag.ID, "leaving house")
 		(*agMan.Map)[ag.Hut.Position.Position.X][ag.Hut.Position.Position.Y].Hut.Owner = nil
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 	}
