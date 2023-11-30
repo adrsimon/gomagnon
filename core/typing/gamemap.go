@@ -30,7 +30,7 @@ func NewGame(
 type Hexagone struct {
 	Position *Point2D
 	Resource ResourceType
-	Biome    *Biome
+	Biome    BiomeType
 	Agents   []*Human
 	Hut      *Hut
 }

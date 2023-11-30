@@ -3,6 +3,7 @@ module github.com/adrsimon/gomagnon
 go 1.21.0
 
 require (
+	github.com/aquilax/go-perlin v1.1.0
 	github.com/hajimehoshi/ebiten/v2 v2.6.2
 	golang.org/x/image v0.12.0
 )
