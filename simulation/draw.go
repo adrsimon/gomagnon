@@ -38,7 +38,7 @@ func (s *Simulation) Draw(screen *ebiten.Image) {
 		s.debug = true
 	}
 
-	screen.Fill(s.GameMap.BackgroundColor)
-	drawing.DrawBoard(screen, s.GameMap.Board, s.cameraX, s.cameraY, s.zoomFactor)
-	drawing.DrawAgents(screen, s.GameMap.Board, s.cameraX, s.cameraY, s.zoomFactor, s.debug)
+	screen.Fill(s.backgroundColor)
+	drawing.DrawBoard(screen, s.Board, s.cameraX, s.cameraY, s.zoomFactor)
+	drawing.DrawAgents(screen, s.Board, s.cameraX, s.cameraY, s.zoomFactor, s.debug)
 }
