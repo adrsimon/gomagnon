@@ -27,5 +27,5 @@ func DrawAgentNeighbor(background *ebiten.Image, xCenter float32, yCenter float3
 }
 
 func DrawAgentPath(background *ebiten.Image, xa, ya, xb, yb float32, color color.Color) {
-	vector.StrokeLine(background, xa, ya, xb, yb, 1, color, false)
+	vector.StrokeLine(background, xa, ya, xb, yb, 2, color, false)
 }

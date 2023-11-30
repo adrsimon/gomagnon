@@ -33,9 +33,9 @@ func (s *Simulation) Draw(screen *ebiten.Image) {
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeySpace) {
-		s.debug = true
-	} else {
 		s.debug = false
+	} else {
+		s.debug = true
 	}
 
 	screen.Fill(s.GameMap.BackgroundColor)
