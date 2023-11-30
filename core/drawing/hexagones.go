@@ -64,7 +64,7 @@ func init() {
 	imgWood = wood
 }
 
-func DrawHex(background *ebiten.Image, xCenter float32, yCenter float32, biome typing.BiomesType, hexSize float32, resource typing.ResourceType, hut *typing.Hut) {
+func DrawHex(background *ebiten.Image, xCenter float32, yCenter float32, biome typing.BiomeType, hexSize float32, resource typing.ResourceType, hut *typing.Hut) {
 	var hexImage *ebiten.Image
 	switch biome {
 	case typing.PLAINS:

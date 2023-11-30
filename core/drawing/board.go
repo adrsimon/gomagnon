@@ -8,8 +8,8 @@ import (
 )
 
 func DrawBoard(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFactor float32) {
-	for _, biome := range b.Biomes {
-		for _, hex := range biome.Hexs {
+	for _, line := range b.Cases {
+		for _, hex := range line {
 			hexSize := b.HexSize
 			x := hex.Position.X
 			y := hex.Position.Y
@@ -19,9 +19,9 @@ func DrawBoard(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFact
 			xc, yc = xc*zoomFactor, yc*zoomFactor
 
 			if &hex.Hut == nil {
-				DrawHex(screen, xc, yc, biome.BiomeType, hexSize*zoomFactor, hex.Resource, nil)
+				DrawHex(screen, xc, yc, hex.Biome, hexSize*zoomFactor, hex.Resource, nil)
 			} else {
-				DrawHex(screen, xc, yc, biome.BiomeType, hexSize*zoomFactor, hex.Resource, hex.Hut)
+				DrawHex(screen, xc, yc, hex.Biome, hexSize*zoomFactor, hex.Resource, hex.Hut)
 			}
 		}
 	}

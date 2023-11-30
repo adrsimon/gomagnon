@@ -9,7 +9,6 @@ type Board struct {
 	XMax            int
 	YMax            int
 	HexSize         float32
-	Biomes          []*Biome
 	ResourceManager *ResourceManager
 	AgentManager    *AgentManager
 }
@@ -26,7 +25,6 @@ func NewBoard(xmax, ymax int, hexSize float32, maxResources map[ResourceType]int
 		XMax:            xmax,
 		YMax:            ymax,
 		HexSize:         hexSize,
-		Biomes:          make([]*Biome, 0),
 		ResourceManager: resMan,
 		AgentManager:    NewAgentManager(cases, make(chan agentToManager, 100), agents, resMan),
 	}
@@ -73,61 +71,38 @@ func (b *Board) GetNeighbours(hex *Hexagone) []*Hexagone {
 }
 
 func (b *Board) GenerateBiomes() {
-	p := perlin.NewPerlin(1, 2.7, 3, Seed)
+	elevation := perlin.NewPerlin(1, 2.7, 3, Seed)
+	moisture := perlin.NewPerlin(0.8, 2, 5, Seed)
 
-	availableHexs := make([][]*Hexagone, b.XMax)
-	for i := range availableHexs {
-		availableHexs[i] = make([]*Hexagone, b.YMax)
-		for j := range availableHexs[i] {
-			availableHexs[i][j] = b.Cases[i][j]
-		}
-	}
-
-	for i := range availableHexs {
-		for j := range availableHexs[i] {
-			hex := availableHexs[i][j]
+	for i, line := range b.Cases {
+		for j := range line {
+			hex := b.Cases[i][j]
 			if hex == nil {
 				continue
 			}
 
-			var biomeType BiomesType
-			noiseValue := p.Noise2D(float64(i)/float64(b.XMax), float64(j)/float64(b.YMax))
+			var biomeType BiomeType
+
+			x := float64(i) / float64(b.XMax)
+			y := float64(j) / float64(b.YMax)
+
+			elevationValue := elevation.Noise2D(x, y)
+			moistureValue := moisture.Noise2D(x, y)
 
 			switch {
-			case noiseValue > 0.3:
+			case elevationValue > 0.3:
 				biomeType = CAVE
-			case noiseValue < -0.4:
+			case elevationValue < -0.4:
 				biomeType = WATER
 			default:
-				if r := Randomizer.Intn(3); r < 2 {
-					biomeType = PLAINS
-				} else {
+				if moistureValue > 0 {
 					biomeType = FOREST
+				} else {
+					biomeType = PLAINS
 				}
 			}
 
-			biome := Biome{
-				BiomeType: biomeType,
-				Hexs:      make([]*Hexagone, 0),
-			}
-			biome.Hexs = append(biome.Hexs, hex)
-			hex.Biome = &biome
-			availableHexs[i][j] = nil
-
-			neighbours := b.GetNeighbours(hex)
-			for _, neighbour := range neighbours {
-				if neighbour == nil || biomeType == WATER {
-					continue
-				}
-				neighbourHex := availableHexs[neighbour.Position.X][neighbour.Position.Y]
-				if try := Randomizer.Intn(200); try > 1 && neighbourHex != nil && neighbourHex.Biome == nil {
-					biome.Hexs = append(biome.Hexs, neighbour)
-					neighbour.Biome = &biome
-					availableHexs[neighbour.Position.X][neighbour.Position.Y] = nil
-					neighbours = append(neighbours, b.GetNeighbours(neighbour)...)
-				}
-			}
-			b.Biomes = append(b.Biomes, &biome)
+			hex.Biome = biomeType
 		}
 	}
 }
@@ -140,13 +115,13 @@ func (b *Board) GenerateResources() {
 			if hex.Resource != NONE {
 				continue
 			}
-			if res == ANIMAL && hex.Biome.BiomeType != PLAINS {
+			if res == ANIMAL && hex.Biome != PLAINS {
 				continue
-			} else if res == FRUIT && hex.Biome.BiomeType != FOREST {
+			} else if res == FRUIT && hex.Biome != FOREST {
 				continue
-			} else if res == WOOD && hex.Biome.BiomeType != FOREST {
+			} else if res == WOOD && hex.Biome != FOREST {
 				continue
-			} else if res == ROCK && hex.Biome.BiomeType != CAVE {
+			} else if res == ROCK && hex.Biome != CAVE {
 				continue
 			}
 			hex.Resource = res

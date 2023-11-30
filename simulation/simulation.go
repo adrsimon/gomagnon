@@ -29,19 +29,19 @@ func NewSimulation() Simulation {
 	simu.GameMap = typing.NewGame(
 		ScreenWidth, ScreenHeight,
 		colornames.Black,
-		90, 80,
+		45, 40,
 		40,
 		map[typing.ResourceType]int{
-			typing.FRUIT:  100,
-			typing.ANIMAL: 100,
-			typing.ROCK:   100,
-			typing.WOOD:   100,
+			typing.FRUIT:  20,
+			typing.ANIMAL: 20,
+			typing.ROCK:   20,
+			typing.WOOD:   20,
 		},
 	)
 
 	simu.cameraX = 0
 	simu.cameraY = 0
-	simu.zoomFactor = 0.3
+	simu.zoomFactor = 0.6
 
 	simu.GameMap.Board.Generate()
 	simu.GameMap.Board.GenerateBiomes()
@@ -52,12 +52,12 @@ func NewSimulation() Simulation {
 
 	simu.GameMap.Board.AgentManager.Start()
 
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 20; i++ {
 		x, y := -1, -1
 		for x == -1 && y == -1 {
 			x = typing.Randomizer.Intn(simu.GameMap.Board.XMax)
 			y = typing.Randomizer.Intn(simu.GameMap.Board.YMax)
-			if simu.GameMap.Board.Cases[x][y].Biome.BiomeType == typing.WATER {
+			if simu.GameMap.Board.Cases[x][y].Biome == typing.WATER {
 				x, y = -1, -1
 			}
 		}
