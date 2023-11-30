@@ -1,10 +1,16 @@
 package typing
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+	"math/rand"
+	"time"
+)
 
 type HumanStats struct {
 	Strength    int
 	Sociability int
+	Acuity      int
 }
 
 type HumanBody struct {
@@ -26,15 +32,35 @@ const (
 	GET
 	BUILD
 	SLEEP
+	CREATECLAN
 )
+
+type Race int
+
+const (
+	NEANDERTHAL Race = iota
+	SAPIENS
+)
+
+const (
+	MaxWeightInv = 10
+	WeightRock   = 2
+	WeighWood    = 1
+)
+
+type Inventory struct {
+	Object map[ResourceType]int
+	Weight int
+}
 
 type Human struct {
 	ID    string
 	Type  rune
+	Race  Race
 	Body  HumanBody
 	Stats HumanStats
 
-	Inventory map[ResourceType]int
+	Inventory Inventory
 
 	Position       *Hexagone
 	Target         *Hexagone
@@ -48,56 +74,103 @@ type Human struct {
 	ComIn  managerToAgent
 
 	Action Action
+
+	Neighbours    []*Human
+	AgentRelation map[string]string
+	AgentCommIn   chan AgentComm
+	Clan          *Clan
+	Terminated    bool
+}
+
+type AgentComm struct {
+	Agent   *Human
+	Action  string
+	commOut chan AgentComm
+}
+
+type Clan struct {
+	members []*Human
+	chief   *Human
 }
 
 const (
 	AnimalFoodValueMultiplier = 3.0
 	FruitFoodValueMultiplier  = 1.0
 	WaterValueMultiplier      = 2.0
+	DistanceMultiplier        = 0.2
 )
 
-func NewHuman(id string, Type rune, body HumanBody, stats HumanStats, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Hexagone, board *Board, comOut agentToManager, comIn managerToAgent, hut *Hut, inventory map[ResourceType]int) *Human {
-	return &Human{ID: id, Type: Type, Body: body, Stats: stats, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn, Hut: hut, Inventory: inventory}
+func NewHuman(id string, Type rune, Race Race, body HumanBody, stats HumanStats, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Hexagone, board *Board, comOut agentToManager, comIn managerToAgent, hut *Hut, inventory Inventory, agentRelation map[string]string) *Human {
+	return &Human{ID: id, Type: Type, Race: Race, Body: body, Stats: stats, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn, Hut: hut, Inventory: inventory, AgentRelation: agentRelation}
 }
 
 func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 	var score = 0.0
+	threshold := 85
 
+	dist := distance(*h.Position, *hex)
+	score -= dist * DistanceMultiplier
+
+	if hex.Biome == WATER {
+		return math.Inf(-1)
+	}
 	if hex == nil {
 		return score
 	}
 
-	if h.Hut == nil {
-		switch hex.Resource {
-		case ANIMAL:
-			score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.01
-		case FRUIT:
-			score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.01
-		case ROCK:
-			score += 3
-		case WOOD:
+	switch hex.Resource {
+	case ANIMAL:
+		if h.Race == NEANDERTHAL {
+			score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.5
+		}
+		if h.Race == SAPIENS {
+			score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 1.0
+		}
+		if h.Body.Hungriness > threshold {
 			score += 3
 		}
-	} else {
-		switch hex.Resource {
-		case ANIMAL:
-			score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.01
-		case FRUIT:
+	case FRUIT:
+		if h.Race == NEANDERTHAL {
 			score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.01
-		case ROCK:
+		}
+		if h.Race == SAPIENS {
+			score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.3
+		}
+		if h.Body.Hungriness > threshold {
+			score += 3
+		}
+	case ROCK:
+		if h.Hut == nil && h.Inventory.Object[ROCK] < Needs["hut"][ROCK] && h.Inventory.Weight <= MaxWeightInv-WeightRock {
+			score += 3
+		} else if (h.Hut != nil || h.Inventory.Object[ROCK] > Needs["hut"][ROCK]) && h.Inventory.Weight <= MaxWeightInv-WeightRock {
 			score += 0.5
-		case WOOD:
+		} else {
+			score -= 1
+		}
+	case WOOD:
+		if h.Hut == nil && h.Inventory.Object[WOOD] < Needs["hut"][WOOD] && h.Inventory.Weight <= MaxWeightInv-WeighWood {
+			score += 3
+		} else if (h.Hut != nil || h.Inventory.Object[WOOD] > Needs["hut"][WOOD]) && h.Inventory.Weight <= MaxWeightInv-WeighWood {
 			score += 0.5
+		} else {
+			score -= 1
+		}
+	}
+
+	for _, nb := range h.Board.GetNeighbours(hex) {
+		if nb.Biome == WATER && h.Body.Thirstiness > threshold {
+			score += (float64(h.Body.Thirstiness)/100)*WaterValueMultiplier + 0.5
+			break
 		}
 	}
 
 	return score
 }
 
-func (h *Human) GetNeighborsWithin5() []*Hexagone {
+func (h *Human) GetNeighboursWithinAcuity() []*Hexagone {
 	neighbours := h.Board.GetNeighbours(h.Position)
 	visited := make(map[*Hexagone]bool)
-	for i := 0; i < 4; i++ {
+	for i := 1; i < h.Stats.Acuity; i++ {
 		for _, neighbour := range neighbours {
 			if neighbour == nil {
 				continue
@@ -127,15 +200,15 @@ func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
 		}
 	}
 
-	if indexBest != -1 {
+	if indexBest != -1 && surroundingHexagons[indexBest] != h.Position {
 		return surroundingHexagons[indexBest]
 	}
 
 	valid := false
 	randHex := &Hexagone{}
 	for !valid {
-		randHex = surroundingHexagons[r.Intn(len(surroundingHexagons))]
-		if h.Board.isValidHex(randHex) && randHex.Biome.BiomeType != WATER {
+		randHex = surroundingHexagons[Randomizer.Intn(len(surroundingHexagons))]
+		if h.Board.isValidHex(randHex) && randHex.Biome != WATER {
 			valid = true
 		}
 	}
@@ -156,8 +229,12 @@ func (h *Human) UpdateState(resource ResourceType) {
 		h.Body.Hungriness -= 10 * AnimalFoodValueMultiplier
 	case FRUIT:
 		h.Body.Hungriness -= 10 * FruitFoodValueMultiplier
-	case ROCK, WOOD:
-		h.Inventory[resource] += 1
+	case ROCK:
+		h.Inventory.Object[resource] += 1
+		h.Inventory.Weight += WeightRock
+	case WOOD:
+		h.Inventory.Object[resource] += 1
+		h.Inventory.Weight += WeighWood
 	}
 
 	neighbours := h.Board.GetNeighbours(h.Position)
@@ -165,18 +242,44 @@ func (h *Human) UpdateState(resource ResourceType) {
 		if neighbour == nil {
 			continue
 		}
-		if neighbour.Biome.BiomeType == WATER {
+		if neighbour.Biome == WATER {
 			h.Body.Thirstiness -= 10
 		}
 	}
 }
 
-func (h *Human) Perceive() {}
+func (h *Human) Perceive() {
+	listHumans := make([]*Human, 0)
+	cases := make([]*Hexagone, 0)
+	cases = append(cases, h.Position)
+	cases = append(cases, h.Board.GetNeighbours(h.Position)...)
+	for _, v := range cases {
+		for _, p := range v.Agents {
+			if p != h {
+				_, ok := h.AgentRelation[p.ID]
+				listHumans = append(listHumans, p)
+				if !ok {
+					if rand.Intn(2) >= 1 {
+						h.AgentRelation[p.ID] = "Friend"
+					} else {
+						h.AgentRelation[p.ID] = "Enemy"
+					}
+				}
+			}
+		}
+	}
+	h.Neighbours = listHumans
+}
 
 func (h *Human) Deliberate() {
 	h.Action = NOOP
-	if h.Hut == nil && h.Inventory[WOOD] >= Needs["hut"][WOOD] && h.Inventory[ROCK] >= Needs["hut"][ROCK] {
+	if h.Hut == nil && h.Inventory.Object[WOOD] >= Needs["hut"][WOOD] && h.Inventory.Object[ROCK] >= Needs["hut"][ROCK] {
 		h.Action = BUILD
+		return
+	}
+
+	if h.Hut != nil && len(h.Neighbours) > 0 && h.Clan == nil {
+		h.Action = CREATECLAN
 		return
 	}
 
@@ -210,12 +313,16 @@ func (h *Human) Act() {
 			if h.Body.Tiredness > 70 && h.Hut != nil {
 				targetHexagon = h.Hut.Position
 			} else {
-				surroundingHexagons := h.GetNeighborsWithin5()
+				surroundingHexagons := h.GetNeighboursWithinAcuity()
 				targetHexagon = h.BestNeighbor(surroundingHexagons)
 			}
 
 			res := AStar(*h, targetHexagon)
 			h.CurrentPath = createPath(res, targetHexagon)
+			if len(h.CurrentPath) < 2 {
+				h.CurrentPath = nil
+				break
+			}
 			h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-2]
 			h.Target = targetHexagon
 			h.MovingToTarget = true
@@ -244,9 +351,11 @@ func (h *Human) Act() {
 		h.Board.AgentManager.messIn <- h.ComOut
 		h.ComIn = <-h.ComOut.commOut
 		if h.ComIn.Valid {
-			h.Hut = &Hut{Position: h.Position, Inventory: make(map[ResourceType]int)}
-			h.Inventory[WOOD] -= Needs["hut"][WOOD]
-			h.Inventory[ROCK] -= Needs["hut"][ROCK]
+			h.Hut = &Hut{Position: h.Position, Inventory: make(map[ResourceType]int), Owner: h}
+			h.Inventory.Object[WOOD] -= Needs["hut"][WOOD]
+			h.Inventory.Object[ROCK] -= Needs["hut"][ROCK]
+			h.Inventory.Weight -= WeighWood * Needs["hut"][WOOD]
+			h.Inventory.Weight -= WeightRock * Needs["hut"][ROCK]
 		}
 	case SLEEP:
 		if h.Body.Sleeping && h.Body.Tiredness > 0 {
@@ -258,14 +367,69 @@ func (h *Human) Act() {
 		} else if !h.Body.Sleeping {
 			h.Body.Sleeping = true
 		}
+	case CREATECLAN:
+		var bestH *Human
+		if len(h.Neighbours) > 1 {
+			//TO DEVELOPP bestH=find bestMatchHuman(humans)
+			bestH = h.Neighbours[0] // waiting function
+		} else {
+			bestH = h.Neighbours[0]
+		}
+		if bestH.Terminated == false {
+			select {
+			case bestH.AgentCommIn <- AgentComm{Agent: h, Action: "CREATECLAN", commOut: h.AgentCommIn}:
+				select {
+				case res := <-h.AgentCommIn:
+					if res.Action == "ACCEPTCLAN" {
+						clan := &Clan{members: []*Human{bestH}, chief: h}
+						h.Clan = clan
+						bestH.AgentCommIn <- AgentComm{Agent: h, Action: "INVITECLAN", commOut: h.AgentCommIn}
+					}
+				case <-time.After(10 * time.Millisecond):
+				}
+			case <-time.After(10 * time.Millisecond):
+
+			}
+		}
 	default:
 		fmt.Println("Should not be here")
 	}
 }
 
+func (h *Human) AnswerAgents(res AgentComm) {
+	switch res.Action {
+	case "CREATECLAN":
+		if h.Clan != nil {
+			res.commOut <- AgentComm{Agent: h, Action: "REFUSECLAN", commOut: h.AgentCommIn}
+		} else {
+			res.commOut <- AgentComm{Agent: h, Action: "ACCEPTCLAN", commOut: h.AgentCommIn}
+			res2 := <-h.AgentCommIn
+			if res2.Action == "INVITECLAN" {
+				h.Clan = res2.Agent.Clan
+				if h.Hut != nil && h.Hut.Owner != nil {
+					h.ComOut = agentToManager{AgentID: h.ID, Action: "leave-house", Pos: h.Position, commOut: make(chan managerToAgent)}
+					h.Board.AgentManager.messIn <- h.ComOut
+					h.ComIn = <-h.ComOut.commOut
+					if h.ComIn.Valid {
+						h.Hut = nil
+					}
+				}
+				h.Hut = res2.Agent.Hut
+			}
+		}
+	}
+}
+
 func (h *Human) UpdateAgent() {
+	h.Terminated = false
 	h.Perceive()
 	h.Deliberate()
 	h.Act()
-	h.UpdateState(NONE)
+	select {
+	case res := <-h.AgentCommIn:
+		h.Terminated = true
+		h.AnswerAgents(res)
+	default:
+		h.Terminated = true
+	}
 }

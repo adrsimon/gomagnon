@@ -17,19 +17,39 @@ func (s *Simulation) Update() error {
 		ebiten.SetTPS(10)
 	}
 
-	for _, line := range s.GameMap.Board.Cases {
+	/**
+	 * ENVIRONMENT UPDATE
+	 */
+	for _, line := range s.Board.Cases {
 		for _, hex := range line {
 			hex.Agents = nil
 		}
 	}
-	for _, agent := range s.GameMap.Board.AgentManager.Agents {
+	for _, agent := range s.Board.AgentManager.Agents {
 		if agent.Position != nil {
-			s.GameMap.Board.Cases[agent.Position.Position.X][agent.Position.Position.Y].Agents = append(s.GameMap.Board.Cases[agent.Position.Position.X][agent.Position.Position.Y].Agents, agent)
+			s.Board.Cases[agent.Position.Position.X][agent.Position.Position.Y].Agents = append(s.Board.Cases[agent.Position.Position.X][agent.Position.Position.Y].Agents, agent)
 		}
 	}
 
+	for i := 0; i < len(s.Board.AgentManager.ResourceManager.RespawnCDs); i++ {
+		res := s.Board.AgentManager.ResourceManager.RespawnCDs[i]
+		res.Current--
+		if res.Current == 0 {
+			s.Board.AgentManager.ResourceManager.CurrentQuantities[res.Resource]--
+			s.Board.AgentManager.ResourceManager.RespawnCDs = append(s.Board.AgentManager.ResourceManager.RespawnCDs[:i], s.Board.AgentManager.ResourceManager.RespawnCDs[i+1:]...)
+			i--
+		} else {
+			s.Board.AgentManager.ResourceManager.RespawnCDs[i] = res
+		}
+	}
+
+	s.Board.GenerateResources()
+
+	/**
+	 * AGENTS UPDATE
+	 */
 	var wg sync.WaitGroup
-	for _, agent := range s.GameMap.Board.AgentManager.Agents {
+	for _, agent := range s.Board.AgentManager.Agents {
 		wg.Add(1)
 		go func(a *typing.Human) {
 			defer wg.Done()

@@ -1,15 +1,10 @@
 package typing
 
-type BiomesType int
+type BiomeType int
 
 const (
-	PLAINS BiomesType = iota
+	PLAINS BiomeType = iota
 	FOREST
 	WATER
 	CAVE
 )
-
-type Biome struct {
-	BiomeType BiomesType
-	Hexs      []*Hexagone
-}

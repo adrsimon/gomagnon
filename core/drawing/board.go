@@ -3,11 +3,13 @@ package drawing
 import (
 	"github.com/adrsimon/gomagnon/core/typing"
 	"github.com/hajimehoshi/ebiten/v2"
+	"golang.org/x/image/colornames"
+	"image/color"
 )
 
 func DrawBoard(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFactor float32) {
-	for _, biome := range b.Biomes {
-		for _, hex := range biome.Hexs {
+	for _, line := range b.Cases {
+		for _, hex := range line {
 			hexSize := b.HexSize
 			x := hex.Position.X
 			y := hex.Position.Y
@@ -16,18 +18,29 @@ func DrawBoard(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFact
 			xc, yc = xc-cameraX, yc-cameraY
 			xc, yc = xc*zoomFactor, yc*zoomFactor
 
-			DrawHex(screen, xc, yc, biome.BiomeType, hexSize*zoomFactor, hex.Resource, hex.Hut != nil)
+			if &hex.Hut == nil {
+				DrawHex(screen, xc, yc, hex.Biome, hexSize*zoomFactor, hex.Resource, nil)
+			} else {
+				DrawHex(screen, xc, yc, hex.Biome, hexSize*zoomFactor, hex.Resource, hex.Hut)
+			}
 		}
 	}
 }
 
-func DrawAgents(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFactor float32) {
+func DrawAgents(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFactor float32, debug bool) {
 	agents := make([]*typing.Human, 0)
 	for _, ag := range b.AgentManager.Agents {
 		agents = append(agents, ag)
 	}
 
 	for _, agent := range agents {
+		var col color.Color
+		if agent.Race == typing.SAPIENS {
+			col = colornames.Blue
+		} else {
+			col = colornames.Red
+		}
+
 		hexSize := b.HexSize
 		x := agent.Position.Position.X
 		y := agent.Position.Position.Y
@@ -35,16 +48,20 @@ func DrawAgents(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFac
 		xA, yA := GetHexGraphicalCenter(x, y, hexSize)
 		xA, yA = xA-cameraX, yA-cameraY
 		xA, yA = xA*zoomFactor, yA*zoomFactor
-		DrawAgent(screen, xA, yA, hexSize*zoomFactor)
+		DrawAgent(screen, xA, yA, hexSize*zoomFactor, col)
 
-		for _, neighbor := range agent.GetNeighborsWithin5() {
+		if !debug {
+			continue
+		}
+
+		for _, neighbor := range agent.GetNeighboursWithinAcuity() {
 			if neighbor == nil {
 				continue
 			}
 			xN, yN := GetHexGraphicalCenter(neighbor.Position.X, neighbor.Position.Y, hexSize)
 			xN, yN = xN-cameraX, yN-cameraY
 			xN, yN = xN*zoomFactor, yN*zoomFactor
-			DrawAgentNeighbor(screen, xN, yN, hexSize*zoomFactor)
+			DrawAgentNeighbor(screen, xN, yN, hexSize*zoomFactor, col)
 		}
 
 		if agent.CurrentPath != nil && len(agent.CurrentPath) > 0 {
@@ -54,7 +71,7 @@ func DrawAgents(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFac
 			x1, y1 = x1-cameraX, y1-cameraY
 			x0, y0 = x0*zoomFactor, y0*zoomFactor
 			x1, y1 = x1*zoomFactor, y1*zoomFactor
-			DrawAgentPath(screen, x0, y0, x1, y1)
+			DrawAgentPath(screen, x0, y0, x1, y1, col)
 			for i := 0; i < len(agent.CurrentPath)-1; i++ {
 				xa, ya := GetHexGraphicalCenter(agent.CurrentPath[i].Position.X, agent.CurrentPath[i].Position.Y, hexSize)
 				xb, yb := GetHexGraphicalCenter(agent.CurrentPath[i+1].Position.X, agent.CurrentPath[i+1].Position.Y, hexSize)
@@ -62,7 +79,7 @@ func DrawAgents(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFac
 				xb, yb = xb-cameraX, yb-cameraY
 				xa, ya = xa*zoomFactor, ya*zoomFactor
 				xb, yb = xb*zoomFactor, yb*zoomFactor
-				DrawAgentPath(screen, xa, ya, xb, yb)
+				DrawAgentPath(screen, xa, ya, xb, yb, col)
 			}
 		}
 	}

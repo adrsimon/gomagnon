@@ -8,26 +8,24 @@ const (
 	ANIMAL
 	ROCK
 	WOOD
+	NUM_RESOURCE_TYPES
 )
 
-type ResourceManager struct {
-	Resources         []ResourceType
-	MaxFruitQuantity  int
-	MaxAnimalQuantity int
-	MaxRockQuantity   int
-	MaxWoodQuantity   int
-	FruitQuantity     int
-	AnimalQuantity    int
-	RockQuantity      int
-	WoodQuantity      int
+type CoolDown struct {
+	Current  int
+	Resource ResourceType
 }
 
-func NewResourceManager(fruits, animals, rocks, woods int) *ResourceManager {
+type ResourceManager struct {
+	maxQuantities     map[ResourceType]int
+	CurrentQuantities map[ResourceType]int
+	RespawnCDs        []CoolDown
+}
+
+func NewResourceManager(maxs map[ResourceType]int) *ResourceManager {
 	return &ResourceManager{
-		Resources:         make([]ResourceType, 0),
-		MaxFruitQuantity:  fruits,
-		MaxAnimalQuantity: animals,
-		MaxRockQuantity:   rocks,
-		MaxWoodQuantity:   woods,
+		maxQuantities:     maxs,
+		CurrentQuantities: make(map[ResourceType]int),
+		RespawnCDs:        make([]CoolDown, 0),
 	}
 }
