@@ -20,6 +20,8 @@ type Simulation struct {
 
 	cameraX, cameraY float32
 	zoomFactor       float32
+
+	debug bool
 }
 
 func NewSimulation() Simulation {
@@ -27,19 +29,19 @@ func NewSimulation() Simulation {
 	simu.GameMap = typing.NewGame(
 		ScreenWidth, ScreenHeight,
 		colornames.Black,
-		28, 25,
+		90, 80,
 		40,
 		map[typing.ResourceType]int{
-			typing.FRUIT:  10,
-			typing.ANIMAL: 10,
-			typing.ROCK:   10,
-			typing.WOOD:   10,
+			typing.FRUIT:  100,
+			typing.ANIMAL: 100,
+			typing.ROCK:   100,
+			typing.WOOD:   100,
 		},
 	)
 
 	simu.cameraX = 0
 	simu.cameraY = 0
-	simu.zoomFactor = 1
+	simu.zoomFactor = 0.3
 
 	simu.GameMap.Board.Generate()
 	simu.GameMap.Board.GenerateBiomes()
@@ -50,7 +52,16 @@ func NewSimulation() Simulation {
 
 	simu.GameMap.Board.AgentManager.Start()
 
-	for i := 0; i < 4; i++ {
+	for i := 0; i < 100; i++ {
+		x, y := -1, -1
+		for x == -1 && y == -1 {
+			x = typing.Randomizer.Intn(simu.GameMap.Board.XMax)
+			y = typing.Randomizer.Intn(simu.GameMap.Board.YMax)
+			if simu.GameMap.Board.Cases[x][y].Biome.BiomeType == typing.WATER {
+				x, y = -1, -1
+			}
+		}
+
 		simu.GameMap.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", i)] = &typing.Human{
 			ID:   fmt.Sprintf("ag-%d", i),
 			Race: typing.Race(typing.Randomizer.Intn(2)),
@@ -63,7 +74,7 @@ func NewSimulation() Simulation {
 				Sociability: 10,
 				Acuity:      typing.Randomizer.Intn(2) + 4,
 			},
-			Position:       simu.GameMap.Board.Cases[1][1],
+			Position:       simu.GameMap.Board.Cases[x][y],
 			Target:         nil,
 			MovingToTarget: false,
 			CurrentPath:    nil,
@@ -75,6 +86,8 @@ func NewSimulation() Simulation {
 			Clan:           nil,
 		}
 	}
+
+	simu.debug = false
 
 	return simu
 }

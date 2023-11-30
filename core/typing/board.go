@@ -1,5 +1,9 @@
 package typing
 
+import (
+	"github.com/aquilax/go-perlin"
+)
+
 type Board struct {
 	Cases           [][]*Hexagone
 	XMax            int
@@ -69,6 +73,8 @@ func (b *Board) GetNeighbours(hex *Hexagone) []*Hexagone {
 }
 
 func (b *Board) GenerateBiomes() {
+	p := perlin.NewPerlin(1, 2.7, 3, Seed)
+
 	availableHexs := make([][]*Hexagone, b.XMax)
 	for i := range availableHexs {
 		availableHexs[i] = make([]*Hexagone, b.YMax)
@@ -84,7 +90,22 @@ func (b *Board) GenerateBiomes() {
 				continue
 			}
 
-			biomeType := BiomesType(Randomizer.Intn(4))
+			var biomeType BiomesType
+			noiseValue := p.Noise2D(float64(i)/float64(b.XMax), float64(j)/float64(b.YMax))
+
+			switch {
+			case noiseValue > 0.3:
+				biomeType = CAVE
+			case noiseValue < -0.4:
+				biomeType = WATER
+			default:
+				if r := Randomizer.Intn(3); r < 2 {
+					biomeType = PLAINS
+				} else {
+					biomeType = FOREST
+				}
+			}
+
 			biome := Biome{
 				BiomeType: biomeType,
 				Hexs:      make([]*Hexagone, 0),
@@ -95,11 +116,11 @@ func (b *Board) GenerateBiomes() {
 
 			neighbours := b.GetNeighbours(hex)
 			for _, neighbour := range neighbours {
-				if neighbour == nil {
+				if neighbour == nil || biomeType == WATER {
 					continue
 				}
 				neighbourHex := availableHexs[neighbour.Position.X][neighbour.Position.Y]
-				if try := Randomizer.Intn(100); try > 1 && neighbourHex != nil && neighbourHex.Biome == nil {
+				if try := Randomizer.Intn(200); try > 1 && neighbourHex != nil && neighbourHex.Biome == nil {
 					biome.Hexs = append(biome.Hexs, neighbour)
 					neighbour.Biome = &biome
 					availableHexs[neighbour.Position.X][neighbour.Position.Y] = nil

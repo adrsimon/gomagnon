@@ -27,7 +27,7 @@ func DrawBoard(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFact
 	}
 }
 
-func DrawAgents(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFactor float32) {
+func DrawAgents(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFactor float32, debug bool) {
 	agents := make([]*typing.Human, 0)
 	for _, ag := range b.AgentManager.Agents {
 		agents = append(agents, ag)
@@ -49,6 +49,10 @@ func DrawAgents(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFac
 		xA, yA = xA-cameraX, yA-cameraY
 		xA, yA = xA*zoomFactor, yA*zoomFactor
 		DrawAgent(screen, xA, yA, hexSize*zoomFactor, col)
+
+		if !debug {
+			continue
+		}
 
 		for _, neighbor := range agent.GetNeighboursWithinAcuity() {
 			if neighbor == nil {
