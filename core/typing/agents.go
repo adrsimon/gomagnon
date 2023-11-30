@@ -422,7 +422,7 @@ func (h *Human) Act() {
 	case PROCREATE:
 		if h.Procreate.Partner == nil && h.Procreate.Potential {
 			for _, neighbour := range h.Neighbours {
-				if neighbour.Clan == h.Clan && neighbour.Procreate.Partner == nil && neighbour.Hut != nil /*&& h.Type != neighbour.Type */ {
+				if neighbour.Clan == h.Clan && neighbour.Procreate.Partner == nil && neighbour.Hut == h.Hut /*&& h.Type != neighbour.Type */ {
 					h.Procreate.Partner = neighbour
 					neighbour.Procreate.Partner = h
 					h.Procreate.Potential = true
@@ -458,12 +458,12 @@ func (h *Human) Act() {
 						Target:         nil,
 						MovingToTarget: false,
 						CurrentPath:    nil,
-						Hut:            nil,
+						Hut:            h.Hut,
 						Board:          h.Board,
 						Inventory:      Inventory{Weight: 0, Object: make(map[ResourceType]int)},
 						AgentRelation:  make(map[string]string),
 						AgentCommIn:    make(chan AgentComm),
-						Clan:           nil,
+						Clan:           h.Clan,
 						Procreate:      Procreate{Partner: nil, Timer: 100, Potential: true},
 					}
 					fmt.Println("Procreated Neand", h.Board.AgentManager.Count, h.ID)
@@ -494,12 +494,12 @@ func (h *Human) Act() {
 						Target:         nil,
 						MovingToTarget: false,
 						CurrentPath:    nil,
-						Hut:            nil,
+						Hut:            h.Hut,
 						Board:          h.Board,
 						Inventory:      Inventory{Weight: 0, Object: make(map[ResourceType]int)},
 						AgentRelation:  make(map[string]string),
 						AgentCommIn:    make(chan AgentComm),
-						Clan:           nil,
+						Clan:           h.Clan,
 						Procreate:      Procreate{Partner: nil, Timer: 100, Potential: true},
 					}
 					fmt.Println("Procreated Sapiens", h.Board.AgentManager.Count, h.ID)
