@@ -1,5 +1,7 @@
 package typing
 
+// check if everyone make childs, add age + childs behaviour,
+
 import (
 	"fmt"
 	"math"
@@ -458,7 +460,7 @@ func (h *Human) Act() {
 				Clan:           nil,
 				Procreate:      Procreate{Partner: nil, Timer: 100, Potential: true},
 			}
-			fmt.Println("Procreated", h.Board.AgentManager.Count)
+			fmt.Println("Procreated", h.Board.AgentManager.Count, h.ID)
 			h.Procreate.Partner = nil
 			h.Procreate.Timer = 100
 		}

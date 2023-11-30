@@ -45,7 +45,7 @@ func NewSimulation() Simulation {
 
 	simu.GameMap.Board.AgentManager.Start()
 
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 10; i++ {
 		simu.GameMap.Board.AgentManager.Count++
 		simu.GameMap.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", simu.GameMap.Board.AgentManager.Count)] = &typing.Human{
 			ID:   fmt.Sprintf("ag-%d", i),
