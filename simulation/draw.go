@@ -7,16 +7,16 @@ import (
 
 func (s *Simulation) Draw(screen *ebiten.Image) {
 	if ebiten.IsKeyPressed(ebiten.KeyD) {
-		s.cameraX += 2
+		s.cameraX += 20
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyA) {
-		s.cameraX -= 2
+		s.cameraX -= 20
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyS) {
-		s.cameraY += 2
+		s.cameraY += 20
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyW) {
-		s.cameraY -= 2
+		s.cameraY -= 20
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyComma) {
@@ -32,7 +32,13 @@ func (s *Simulation) Draw(screen *ebiten.Image) {
 		s.zoomFactor = 1
 	}
 
-	screen.Fill(s.GameMap.BackgroundColor)
-	drawing.DrawBoard(screen, s.GameMap.Board, s.cameraX, s.cameraY, s.zoomFactor)
-	drawing.DrawAgents(screen, s.GameMap.Board, s.cameraX, s.cameraY, s.zoomFactor)
+	if ebiten.IsKeyPressed(ebiten.KeySpace) {
+		s.debug = false
+	} else {
+		s.debug = true
+	}
+
+	screen.Fill(s.backgroundColor)
+	drawing.DrawBoard(screen, s.Board, s.cameraX, s.cameraY, s.zoomFactor)
+	drawing.DrawAgents(screen, s.Board, s.cameraX, s.cameraY, s.zoomFactor, s.debug)
 }

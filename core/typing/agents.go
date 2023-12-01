@@ -121,7 +121,7 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 	dist := distance(*h.Position, *hex)
 	score -= dist * DistanceMultiplier
 
-	if hex.Biome.BiomeType == WATER {
+	if hex.Biome == WATER {
 		return math.Inf(-1)
 	}
 	if hex == nil {
@@ -168,7 +168,7 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 	}
 
 	for _, nb := range h.Board.GetNeighbours(hex) {
-		if nb.Biome.BiomeType == WATER && h.Body.Thirstiness > threshold {
+		if nb.Biome == WATER && h.Body.Thirstiness > threshold {
 			score += (float64(h.Body.Thirstiness)/100)*WaterValueMultiplier + 0.5
 			break
 		}
@@ -218,7 +218,7 @@ func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
 	randHex := &Hexagone{}
 	for !valid {
 		randHex = surroundingHexagons[Randomizer.Intn(len(surroundingHexagons))]
-		if h.Board.isValidHex(randHex) && randHex.Biome.BiomeType != WATER {
+		if h.Board.isValidHex(randHex) && randHex.Biome != WATER {
 			valid = true
 		}
 	}
@@ -253,7 +253,7 @@ func (h *Human) UpdateState(resource ResourceType) {
 		if neighbour == nil {
 			continue
 		}
-		if neighbour.Biome.BiomeType == WATER {
+		if neighbour.Biome == WATER {
 			h.Body.Thirstiness -= 10
 		}
 	}
