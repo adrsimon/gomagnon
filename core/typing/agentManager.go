@@ -56,6 +56,17 @@ func (agMan *AgentManager) executeRessources(request agentToManager) {
 		ag := agMan.Agents[request.AgentID]
 		(*agMan.Map)[ag.Hut.Position.Position.X][ag.Hut.Position.Position.Y].Hut.Owner = nil
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
+	case "procreate":
+		ag := agMan.Agents[request.AgentID]
+		if ag.Procreate.Partner != nil {
+			fmt.Println("Procreating", ag.ID, "with", ag.Procreate.Partner.ID)
+			newHuman := MakeChild(ag, ag.Procreate.Partner, agMan.Count)
+			if newHuman != nil {
+				agMan.Count++
+				agMan.Agents[newHuman.ID] = newHuman
+			}
+		}
+		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 	}
 }
 

@@ -325,17 +325,18 @@ func (h *Human) Deliberate() {
 	}
 }
 
-func (h *Human) MakeChild() {
+func MakeChild(parent1 *Human, parent2 *Human, count int) *Human {
 	var failChance int
-	if h.Race == NEANDERTHAL {
+	var newHuman *Human
+	newHuman = nil
+	if parent1.Race == NEANDERTHAL {
 		failChance = rand.Intn(4)
 	} else {
 		failChance = rand.Intn(2)
 	}
 	if failChance == 0 {
-		h.Board.AgentManager.Count++
-		h.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", h.Board.AgentManager.Count)] = &Human{
-			ID: fmt.Sprintf("ag-%d", h.Board.AgentManager.Count),
+		newHuman = &Human{
+			ID: fmt.Sprintf("ag-%d", count),
 			Type: func() rune {
 				if rand.Intn(2) == 0 {
 					return 'M'
@@ -343,30 +344,31 @@ func (h *Human) MakeChild() {
 					return 'F'
 				}
 			}(),
-			Race: h.Race,
+			Race: parent1.Race,
 			Body: HumanBody{
 				Thirstiness: 50,
 				Hungriness:  50,
 			},
 			Stats: HumanStats{
-				Strength:    int((h.Stats.Strength + h.Procreate.Partner.Stats.Strength) / 2),
-				Sociability: int((h.Stats.Sociability + h.Procreate.Partner.Stats.Sociability) / 2),
-				Acuity:      int((h.Stats.Acuity + h.Procreate.Partner.Stats.Acuity) / 2),
+				Strength:    int((parent1.Stats.Strength + parent2.Procreate.Partner.Stats.Strength) / 2),
+				Sociability: int((parent1.Stats.Sociability + parent2.Procreate.Partner.Stats.Sociability) / 2),
+				Acuity:      int((parent1.Stats.Acuity + parent2.Procreate.Partner.Stats.Acuity) / 2),
 			},
-			Position:       h.Position,
+			Position:       parent1.Position,
 			Target:         nil,
 			MovingToTarget: false,
 			CurrentPath:    nil,
-			Hut:            h.Hut,
-			Board:          h.Board,
+			Hut:            parent1.Hut,
+			Board:          parent1.Board,
 			Inventory:      Inventory{Weight: 0, Object: make(map[ResourceType]int)},
 			AgentRelation:  make(map[string]string),
 			AgentCommIn:    make(chan AgentComm),
-			Clan:           h.Clan,
+			Clan:           parent1.Clan,
 			Procreate:      Procreate{Partner: nil, Timer: 100, Potential: true},
 		}
-		fmt.Println("Procreated race:", h.Race, "from:", h.ID, "Nb of Agents:", h.Board.AgentManager.Count)
+		fmt.Println("Procreated race:", parent1.Race, "from:", parent1.ID, "Nb of Agents:", parent1.Board.AgentManager.Count)
 	}
+	return newHuman
 }
 
 func (h *Human) Act() {
@@ -424,6 +426,7 @@ func (h *Human) Act() {
 		h.ComIn = <-h.ComOut.commOut
 		if h.ComIn.Valid {
 			h.Hut = &Hut{Position: h.Position, Inventory: make(map[ResourceType]int), Owner: h}
+			fmt.Println("Built hut", h.ID, h.Hut.Owner.ID, h.Race, h.Hut.Owner.Race)
 			h.Inventory.Object[WOOD] -= Needs["hut"][WOOD]
 			h.Inventory.Object[ROCK] -= Needs["hut"][ROCK]
 			h.Inventory.Weight -= WeighWood * Needs["hut"][WOOD]
@@ -455,7 +458,9 @@ func (h *Human) Act() {
 					if res.Action == "ACCEPTCLAN" {
 						clan := &Clan{members: []*Human{bestH}, chief: h}
 						h.Clan = clan
+						fmt.Println("created clan", h.ID)
 						bestH.AgentCommIn <- AgentComm{Agent: h, Action: "INVITECLAN", commOut: h.AgentCommIn}
+						fmt.Println("invited clan", bestH.ID)
 					}
 				case <-time.After(10 * time.Millisecond):
 				}
@@ -470,15 +475,20 @@ func (h *Human) Act() {
 					h.Procreate.Partner = neighbour
 					neighbour.Procreate.Partner = h
 					h.Procreate.Potential = true
+					fmt.Println("Found partner", h.ID, h.Procreate.Partner.ID)
 					break
 				} else {
 					h.Procreate.Potential = false
 				}
 			}
 		} else if h.Procreate.Partner != nil && h.Procreate.Partner.Position.Position == h.Position.Position && h.Position.Position == h.Hut.Position.Position {
-			h.MakeChild()
-			h.Procreate.Partner = nil
-			h.Procreate.Timer = 100
+			h.ComOut = agentToManager{AgentID: h.ID, Action: "procreate", Pos: h.Position, commOut: make(chan managerToAgent)}
+			h.Board.AgentManager.messIn <- h.ComOut
+			h.ComIn = <-h.ComOut.commOut
+			if h.ComIn.Valid {
+				h.Procreate.Partner = nil
+				h.Procreate.Timer = 100
+			}
 		}
 	default:
 		fmt.Println("Should not be here")
