@@ -366,7 +366,7 @@ func MakeChild(parent1 *Human, parent2 *Human, count int) *Human {
 			Clan:           parent1.Clan,
 			Procreate:      Procreate{Partner: nil, Timer: 100, Potential: true},
 		}
-		fmt.Println("Procreated race:", parent1.Race, "from:", parent1.ID, "Nb of Agents:", parent1.Board.AgentManager.Count+1, newHuman.ID)
+		fmt.Println("Procreated race:", parent1.Race, "from:", parent1.ID, "New human id:", newHuman.ID, "Nb of Agents:", parent1.Board.AgentManager.Count+1)
 	}
 	return newHuman
 }
