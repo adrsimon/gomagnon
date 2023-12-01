@@ -59,7 +59,6 @@ func (agMan *AgentManager) executeRessources(request agentToManager) {
 	case "procreate":
 		ag := agMan.Agents[request.AgentID]
 		if ag.Procreate.Partner != nil {
-			fmt.Println("Procreating", ag.ID, "with", ag.Procreate.Partner.ID)
 			newHuman := MakeChild(ag, ag.Procreate.Partner, agMan.Count)
 			if newHuman != nil {
 				agMan.Count++

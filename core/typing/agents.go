@@ -426,7 +426,6 @@ func (h *Human) Act() {
 		h.ComIn = <-h.ComOut.commOut
 		if h.ComIn.Valid {
 			h.Hut = &Hut{Position: h.Position, Inventory: make(map[ResourceType]int), Owner: h}
-			fmt.Println("Built hut", h.ID, h.Hut.Owner.ID, h.Race, h.Hut.Owner.Race)
 			h.Inventory.Object[WOOD] -= Needs["hut"][WOOD]
 			h.Inventory.Object[ROCK] -= Needs["hut"][ROCK]
 			h.Inventory.Weight -= WeighWood * Needs["hut"][WOOD]
@@ -458,9 +457,7 @@ func (h *Human) Act() {
 					if res.Action == "ACCEPTCLAN" {
 						clan := &Clan{members: []*Human{bestH}, chief: h}
 						h.Clan = clan
-						fmt.Println("created clan", h.ID)
 						bestH.AgentCommIn <- AgentComm{Agent: h, Action: "INVITECLAN", commOut: h.AgentCommIn}
-						fmt.Println("invited clan", bestH.ID)
 					}
 				case <-time.After(10 * time.Millisecond):
 				}
@@ -475,7 +472,6 @@ func (h *Human) Act() {
 					h.Procreate.Partner = neighbour
 					neighbour.Procreate.Partner = h
 					h.Procreate.Potential = true
-					fmt.Println("Found partner", h.ID, h.Procreate.Partner.ID)
 					break
 				} else {
 					h.Procreate.Potential = false
