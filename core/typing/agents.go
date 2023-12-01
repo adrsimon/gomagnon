@@ -350,9 +350,9 @@ func MakeChild(parent1 *Human, parent2 *Human, count int) *Human {
 				Hungriness:  50,
 			},
 			Stats: HumanStats{
-				Strength:    int((parent1.Stats.Strength + parent2.Procreate.Partner.Stats.Strength) / 2),
-				Sociability: int((parent1.Stats.Sociability + parent2.Procreate.Partner.Stats.Sociability) / 2),
-				Acuity:      int((parent1.Stats.Acuity + parent2.Procreate.Partner.Stats.Acuity) / 2),
+				Strength:    int((parent1.Stats.Strength + parent2.Stats.Strength) / 2),
+				Sociability: int((parent1.Stats.Sociability + parent2.Stats.Sociability) / 2),
+				Acuity:      int((parent1.Stats.Acuity + parent2.Stats.Acuity) / 2),
 			},
 			Position:       parent1.Position,
 			Target:         nil,
@@ -366,7 +366,7 @@ func MakeChild(parent1 *Human, parent2 *Human, count int) *Human {
 			Clan:           parent1.Clan,
 			Procreate:      Procreate{Partner: nil, Timer: 100, Potential: true},
 		}
-		fmt.Println("Procreated race:", parent1.Race, "from:", parent1.ID, "Nb of Agents:", parent1.Board.AgentManager.Count)
+		fmt.Println("Procreated race:", parent1.Race, "from:", parent1.ID, "Nb of Agents:", parent1.Board.AgentManager.Count+1, newHuman.ID)
 	}
 	return newHuman
 }

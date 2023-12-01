@@ -58,8 +58,7 @@ func NewSimulation() Simulation {
 				x, y = -1, -1
 			}
 		}
-
-		simu.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", i)] = &typing.Human{
+		simu.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", simu.Board.AgentManager.Count)] = &typing.Human{
 			ID:   fmt.Sprintf("ag-%d", i),
 			Race: typing.Race(typing.Randomizer.Intn(2)),
 			Body: typing.HumanBody{
@@ -83,6 +82,7 @@ func NewSimulation() Simulation {
 			Clan:           nil,
 			Procreate:      typing.Procreate{Partner: nil, Timer: 100, Potential: true},
 		}
+		simu.Board.AgentManager.Count++
 	}
 
 	simu.debug = false
