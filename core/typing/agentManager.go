@@ -28,14 +28,14 @@ func NewAgentManager(Map [][]*Hexagone, messIn chan agentToManager, agents map[s
 	return &AgentManager{Map: &Map, messIn: messIn, Agents: agents, ResourceManager: resourceManager}
 }
 
-func (agMan *AgentManager) startRessources() {
+func (agMan *AgentManager) startResources() {
 	for {
 		request := <-agMan.messIn
-		agMan.executeRessources(request)
+		agMan.executeResources(request)
 	}
 }
 
-func (agMan *AgentManager) executeRessources(request agentToManager) {
+func (agMan *AgentManager) executeResources(request agentToManager) {
 	switch request.Action {
 	case "get":
 		switch (*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Resource {
@@ -90,5 +90,5 @@ func (agMan *AgentManager) executeRessources(request agentToManager) {
 
 func (agMan *AgentManager) Start() {
 	fmt.Println("Starting agent manager")
-	go agMan.startRessources()
+	go agMan.startResources()
 }
