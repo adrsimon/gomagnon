@@ -63,6 +63,12 @@ func (agMan *AgentManager) executeRessources(request agentToManager) {
 		ag := agMan.Agents[request.AgentID]
 		(*agMan.Map)[ag.Hut.Position.Position.X][ag.Hut.Position.Position.Y].Hut.Owner = nil
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
+	case "die":
+		if agMan.Agents[request.AgentID].Hut != nil {
+			(*agMan.Map)[agMan.Agents[request.AgentID].Hut.Position.Position.X][agMan.Agents[request.AgentID].Hut.Position.Position.Y].Hut.Owner = nil
+		}
+		agMan.RemoveAgent(request.AgentID)
+		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 	}
 }
 

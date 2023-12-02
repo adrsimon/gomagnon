@@ -17,8 +17,8 @@ type HumanBody struct {
 	Age    int
 	Gender rune
 
-	Hungriness  int
-	Thirstiness int
+	Hungriness  float64
+	Thirstiness float64
 
 	Tiredness float64
 	Sleeping  bool
@@ -106,7 +106,7 @@ func NewHuman(id string, Type rune, Race Race, body HumanBody, stats HumanStats,
 
 func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 	var score = 0.0
-	threshold := 85
+	threshold := 85.0
 
 	dist := distance(*h.Position, *hex)
 	score -= dist * DistanceMultiplier
@@ -218,9 +218,9 @@ func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
 
 func (h *Human) MoveToHexagon(hex *Hexagone) {
 	h.Position = hex
-	h.Body.Hungriness += 1
-	h.Body.Thirstiness += 2
-	h.Body.Tiredness += 0.5
+	h.Body.Hungriness += 0.1
+	h.Body.Thirstiness += 0.2
+	h.Body.Tiredness += 0.2
 }
 
 func (h *Human) UpdateState(resource ResourceType) {
@@ -273,6 +273,11 @@ func (h *Human) Perceive() {
 
 func (h *Human) Deliberate() {
 	h.Action = NOOP
+
+	if h.Hut == nil && h.Body.Tiredness > 70 {
+		return
+	}
+
 	if h.Hut == nil && h.Inventory.Object[WOOD] >= Needs["hut"][WOOD] && h.Inventory.Object[ROCK] >= Needs["hut"][ROCK] {
 		h.Action = BUILD
 		return
@@ -421,7 +426,17 @@ func (h *Human) AnswerAgents(res AgentComm) {
 }
 
 func (h *Human) IsDead() bool {
-	return h.Body.Hungriness >= 100 || h.Body.Thirstiness >= 100 || h.Stats.Strength <= 0
+	return h.Body.Hungriness >= 100 || h.Body.Thirstiness >= 100 || h.Body.Tiredness >= 100
+}
+
+func (h *Human) CloseUpdate() {
+	if h.IsDead() {
+		h.ComOut = agentToManager{AgentID: h.ID, Action: "die", Pos: h.Position, commOut: make(chan managerToAgent)}
+		h.Board.AgentManager.messIn <- h.ComOut
+		h.ComIn = <-h.ComOut.commOut
+	} else {
+		h.UpdateState(NONE)
+	}
 }
 
 func (h *Human) UpdateAgent() {
@@ -429,10 +444,6 @@ func (h *Human) UpdateAgent() {
 	h.Perceive()
 	h.Deliberate()
 	h.Act()
-	if h.IsDead() {
-		fmt.Printf("Agent %s is dead.\n", h.ID)
-		h.Board.AgentManager.RemoveAgent(h.ID)
-	}
 	select {
 	case res := <-h.AgentCommIn:
 		h.Terminated = true
@@ -440,4 +451,5 @@ func (h *Human) UpdateAgent() {
 	default:
 		h.Terminated = true
 	}
+	h.CloseUpdate()
 }
