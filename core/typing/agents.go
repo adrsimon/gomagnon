@@ -218,9 +218,9 @@ func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
 
 func (h *Human) MoveToHexagon(hex *Hexagone) {
 	h.Position = hex
-	h.Body.Hungriness += 0.1
-	h.Body.Thirstiness += 0.2
-	h.Body.Tiredness += 0.2
+	h.Body.Hungriness += 0.2
+	h.Body.Thirstiness += 0.4
+	h.Body.Tiredness += 0.4
 }
 
 func (h *Human) UpdateState(resource ResourceType) {
@@ -433,7 +433,6 @@ func (h *Human) CloseUpdate() {
 	if h.IsDead() {
 		h.ComOut = agentToManager{AgentID: h.ID, Action: "die", Pos: h.Position, commOut: make(chan managerToAgent)}
 		h.Board.AgentManager.messIn <- h.ComOut
-		h.ComIn = <-h.ComOut.commOut
 	} else {
 		h.UpdateState(NONE)
 	}

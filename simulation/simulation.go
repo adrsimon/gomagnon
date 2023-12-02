@@ -49,7 +49,7 @@ func NewSimulation() Simulation {
 
 	simu.Board.AgentManager.Start()
 
-	for i := 0; i < 40; i++ {
+	for i := 0; i < 20; i++ {
 		x, y := -1, -1
 		for x == -1 && y == -1 {
 			x = typing.Randomizer.Intn(simu.Board.XMax)

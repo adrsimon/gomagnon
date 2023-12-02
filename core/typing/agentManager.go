@@ -24,22 +24,14 @@ type AgentManager struct {
 	ResourceManager *ResourceManager
 }
 
-func NewAgentManager(Map [][]*Hexagone, messIn chan agentToManager, agents map[string]*Human, ressourceManager *ResourceManager) *AgentManager {
-	return &AgentManager{Map: &Map, messIn: messIn, Agents: agents, ResourceManager: ressourceManager}
+func NewAgentManager(Map [][]*Hexagone, messIn chan agentToManager, agents map[string]*Human, resourceManager *ResourceManager) *AgentManager {
+	return &AgentManager{Map: &Map, messIn: messIn, Agents: agents, ResourceManager: resourceManager}
 }
 
 func (agMan *AgentManager) startRessources() {
 	for {
 		request := <-agMan.messIn
 		agMan.executeRessources(request)
-	}
-}
-
-func (agMan *AgentManager) RemoveAgent(agentID string) {
-	if _, ok := agMan.Agents[agentID]; ok {
-		delete(agMan.Agents, agentID)
-	} else {
-		fmt.Printf("Agent with ID %s not found.\n", agentID)
 	}
 }
 
@@ -61,14 +53,38 @@ func (agMan *AgentManager) executeRessources(request agentToManager) {
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 	case "leave-house":
 		ag := agMan.Agents[request.AgentID]
+		ag.Hut.Owner = nil
 		(*agMan.Map)[ag.Hut.Position.Position.X][ag.Hut.Position.Position.Y].Hut.Owner = nil
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 	case "die":
-		if agMan.Agents[request.AgentID].Hut != nil {
-			(*agMan.Map)[agMan.Agents[request.AgentID].Hut.Position.Position.X][agMan.Agents[request.AgentID].Hut.Position.Position.Y].Hut.Owner = nil
+		agent := agMan.Agents[request.AgentID]
+		if agent.Clan != nil {
+			for i, ag := range agent.Clan.members {
+				if ag.ID == request.AgentID {
+					agent.Clan.members = append(agent.Clan.members[:i], agent.Clan.members[i+1:]...)
+					break
+				}
+			}
+
+			if agent.Clan.chief.ID == request.AgentID {
+				if len(agMan.Agents[request.AgentID].Clan.members) > 0 {
+					agent.Clan.chief = agent.Clan.members[0]
+					agent.Hut.Owner = agent.Clan.members[0]
+					(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = agent.Clan.members[0]
+				} else {
+					agMan.Agents[request.AgentID].Clan = nil
+					agent.Hut.Owner = nil
+					(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = nil
+				}
+			}
+		} else {
+			if agent.Hut != nil {
+				agent.Hut.Owner = nil
+				(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = nil
+			}
 		}
-		agMan.RemoveAgent(request.AgentID)
-		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
+
+		delete(agMan.Agents, request.AgentID)
 	}
 }
 
