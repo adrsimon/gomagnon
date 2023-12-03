@@ -49,7 +49,7 @@ func NewSimulation() Simulation {
 
 	simu.Board.AgentManager.Start()
 
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 3; i++ {
 		x, y := -1, -1
 		for x == -1 && y == -1 {
 			x = typing.Randomizer.Intn(simu.Board.XMax)
@@ -64,7 +64,7 @@ func NewSimulation() Simulation {
 			Body: typing.HumanBody{
 				Thirstiness: 50,
 				Hungriness:  50,
-				Age:         25,
+				Age:         float64(25),
 			},
 			Stats: typing.HumanStats{
 				Strength:    10,

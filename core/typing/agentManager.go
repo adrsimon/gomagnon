@@ -58,7 +58,7 @@ func (agMan *AgentManager) executeRessources(request agentToManager) {
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 	case "procreate":
 		ag := agMan.Agents[request.AgentID]
-		if ag.Procreate.Partner != nil && ag.Race == 'F' {
+		if ag.Procreate.Partner != nil {
 			newHuman := MakeChild(ag, ag.Procreate.Partner, agMan.Count)
 			if newHuman != nil {
 				agMan.Count++

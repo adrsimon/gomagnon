@@ -16,7 +16,7 @@ type HumanStats struct {
 }
 
 type HumanBody struct {
-	Age    int
+	Age    float64
 	Gender rune
 
 	Hungriness  int
@@ -36,6 +36,7 @@ const (
 	SLEEP
 	CREATECLAN
 	PROCREATE
+	EATATHOME
 )
 
 type Race int
@@ -315,6 +316,11 @@ func (h *Human) Deliberate() {
 		return
 	}
 
+	if h.Body.Age < 15 && h.Hut != nil && h.Position.Position == h.Hut.Position.Position && h.Body.Tiredness < 20 {
+		h.Action = EATATHOME
+		return
+	}
+
 	if !h.MovingToTarget {
 		h.Action = MOVE
 		return
@@ -396,7 +402,7 @@ func (h *Human) Act() {
 		if !h.MovingToTarget {
 			var targetHexagon *Hexagone
 
-			if (h.Body.Tiredness > 70 && h.Hut != nil) || h.Procreate.Partner != nil || h.Body.Age < 5 {
+			if (h.Body.Tiredness > 70 && h.Hut != nil) || h.Procreate.Partner != nil || h.Body.Age < 5 || (h.Body.Age < 15 && (h.Body.Thirstiness > 70 || h.Body.Hungriness > 70)) {
 				targetHexagon = h.Hut.Position
 			} else {
 				surroundingHexagons := h.GetNeighboursWithinAcuity()
@@ -496,7 +502,7 @@ func (h *Human) Act() {
 	case PROCREATE:
 		if h.Procreate.Partner == nil && h.Procreate.Potential {
 			for _, neighbour := range h.Neighbours {
-				if neighbour.Clan == h.Clan && neighbour.Procreate.Partner == nil && neighbour.Hut == h.Hut /*&& h.Type != neighbour.Type */ {
+				if neighbour.Clan == h.Clan && neighbour.Procreate.Partner == nil && neighbour.Hut == h.Hut && neighbour.Body.Age > 15 /*&& h.Type != neighbour.Type */ {
 					h.Procreate.Partner = neighbour
 					neighbour.Procreate.Partner = h
 					h.Procreate.Potential = true
@@ -514,6 +520,21 @@ func (h *Human) Act() {
 				h.Procreate.Timer = 100
 			}
 		}
+	case EATATHOME:
+		if h.Body.Hungriness > 70 && h.Hut.Inventory[ANIMAL] > 0 {
+			h.Hut.Inventory[ANIMAL] -= 1
+			fmt.Println("Eating animal")
+			h.Body.Hungriness -= 10 * AnimalFoodValueMultiplier
+		} else if h.Body.Hungriness > 70 && h.Hut.Inventory[FRUIT] > 0 {
+			h.Hut.Inventory[FRUIT] -= 1
+			h.Body.Hungriness -= 10 * FruitFoodValueMultiplier
+			fmt.Println("Eating fruit")
+		} else if h.Body.Thirstiness > 70 && h.Hut.Inventory[BOTTLE] > 0 {
+			h.Hut.Inventory[BOTTLE] -= 1
+			h.Body.Thirstiness = 0
+			fmt.Println("Drinking")
+		}
+
 	default:
 		fmt.Println("Should not be here")
 	}
@@ -556,4 +577,5 @@ func (h *Human) UpdateAgent() {
 	default:
 		h.Terminated = true
 	}
+	h.Body.Age += 0.05
 }
