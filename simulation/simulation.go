@@ -64,6 +64,7 @@ func NewSimulation() Simulation {
 			Body: typing.HumanBody{
 				Thirstiness: 50,
 				Hungriness:  50,
+				Age:         25,
 			},
 			Stats: typing.HumanStats{
 				Strength:    10,

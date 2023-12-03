@@ -45,7 +45,7 @@ func (agMan *AgentManager) executeRessources(request agentToManager) {
 		default:
 			res := (*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Resource
 			(*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Resource = NONE
-			respawnCD := Randomizer.Intn(100) + 150
+			respawnCD := Randomizer.Intn(20)
 			agMan.ResourceManager.RespawnCDs = append(agMan.ResourceManager.RespawnCDs, CoolDown{Current: respawnCD, Resource: res})
 			request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: res}
 		}
@@ -58,7 +58,7 @@ func (agMan *AgentManager) executeRessources(request agentToManager) {
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 	case "procreate":
 		ag := agMan.Agents[request.AgentID]
-		if ag.Procreate.Partner != nil {
+		if ag.Procreate.Partner != nil && ag.Race == 'F' {
 			newHuman := MakeChild(ag, ag.Procreate.Partner, agMan.Count)
 			if newHuman != nil {
 				agMan.Count++

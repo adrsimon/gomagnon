@@ -131,20 +131,20 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 	switch hex.Resource {
 	case ANIMAL:
 		if h.Race == NEANDERTHAL {
-			score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 0.5
+			score += AnimalFoodValueMultiplier + 0.5
 		}
 		if h.Race == SAPIENS {
-			score += (float64(h.Body.Hungriness)/100)*AnimalFoodValueMultiplier + 1.0
+			score += AnimalFoodValueMultiplier + 1.0
 		}
 		if h.Body.Hungriness > threshold {
 			score += 3
 		}
 	case FRUIT:
 		if h.Race == NEANDERTHAL {
-			score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.01
+			score += FruitFoodValueMultiplier + 0.01
 		}
 		if h.Race == SAPIENS {
-			score += (float64(h.Body.Hungriness)/100)*FruitFoodValueMultiplier + 0.3
+			score += FruitFoodValueMultiplier + 0.5
 		}
 		if h.Body.Hungriness > threshold {
 			score += 3
@@ -178,7 +178,12 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 }
 
 func (h *Human) GetNeighboursWithinAcuity() []*Hexagone {
-	neighbours := h.Board.GetNeighbours(h.Position)
+	var neighbours []*Hexagone
+	if h.Body.Age < 15 {
+		neighbours = h.Board.GetNeighbours(h.Hut.Position)
+	} else {
+		neighbours = h.Board.GetNeighbours(h.Position)
+	}
 	visited := make(map[*Hexagone]bool)
 	for i := 1; i < h.Stats.Acuity; i++ {
 		for _, neighbour := range neighbours {
@@ -237,9 +242,17 @@ func (h *Human) MoveToHexagon(hex *Hexagone) {
 func (h *Human) UpdateState(resource ResourceType) {
 	switch resource {
 	case ANIMAL:
-		h.Body.Hungriness -= 10 * AnimalFoodValueMultiplier
+		if h.Body.Hungriness < 55 {
+			h.Inventory.Object[resource] += 1
+		} else {
+			h.Body.Hungriness -= 10 * AnimalFoodValueMultiplier
+		}
 	case FRUIT:
-		h.Body.Hungriness -= 10 * FruitFoodValueMultiplier
+		if h.Body.Hungriness < 55 {
+			h.Inventory.Object[resource] += 1
+		} else {
+			h.Body.Hungriness -= 10 * FruitFoodValueMultiplier
+		}
 	case ROCK:
 		h.Inventory.Object[resource] += 1
 		h.Inventory.Weight += WeightRock
@@ -255,6 +268,9 @@ func (h *Human) UpdateState(resource ResourceType) {
 		}
 		if neighbour.Biome == WATER {
 			h.Body.Thirstiness -= 10
+			if h.Inventory.Object[BOTTLE] < 3 {
+				h.Inventory.Object[BOTTLE] += 1
+			}
 		}
 	}
 }
@@ -314,7 +330,7 @@ func (h *Human) Deliberate() {
 		return
 	}
 
-	if h.Hut != nil && h.Clan != nil && h.Procreate.Potential && h.Procreate.Partner == nil && h.Procreate.Timer <= 0 && h.Neighbours != nil && len(h.Neighbours) > 0 {
+	if h.Hut != nil && h.Clan != nil && h.Procreate.Potential && h.Procreate.Partner == nil && h.Procreate.Timer <= 0 && h.Body.Age > 15 && h.Neighbours != nil && len(h.Neighbours) > 0 {
 		h.Action = PROCREATE
 		return
 	}
@@ -348,6 +364,7 @@ func MakeChild(parent1 *Human, parent2 *Human, count int) *Human {
 			Body: HumanBody{
 				Thirstiness: 50,
 				Hungriness:  50,
+				Age:         0,
 			},
 			Stats: HumanStats{
 				Strength:    int((parent1.Stats.Strength + parent2.Stats.Strength) / 2),
@@ -379,7 +396,7 @@ func (h *Human) Act() {
 		if !h.MovingToTarget {
 			var targetHexagon *Hexagone
 
-			if (h.Body.Tiredness > 70 && h.Hut != nil) || h.Procreate.Partner != nil {
+			if (h.Body.Tiredness > 70 && h.Hut != nil) || h.Procreate.Partner != nil || h.Body.Age < 5 {
 				targetHexagon = h.Hut.Position
 			} else {
 				surroundingHexagons := h.GetNeighboursWithinAcuity()
@@ -432,6 +449,17 @@ func (h *Human) Act() {
 			h.Inventory.Weight -= WeightRock * Needs["hut"][ROCK]
 		}
 	case SLEEP:
+		if h.Inventory.Object[BOTTLE] > 0 || h.Inventory.Object[ANIMAL] > 0 || h.Inventory.Object[FRUIT] > 0 {
+			h.Hut.Inventory[BOTTLE] += h.Inventory.Object[BOTTLE]
+			h.Hut.Inventory[ANIMAL] += h.Inventory.Object[ANIMAL]
+			h.Hut.Inventory[FRUIT] += h.Inventory.Object[FRUIT]
+			h.Inventory.Object[BOTTLE] = 0
+			h.Inventory.Object[ANIMAL] = 0
+			h.Inventory.Object[FRUIT] = 0
+			h.Inventory.Weight = h.Inventory.Object[WOOD] + h.Inventory.Object[ROCK]
+			fmt.Println(h.Hut.Inventory)
+		}
+
 		if h.Body.Sleeping && h.Body.Tiredness > 0 {
 			h.Body.Tiredness -= 5
 			h.Body.Hungriness += 1
