@@ -279,8 +279,15 @@ func (h *Human) Deliberate() {
 	}
 
 	if h.Hut == nil && h.Inventory.Object[WOOD] >= Needs["hut"][WOOD] && h.Inventory.Object[ROCK] >= Needs["hut"][ROCK] {
-		h.Action = BUILD
-		return
+		for _, v := range h.Board.GetNeighbours(h.Position) {
+			if v == nil {
+				continue
+			}
+			if v.Biome == WATER {
+				h.Action = BUILD
+				return
+			}
+		}
 	}
 
 	if h.Hut != nil && len(h.Neighbours) > 0 && h.Clan == nil {
