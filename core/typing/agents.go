@@ -21,7 +21,6 @@ type HumanBody struct {
 	Thirstiness float64
 
 	Tiredness float64
-	Sleeping  bool
 }
 
 type Action int
@@ -274,50 +273,71 @@ func (h *Human) Perceive() {
 	h.Neighbours = listHumans
 }
 
+func (h *Human) DeliberateAtHut() {
+	/** If he is tired and have a home, he should sleep **/
+	if h.Body.Tiredness > 0 {
+		h.Action = SLEEP
+		return
+	}
+}
+
 func (h *Human) Deliberate() {
 	h.Action = NOOP
+
+	/** Stacked actions **/
 	if len(h.StackAction) > 0 {
-		h.Action = Action(h.StackAction[0])
+		h.Action = h.StackAction[0]
 		h.StackAction = h.StackAction[1:]
 		return
 	}
 
-	if h.Hut == nil && h.Body.Tiredness > 70 {
-		return
-	}
+	/** Early game actions **/
+	if h.Hut == nil {
+		/** if the agent is tired and don't have a home, he should rest in the nature **/
+		if h.Body.Tiredness > 80 {
+			h.StackAction = append(h.StackAction, NOOP)
+			h.StackAction = append(h.StackAction, NOOP)
+			h.StackAction = append(h.StackAction, NOOP)
+			return
+		}
 
-	if h.Hut == nil && h.Inventory.Object[WOOD] >= Needs["hut"][WOOD] && h.Inventory.Object[ROCK] >= Needs["hut"][ROCK] {
-		for _, v := range h.Board.GetNeighbours(h.Position) {
-			if v == nil {
-				continue
-			}
-			if v.Biome == WATER {
-				h.Action = BUILD
-				return
+		/** if he can build a home and don't have one, he should build it **/
+		if h.Inventory.Object[WOOD] >= Needs["hut"][WOOD] && h.Inventory.Object[ROCK] >= Needs["hut"][ROCK] {
+			for _, v := range h.Board.GetNeighbours(h.Position) {
+				if v == nil {
+					continue
+				}
+				if v.Biome == WATER {
+					h.Action = BUILD
+					return
+				}
 			}
 		}
 	}
 
-	if h.Hut != nil && len(h.Neighbours) > 0 && h.Clan == nil {
-		h.Action = CREATECLAN
-		return
+	/** In Hut actions **/
+	if h.Hut != nil && h.Position.Position == h.Hut.Position.Position {
+		h.DeliberateAtHut()
+		if h.Action != NOOP {
+			return
+		}
 	}
 
-	if h.Hut != nil && h.Position.Position == h.Hut.Position.Position && h.Body.Tiredness > 0 {
-		h.Action = SLEEP
-		return
+	/** Outside hut actions **/
+	if h.Hut != nil {
+		if len(h.Neighbours) > 0 && h.Clan == nil {
+			h.Action = CREATECLAN
+			return
+		}
 	}
 
+	/** General actions **/
 	if !h.MovingToTarget {
 		h.Action = MOVE
 		return
 	}
 	if h.MovingToTarget && len(h.CurrentPath) > 0 {
 		h.Action = MOVE
-		return
-	}
-	if h.Target.Position == h.Position.Position {
-		h.Action = GET
 		return
 	}
 }
@@ -353,17 +373,26 @@ func (h *Human) Act() {
 			h.MoveToHexagon(h.Board.Cases[nextHexagon.Position.X][nextHexagon.Position.Y])
 			h.CurrentPath = h.CurrentPath[:len(h.CurrentPath)-1]
 		}
-	case GET:
-		if h.Target.Position == h.Position.Position {
-			h.MovingToTarget = false
+
+		/** Next move stacking **/
+		if h.MovingToTarget && len(h.CurrentPath) > 0 {
+			h.StackAction = append(h.StackAction, MOVE)
+		}
+
+		if h.Position.Position == h.Target.Position {
+			if h.Target.Resource != NONE {
+				h.StackAction = append(h.StackAction, GET)
+			}
 			h.Target = nil
-			if h.Position.Resource != NONE {
-				h.ComOut = agentToManager{AgentID: h.ID, Action: "get", Pos: h.Position, commOut: make(chan managerToAgent)}
-				h.Board.AgentManager.messIn <- h.ComOut
-				h.ComIn = <-h.ComOut.commOut
-				if h.ComIn.Valid {
-					h.UpdateState(h.ComIn.Resource)
-				}
+			h.MovingToTarget = false
+		}
+	case GET:
+		if h.Position.Resource != NONE {
+			h.ComOut = agentToManager{AgentID: h.ID, Action: "get", Pos: h.Position, commOut: make(chan managerToAgent)}
+			h.Board.AgentManager.messIn <- h.ComOut
+			h.ComIn = <-h.ComOut.commOut
+			if h.ComIn.Valid {
+				h.UpdateState(h.ComIn.Resource)
 			}
 		}
 	case BUILD:
@@ -378,14 +407,11 @@ func (h *Human) Act() {
 			h.Inventory.Weight -= WeightRock * Needs["hut"][ROCK]
 		}
 	case SLEEP:
-		if h.Body.Sleeping && h.Body.Tiredness > 0 {
-			h.Body.Tiredness -= 5
-			h.Body.Hungriness += 1
-			h.Body.Thirstiness += 1
-		} else if h.Body.Sleeping && h.Body.Tiredness <= 0 {
-			h.Body.Sleeping = false
-		} else if !h.Body.Sleeping {
-			h.Body.Sleeping = true
+		if h.Body.Tiredness > 0 {
+			h.Body.Tiredness -= 3
+			h.Body.Hungriness += 0.5
+			h.Body.Thirstiness += 0.5
+			h.StackAction = append(h.StackAction, SLEEP)
 		}
 	case CREATECLAN:
 		var bestH *Human
