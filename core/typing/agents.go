@@ -26,6 +26,8 @@ type HumanBody struct {
 
 type Action int
 
+type StackAction []Action
+
 const (
 	NOOP Action = iota
 	MOVE
@@ -73,7 +75,8 @@ type Human struct {
 	ComOut agentToManager
 	ComIn  managerToAgent
 
-	Action Action
+	Action      Action
+	StackAction StackAction
 
 	Neighbours    []*Human
 	AgentRelation map[string]string
@@ -273,6 +276,11 @@ func (h *Human) Perceive() {
 
 func (h *Human) Deliberate() {
 	h.Action = NOOP
+	if len(h.StackAction) > 0 {
+		h.Action = Action(h.StackAction[0])
+		h.StackAction = h.StackAction[1:]
+		return
+	}
 
 	if h.Hut == nil && h.Body.Tiredness > 70 {
 		return
