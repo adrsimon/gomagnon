@@ -12,7 +12,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
-var imgPlains, imgForest, imgWater, imgCaves, imgCow, imgMushroom, imgRock, imgWood *ebiten.Image
+var imgPlains, imgForest, imgWater, imgCaves, imgDeepWater, imgCow, imgMushroom, imgRock, imgWood *ebiten.Image
 
 func init() {
 	plains, _, err := ebitenutil.NewImageFromFile("assets/images/plains.png")
@@ -38,6 +38,12 @@ func init() {
 		log.Fatal(err)
 	}
 	imgCaves = caves
+
+	deepwater, _, err := ebitenutil.NewImageFromFile("assets/images/deepwater.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	imgDeepWater = deepwater
 
 	cow, _, err := ebitenutil.NewImageFromFile("assets/images/cow.png")
 	if err != nil {
@@ -75,6 +81,8 @@ func DrawHex(background *ebiten.Image, xCenter float32, yCenter float32, biome t
 		hexImage = imgWater
 	case typing.CAVE:
 		hexImage = imgCaves
+	case typing.DEEP_WATER:
+		hexImage = imgDeepWater
 	}
 
 	op := &ebiten.DrawImageOptions{}

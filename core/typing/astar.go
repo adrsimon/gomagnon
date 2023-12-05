@@ -49,7 +49,7 @@ func AStar(agent Human, goal *Hexagone) map[*Hexagone]*Hexagone {
 		}
 
 		for _, succ := range agTemp.Board.GetNeighbours(agTemp.Position) {
-			if succ.Biome == WATER {
+			if succ.Biome == DEEP_WATER {
 				continue
 			}
 			_, ok := save[succ]

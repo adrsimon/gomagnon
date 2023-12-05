@@ -113,7 +113,7 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 	dist := distance(*h.Position, *hex)
 	score -= dist * DistanceMultiplier
 
-	if hex.Biome == WATER {
+	if hex.Biome == DEEP_WATER {
 		return math.Inf(-1)
 	}
 	if hex == nil {
@@ -210,7 +210,7 @@ func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
 	randHex := &Hexagone{}
 	for !valid {
 		randHex = surroundingHexagons[Randomizer.Intn(len(surroundingHexagons))]
-		if h.Board.isValidHex(randHex) && randHex.Biome != WATER {
+		if h.Board.isValidHex(randHex) && randHex.Biome != DEEP_WATER {
 			valid = true
 		}
 	}
@@ -307,7 +307,7 @@ func (h *Human) Deliberate() {
 				if v == nil {
 					continue
 				}
-				if v.Biome == WATER {
+				if v.Biome == WATER && h.Position.Biome != WATER {
 					h.Action = BUILD
 					return
 				}

@@ -34,11 +34,11 @@ func NewSimulation() Simulation {
 		typing.WOOD:   20,
 	}
 
-	simu.Board = typing.NewBoard(45, 40, 40, ressourcesMap)
+	simu.Board = typing.NewBoard(68, 61, 40, ressourcesMap)
 
 	simu.cameraX = 0
 	simu.cameraY = 0
-	simu.zoomFactor = 0.6
+	simu.zoomFactor = 0.4
 
 	simu.Board.Generate()
 	simu.Board.GenerateBiomes()
@@ -54,7 +54,7 @@ func NewSimulation() Simulation {
 		for x == -1 && y == -1 {
 			x = typing.Randomizer.Intn(simu.Board.XMax)
 			y = typing.Randomizer.Intn(simu.Board.YMax)
-			if simu.Board.Cases[x][y].Biome == typing.WATER {
+			if simu.Board.Cases[x][y].Biome == typing.DEEP_WATER {
 				x, y = -1, -1
 			}
 		}

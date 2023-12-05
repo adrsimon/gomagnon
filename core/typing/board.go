@@ -2,6 +2,7 @@ package typing
 
 import (
 	"github.com/aquilax/go-perlin"
+	"math"
 )
 
 type Board struct {
@@ -89,11 +90,23 @@ func (b *Board) GenerateBiomes() {
 			elevationValue := elevation.Noise2D(x, y)
 			moistureValue := moisture.Noise2D(x, y)
 
+			lerp := func(a, b, t float64) float64 {
+				return a + t*(b-a)
+			}
+
+			d := func(x, y float64) float64 {
+				return math.Sqrt(math.Pow(x-0.5, 2) + math.Pow(y-0.5, 2))
+			}
+
+			elevationValue = math.Abs(lerp(elevationValue, d(x, y), 0.75))
+
 			switch {
+			case elevationValue > 0.4:
+				biomeType = DEEP_WATER
 			case elevationValue > 0.3:
-				biomeType = CAVE
-			case elevationValue < -0.4:
 				biomeType = WATER
+			case elevationValue < 0.05:
+				biomeType = CAVE
 			default:
 				if moistureValue > 0 {
 					biomeType = FOREST
