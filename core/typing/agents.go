@@ -233,7 +233,7 @@ func (h *Human) MoveToHexagon(hex *Hexagone) {
 func (h *Human) UpdateState(resource ResourceType) {
 	switch resource {
 	case ANIMAL:
-		if h.Body.Hungriness > 85 || h.Hut == nil || h.Inventory.Weight >= MaxWeightInv-WeightAnimal {
+		if h.Body.Hungriness > 85 || h.Hut == nil || h.Inventory.Weight >= MaxWeightInv-3*WeightAnimal {
 			h.Body.Hungriness -= 10 * AnimalFoodValueMultiplier
 			break
 		} else {
@@ -303,9 +303,15 @@ func (h *Human) DeliberateAtHut() {
 		return
 	}
 
-	if h.Body.Hungriness > 80 && (slices.Contains(h.Hut.Inventory, ANIMAL) || slices.Contains(h.Hut.Inventory, FRUIT)) {
-		h.Action = EATFROMHOME
-		return
+	/** If he is hungry and have food in home, he should eat **/
+	if h.Body.Hungriness > 80 {
+		if slices.Contains(h.Hut.Inventory, ANIMAL) || slices.Contains(h.Hut.Inventory, FRUIT) {
+			h.Action = EATFROMHOME
+			return
+		} else {
+			h.Action = MOVE
+			return
+		}
 	}
 }
 
@@ -378,15 +384,9 @@ func (h *Human) Act() {
 		if !h.MovingToTarget {
 			var targetHexagon *Hexagone
 
-			if h.Hut != nil {
-				if h.Body.Tiredness > 80 {
-					targetHexagon = h.Hut.Position
-				} else if h.Body.Hungriness > 80 && (slices.Contains(h.Hut.Inventory, ANIMAL) || slices.Contains(h.Hut.Inventory, FRUIT)) {
-					targetHexagon = h.Hut.Position
-				}
-			}
-
-			if targetHexagon == nil {
+			if h.Hut != nil && (h.Body.Tiredness > 80 || h.Body.Hungriness > 80) {
+				targetHexagon = h.Hut.Position
+			} else {
 				surroundingHexagons := h.GetNeighboursWithinAcuity()
 				targetHexagon = h.BestNeighbor(surroundingHexagons)
 			}
