@@ -74,7 +74,8 @@ type Human struct {
 	CurrentPath    []*Hexagone
 	Board          *Board
 
-	Hut *Hut
+	Hut                *Hut
+	HutInventoryVision []ResourceType
 
 	ComOut agentToManager
 	ComIn  managerToAgent
@@ -288,6 +289,10 @@ func (h *Human) Perceive() {
 		}
 	}
 	h.Neighbours = listHumans
+
+	if h.Hut != nil && h.Position.Position == h.Hut.Position.Position {
+		h.HutInventoryVision = h.Hut.Inventory
+	}
 }
 
 func (h *Human) DeliberateAtHut() {
@@ -305,7 +310,7 @@ func (h *Human) DeliberateAtHut() {
 
 	/** If he is hungry and have food in home, he should eat **/
 	if h.Body.Hungriness > 80 {
-		if slices.Contains(h.Hut.Inventory, ANIMAL) || slices.Contains(h.Hut.Inventory, FRUIT) {
+		if slices.Contains(h.HutInventoryVision, ANIMAL) || slices.Contains(h.HutInventoryVision, FRUIT) {
 			h.Action = EATFROMHOME
 			return
 		} else {
@@ -384,9 +389,15 @@ func (h *Human) Act() {
 		if !h.MovingToTarget {
 			var targetHexagon *Hexagone
 
-			if h.Hut != nil && (h.Body.Tiredness > 80 || h.Body.Hungriness > 80) {
-				targetHexagon = h.Hut.Position
-			} else {
+			if h.Hut != nil {
+				if h.Body.Tiredness > 80 {
+					targetHexagon = h.Hut.Position
+				} else if h.Body.Hungriness > 80 && (slices.Contains(h.HutInventoryVision, ANIMAL) || slices.Contains(h.HutInventoryVision, FRUIT)) {
+					targetHexagon = h.Hut.Position
+				}
+			}
+
+			if targetHexagon == nil {
 				surroundingHexagons := h.GetNeighboursWithinAcuity()
 				targetHexagon = h.BestNeighbor(surroundingHexagons)
 			}
