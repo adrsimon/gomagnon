@@ -19,14 +19,16 @@ type HumanBody struct {
 	Age    float64
 	Gender rune
 
-	Hungriness  int
-	Thirstiness int
+	Hungriness  float64
+	Thirstiness float64
 
 	Tiredness float64
 	Sleeping  bool
 }
 
 type Action int
+
+type StackAction []Action
 
 const (
 	NOOP Action = iota
@@ -83,7 +85,8 @@ type Human struct {
 	ComOut agentToManager
 	ComIn  managerToAgent
 
-	Action Action
+	Action      Action
+	StackAction StackAction
 
 	Neighbours    []*Human
 	AgentRelation map[string]string
@@ -117,7 +120,7 @@ func NewHuman(id string, Type rune, Race Race, body HumanBody, stats HumanStats,
 
 func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 	var score = 0.0
-	threshold := 85
+	threshold := 85.0
 
 	dist := distance(*h.Position, *hex)
 	score -= dist * DistanceMultiplier
@@ -301,9 +304,26 @@ func (h *Human) Perceive() {
 
 func (h *Human) Deliberate() {
 	h.Action = NOOP
-	if h.Hut == nil && h.Inventory.Object[WOOD] >= Needs["hut"][WOOD] && h.Inventory.Object[ROCK] >= Needs["hut"][ROCK] {
-		h.Action = BUILD
+	if len(h.StackAction) > 0 {
+		h.Action = Action(h.StackAction[0])
+		h.StackAction = h.StackAction[1:]
 		return
+	}
+
+	if h.Hut == nil && h.Body.Tiredness > 70 {
+		return
+	}
+
+	if h.Hut == nil && h.Inventory.Object[WOOD] >= Needs["hut"][WOOD] && h.Inventory.Object[ROCK] >= Needs["hut"][ROCK] {
+		for _, v := range h.Board.GetNeighbours(h.Position) {
+			if v == nil {
+				continue
+			}
+			if v.Biome == WATER {
+				h.Action = BUILD
+				return
+			}
+		}
 	}
 
 	if h.Hut != nil && len(h.Neighbours) > 0 && h.Clan == nil {
@@ -565,6 +585,19 @@ func (h *Human) AnswerAgents(res AgentComm) {
 	}
 }
 
+func (h *Human) IsDead() bool {
+	return h.Body.Hungriness >= 100 || h.Body.Thirstiness >= 100 || h.Body.Tiredness >= 100
+}
+
+func (h *Human) CloseUpdate() {
+	if h.IsDead() {
+		h.ComOut = agentToManager{AgentID: h.ID, Action: "die", Pos: h.Position, commOut: make(chan managerToAgent)}
+		h.Board.AgentManager.messIn <- h.ComOut
+	} else {
+		h.UpdateState(NONE)
+	}
+}
+
 func (h *Human) UpdateAgent() {
 	h.Terminated = false
 	h.Perceive()
@@ -577,5 +610,5 @@ func (h *Human) UpdateAgent() {
 	default:
 		h.Terminated = true
 	}
-	h.Body.Age += 0.05
+	h.CloseUpdate()
 }

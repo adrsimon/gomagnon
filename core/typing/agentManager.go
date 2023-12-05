@@ -29,14 +29,14 @@ func NewAgentManager(Map [][]*Hexagone, messIn chan agentToManager, agents map[s
 	return &AgentManager{Map: &Map, messIn: messIn, Agents: agents, ResourceManager: ressourceManager, Count: count}
 }
 
-func (agMan *AgentManager) startRessources() {
+func (agMan *AgentManager) startResources() {
 	for {
 		request := <-agMan.messIn
-		agMan.executeRessources(request)
+		agMan.executeResources(request)
 	}
 }
 
-func (agMan *AgentManager) executeRessources(request agentToManager) {
+func (agMan *AgentManager) executeResources(request agentToManager) {
 	switch request.Action {
 	case "get":
 		switch (*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Resource {
@@ -54,6 +54,7 @@ func (agMan *AgentManager) executeRessources(request agentToManager) {
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 	case "leave-house":
 		ag := agMan.Agents[request.AgentID]
+		ag.Hut.Owner = nil
 		(*agMan.Map)[ag.Hut.Position.Position.X][ag.Hut.Position.Position.Y].Hut.Owner = nil
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 	case "procreate":
@@ -66,10 +67,39 @@ func (agMan *AgentManager) executeRessources(request agentToManager) {
 			}
 		}
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
+	case "die":
+		agent := agMan.Agents[request.AgentID]
+		if agent.Clan != nil {
+			for i, ag := range agent.Clan.members {
+				if ag.ID == request.AgentID {
+					agent.Clan.members = append(agent.Clan.members[:i], agent.Clan.members[i+1:]...)
+					break
+				}
+			}
+
+			if agent.Clan.chief.ID == request.AgentID {
+				if len(agMan.Agents[request.AgentID].Clan.members) > 0 {
+					agent.Clan.chief = agent.Clan.members[0]
+					agent.Hut.Owner = agent.Clan.members[0]
+					(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = agent.Clan.members[0]
+				} else {
+					agMan.Agents[request.AgentID].Clan = nil
+					agent.Hut.Owner = nil
+					(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = nil
+				}
+			}
+		} else {
+			if agent.Hut != nil {
+				agent.Hut.Owner = nil
+				(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = nil
+			}
+		}
+
+		delete(agMan.Agents, request.AgentID)
 	}
 }
 
 func (agMan *AgentManager) Start() {
 	fmt.Println("Starting agent manager")
-	go agMan.startRessources()
+	go agMan.startResources()
 }
