@@ -45,7 +45,7 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		default:
 			res := (*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Resource
 			(*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Resource = NONE
-			respawnCD := Randomizer.Intn(20)
+			respawnCD := Randomizer.Intn(20) + 10
 			agMan.ResourceManager.RespawnCDs = append(agMan.ResourceManager.RespawnCDs, CoolDown{Current: respawnCD, Resource: res})
 			request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: res}
 		}
@@ -96,6 +96,8 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		}
 
 		delete(agMan.Agents, request.AgentID)
+		agMan.Count--
+		fmt.Println("Agent died, current number:", len(agMan.Agents))
 	}
 }
 

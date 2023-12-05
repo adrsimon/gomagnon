@@ -108,8 +108,8 @@ type Clan struct {
 }
 
 const (
-	AnimalFoodValueMultiplier = 3.0
-	FruitFoodValueMultiplier  = 1.0
+	AnimalFoodValueMultiplier = 5.0
+	FruitFoodValueMultiplier  = 3.0
 	WaterValueMultiplier      = 2.0
 	DistanceMultiplier        = 0.2
 )
@@ -240,28 +240,19 @@ func (h *Human) MoveToHexagon(hex *Hexagone) {
 	h.Body.Hungriness += 1
 	h.Body.Thirstiness += 2
 	h.Body.Tiredness += 0.5
-	h.Procreate.Timer -= 1
 }
 
 func (h *Human) UpdateState(resource ResourceType) {
 	switch resource {
 	case ANIMAL:
-		if h.Body.Hungriness < 55 {
-			h.Inventory.Object[resource] += 1
-		} else {
-			h.Body.Hungriness -= 10 * AnimalFoodValueMultiplier
-		}
+		h.Body.Hungriness -= 10 * AnimalFoodValueMultiplier
 	case FRUIT:
-		if h.Body.Hungriness < 55 {
-			h.Inventory.Object[resource] += 1
-		} else {
-			h.Body.Hungriness -= 10 * FruitFoodValueMultiplier
-		}
+		h.Body.Hungriness -= 10 * FruitFoodValueMultiplier
 	case ROCK:
-		h.Inventory.Object[resource] += 1
+		h.Inventory.Object[ROCK] += 1
 		h.Inventory.Weight += WeightRock
 	case WOOD:
-		h.Inventory.Object[resource] += 1
+		h.Inventory.Object[WOOD] += 1
 		h.Inventory.Weight += WeighWood
 	}
 
@@ -271,10 +262,7 @@ func (h *Human) UpdateState(resource ResourceType) {
 			continue
 		}
 		if neighbour.Biome == WATER {
-			h.Body.Thirstiness -= 10
-			if h.Inventory.Object[BOTTLE] < 3 {
-				h.Inventory.Object[BOTTLE] += 1
-			}
+			h.Body.Thirstiness = 0
 		}
 	}
 }
@@ -336,11 +324,6 @@ func (h *Human) Deliberate() {
 		return
 	}
 
-	if h.Body.Age < 15 && h.Hut != nil && h.Position.Position == h.Hut.Position.Position && h.Body.Tiredness < 20 {
-		h.Action = EATATHOME
-		return
-	}
-
 	if !h.MovingToTarget {
 		h.Action = MOVE
 		return
@@ -356,7 +339,7 @@ func (h *Human) Deliberate() {
 		return
 	}
 
-	if h.Hut != nil && h.Clan != nil && h.Procreate.Potential && h.Procreate.Partner == nil && h.Procreate.Timer <= 0 && h.Body.Age > 15 && h.Neighbours != nil && len(h.Neighbours) > 0 {
+	if h.Hut != nil && h.Clan != nil && h.Procreate.Potential && h.Procreate.Partner == nil && h.Procreate.Timer <= 0 && h.Body.Age > 0 && h.Neighbours != nil && len(h.Neighbours) > 0 {
 		h.Action = PROCREATE
 		return
 	}
@@ -372,9 +355,9 @@ func MakeChild(parent1 *Human, parent2 *Human, count int) *Human {
 	var newHuman *Human
 	newHuman = nil
 	if parent1.Race == NEANDERTHAL {
-		failChance = rand.Intn(4)
-	} else {
 		failChance = rand.Intn(2)
+	} else {
+		failChance = rand.Intn(1)
 	}
 	if failChance == 0 {
 		newHuman = &Human{
@@ -407,7 +390,7 @@ func MakeChild(parent1 *Human, parent2 *Human, count int) *Human {
 			AgentRelation:  make(map[string]string),
 			AgentCommIn:    make(chan AgentComm),
 			Clan:           parent1.Clan,
-			Procreate:      Procreate{Partner: nil, Timer: 100, Potential: true},
+			Procreate:      Procreate{Partner: nil, Timer: 50, Potential: true},
 		}
 		fmt.Println("Procreated race:", parent1.Race, "from:", parent1.ID, "New human id:", newHuman.ID, "Nb of Agents:", parent1.Board.AgentManager.Count+1)
 	}
@@ -422,7 +405,7 @@ func (h *Human) Act() {
 		if !h.MovingToTarget {
 			var targetHexagon *Hexagone
 
-			if (h.Body.Tiredness > 70 && h.Hut != nil) || h.Procreate.Partner != nil || h.Body.Age < 5 || (h.Body.Age < 15 && (h.Body.Thirstiness > 70 || h.Body.Hungriness > 70)) {
+			if (h.Body.Tiredness > 70 && h.Hut != nil) || h.Procreate.Partner != nil {
 				targetHexagon = h.Hut.Position
 			} else {
 				surroundingHexagons := h.GetNeighboursWithinAcuity()
@@ -475,17 +458,6 @@ func (h *Human) Act() {
 			h.Inventory.Weight -= WeightRock * Needs["hut"][ROCK]
 		}
 	case SLEEP:
-		if h.Inventory.Object[BOTTLE] > 0 || h.Inventory.Object[ANIMAL] > 0 || h.Inventory.Object[FRUIT] > 0 {
-			h.Hut.Inventory[BOTTLE] += h.Inventory.Object[BOTTLE]
-			h.Hut.Inventory[ANIMAL] += h.Inventory.Object[ANIMAL]
-			h.Hut.Inventory[FRUIT] += h.Inventory.Object[FRUIT]
-			h.Inventory.Object[BOTTLE] = 0
-			h.Inventory.Object[ANIMAL] = 0
-			h.Inventory.Object[FRUIT] = 0
-			h.Inventory.Weight = h.Inventory.Object[WOOD] + h.Inventory.Object[ROCK]
-			fmt.Println(h.Hut.Inventory)
-		}
-
 		if h.Body.Sleeping && h.Body.Tiredness > 0 {
 			h.Body.Tiredness -= 5
 			h.Body.Hungriness += 1
@@ -537,24 +509,9 @@ func (h *Human) Act() {
 			h.ComIn = <-h.ComOut.commOut
 			if h.ComIn.Valid {
 				h.Procreate.Partner = nil
-				h.Procreate.Timer = 100
+				h.Procreate.Timer = 50
 			}
 		}
-	case EATATHOME:
-		if h.Body.Hungriness > 70 && h.Hut.Inventory[ANIMAL] > 0 {
-			h.Hut.Inventory[ANIMAL] -= 1
-			fmt.Println("Eating animal")
-			h.Body.Hungriness -= 10 * AnimalFoodValueMultiplier
-		} else if h.Body.Hungriness > 70 && h.Hut.Inventory[FRUIT] > 0 {
-			h.Hut.Inventory[FRUIT] -= 1
-			h.Body.Hungriness -= 10 * FruitFoodValueMultiplier
-			fmt.Println("Eating fruit")
-		} else if h.Body.Thirstiness > 70 && h.Hut.Inventory[BOTTLE] > 0 {
-			h.Hut.Inventory[BOTTLE] -= 1
-			h.Body.Thirstiness = 0
-			fmt.Println("Drinking")
-		}
-
 	default:
 		fmt.Println("Should not be here")
 	}
@@ -595,6 +552,8 @@ func (h *Human) CloseUpdate() {
 		h.Board.AgentManager.messIn <- h.ComOut
 	} else {
 		h.UpdateState(NONE)
+		h.Body.Age += 0.05
+		h.Procreate.Timer -= 1
 	}
 }
 
