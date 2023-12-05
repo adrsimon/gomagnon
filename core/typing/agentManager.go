@@ -72,6 +72,7 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 					agent.Clan.chief = agent.Clan.members[0]
 					agent.Hut.Owner = agent.Clan.members[0]
 					(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = agent.Clan.members[0]
+					agent.Clan.members = agent.Clan.members[1:]
 				} else {
 					agMan.Agents[request.AgentID].Clan = nil
 					agent.Hut.Owner = nil
@@ -122,6 +123,27 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 			ag.Hut.Inventory = append(ag.Hut.Inventory[:i], ag.Hut.Inventory[i+1:]...)
 			request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: FRUIT}
 		}
+	case "VoteNewPerson":
+		valid := agMan.Agents[request.AgentID].Hut.StartNewVote(agMan.Agents[request.AgentID], "VoteNewPerson") //(*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Hut.StartNewVote(agMan.Agents[request.AgentID], "VoteNewPerson")
+		request.commOut <- managerToAgent{Valid: valid, Map: *agMan.Map, Resource: NONE}
+		fmt.Println("votecreated")
+	case "VoteYes":
+		valid := agMan.Agents[request.AgentID].Hut.Vote(agMan.Agents[request.AgentID], "VoteYes")
+		request.commOut <- managerToAgent{Valid: valid, Map: *agMan.Map, Resource: NONE}
+		if valid {
+			fmt.Println(request.AgentID, "has voted yes")
+		} else {
+			fmt.Println(request.AgentID, "cannot voted")
+		}
+	case "VoteNo":
+		valid := agMan.Agents[request.AgentID].Hut.Vote(agMan.Agents[request.AgentID], "VoteNo")
+		request.commOut <- managerToAgent{Valid: valid, Map: *agMan.Map, Resource: NONE}
+		if valid {
+			fmt.Println(request.AgentID, "has voted no")
+		} else {
+			fmt.Println(request.AgentID, "cannot voted")
+		}
+
 	}
 }
 

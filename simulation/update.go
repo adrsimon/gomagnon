@@ -1,7 +1,6 @@
 package simulation
 
 import (
-	"fmt"
 	"github.com/adrsimon/gomagnon/core/typing"
 	"sync"
 )
@@ -48,6 +47,5 @@ func (s *Simulation) Update() error {
 	}
 	wg.Wait()
 
-	fmt.Println("Agent current number:", len(s.Board.AgentManager.Agents))
 	return nil
 }

@@ -3,7 +3,6 @@ package typing
 import (
 	"fmt"
 	"math"
-	"math/rand"
 	"slices"
 	"time"
 )
@@ -37,6 +36,8 @@ const (
 	STOREATHOME
 	EATFROMHOME
 	CREATECLAN
+	CREATEVOTENEWMEMBER
+	VOTE
 )
 
 type Race int
@@ -279,7 +280,7 @@ func (h *Human) Perceive() {
 				_, ok := h.AgentRelation[p.ID]
 				listHumans = append(listHumans, p)
 				if !ok {
-					if rand.Intn(2) >= 1 {
+					if Randomizer.Intn(2) >= 1 {
 						h.AgentRelation[p.ID] = "Friend"
 					} else {
 						h.AgentRelation[p.ID] = "Enemy"
@@ -296,6 +297,17 @@ func (h *Human) Perceive() {
 }
 
 func (h *Human) DeliberateAtHut() {
+	/** If he is hungry and have food in home, he should eat **/
+	if h.Body.Hungriness > 80 {
+		if slices.Contains(h.HutInventoryVision, ANIMAL) || slices.Contains(h.HutInventoryVision, FRUIT) {
+			h.Action = EATFROMHOME
+			return
+		} else {
+			h.Action = MOVE
+			return
+		}
+	}
+
 	/** If he is tired and have a home, he should sleep **/
 	if h.Body.Tiredness > 0 {
 		h.Action = SLEEP
@@ -308,16 +320,18 @@ func (h *Human) DeliberateAtHut() {
 		return
 	}
 
-	/** If he is hungry and have food in home, he should eat **/
-	if h.Body.Hungriness > 80 {
-		if slices.Contains(h.HutInventoryVision, ANIMAL) || slices.Contains(h.HutInventoryVision, FRUIT) {
-			h.Action = EATFROMHOME
-			return
-		} else {
-			h.Action = MOVE
-			return
-		}
+	if h.Clan != nil && h.Clan.chief == h && len(h.Clan.members) < 15 && len(h.Clan.members) > 0 && h.Hut.Ballot.VoteInProgress == false {
+		h.Action = CREATEVOTENEWMEMBER
+		fmt.Println(h.ID, "want to have a vote")
+		return
 	}
+	if h.Clan != nil && h.Hut.Ballot.VoteInProgress == true && slices.Contains(h.Hut.Ballot.VotersID, h.ID) {
+		h.Action = VOTE
+		fmt.Println(h.ID, "want to vote")
+		return
+	} // mettre un timeur dans agent et l'utilisait pour savoir quand venir recuperer les votes
+	// METTRE variable résultat dans la hut pour pouvoir checker si last result et quand on ajoute agent au clan agent manager doit
+
 }
 
 func (h *Human) Deliberate() {
@@ -493,12 +507,37 @@ func (h *Human) Act() {
 						clan := &Clan{members: []*Human{bestH}, chief: h}
 						h.Clan = clan
 						bestH.AgentCommIn <- AgentComm{Agent: h, Action: "INVITECLAN", commOut: h.AgentCommIn}
+						fmt.Println("clan created", h.Clan.chief.ID, h.Clan.members[0].ID)
 					}
-				case <-time.After(10 * time.Millisecond):
+				case <-time.After(20 * time.Millisecond):
 				}
-			case <-time.After(10 * time.Millisecond):
+			case <-time.After(20 * time.Millisecond):
 
 			}
+		}
+	case CREATEVOTENEWMEMBER:
+		h.ComOut = agentToManager{AgentID: h.ID, Action: "VoteNewPerson", Pos: h.Position, commOut: make(chan managerToAgent)}
+		h.Board.AgentManager.messIn <- h.ComOut
+		h.ComIn = <-h.ComOut.commOut
+		if h.ComIn.Valid {
+			fmt.Println(h.ID, "vote created ", h.Hut.Ballot.VotersID)
+			h.ComOut = agentToManager{AgentID: h.ID, Action: "VoteYes", Pos: h.Position, commOut: make(chan managerToAgent)}
+			h.Board.AgentManager.messIn <- h.ComOut
+			h.ComIn = <-h.ComOut.commOut
+			if h.ComIn.Valid {
+				fmt.Println(h.ID, "vote made ", h.Hut.Ballot.VotersID)
+			}
+		}
+	case VOTE:
+		if Randomizer.Intn(2) >= 1 {
+			h.ComOut = agentToManager{AgentID: h.ID, Action: "VoteYes", Pos: h.Position, commOut: make(chan managerToAgent)}
+		} else {
+			h.ComOut = agentToManager{AgentID: h.ID, Action: "VoteNo", Pos: h.Position, commOut: make(chan managerToAgent)}
+		}
+		h.Board.AgentManager.messIn <- h.ComOut
+		h.ComIn = <-h.ComOut.commOut
+		if h.ComIn.Valid {
+			fmt.Println(h.ID, "vote made ", h.Hut.Ballot.VotersID)
 		}
 	default:
 		fmt.Println("Should not be here")
