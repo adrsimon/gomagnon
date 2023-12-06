@@ -327,7 +327,7 @@ func (h *Human) DeliberateAtHut() {
 	/** If he is home and not partner he should wait **/
 	if h.Procreate.Partner != nil && h.Procreate.Partner.Position.Position != h.Hut.Position.Position {
 		h.Action = SLEEP
-		//fmt.Println("Waiting partner", h.ID, h.Procreate.Partner.ID)
+		fmt.Println("Waiting partner", h.ID, h.Procreate.Partner.ID)
 		return
 	}
 
@@ -602,15 +602,8 @@ func (h *Human) Act() {
 			h.ComOut = agentToManager{AgentID: h.ID, Action: "procreate", Pos: h.Position, commOut: make(chan managerToAgent)}
 			h.Board.AgentManager.messIn <- h.ComOut
 			h.ComIn = <-h.ComOut.commOut
-			if h.ComIn.Valid {
-				h.Procreate.Partner = nil
-				h.Procreate.Timer = 50
-			}
-		} else {
-			h.Procreate.Partner = nil
-			h.Procreate.Timer = 50
 		}
-		h.StackAction = append(h.StackAction, MOVE)
+		//h.StackAction = append(h.StackAction, MOVE)
 	default:
 		fmt.Println("Should not be here")
 	}

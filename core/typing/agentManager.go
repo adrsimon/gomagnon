@@ -70,6 +70,10 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 					agMan.Agents[newHuman.ID] = newHuman
 				}
 			}
+			ag.Procreate.Partner.Procreate.Partner = nil
+			ag.Procreate.Partner.Procreate.Timer = 50
+			ag.Procreate.Partner = nil
+			ag.Procreate.Timer = 50
 		}
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 	case "die":
@@ -81,13 +85,11 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 					if agent.Clan.chief.ID == agent.ID {
 						agMan.Agents[agent.Clan.chief.ID].Procreate.Partner = nil
 						agMan.Agents[agent.Clan.chief.ID].Procreate.Partner = nil
-						fmt.Println("Chief died so", agMan.Agents[agent.Clan.chief.ID].Procreate.Partner)
 					} else {
 						for _, ag := range agent.Clan.members {
 							if ag.Procreate.Partner != nil && ag.Procreate.Partner.ID == agent.ID {
 								agMan.Agents[ag.ID].Procreate.Partner = nil
 								agMan.Agents[agent.ID].Procreate.Partner = nil
-								fmt.Println(ag.ID, "partner died", ag.Procreate.Partner)
 							}
 						}
 					}
