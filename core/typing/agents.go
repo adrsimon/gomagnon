@@ -38,6 +38,7 @@ const (
 	CREATECLAN
 	CREATEVOTENEWMEMBER
 	VOTE
+	GETRESULT
 )
 
 type Race int
@@ -81,8 +82,9 @@ type Human struct {
 	ComOut agentToManager
 	ComIn  managerToAgent
 
-	Action      Action
-	StackAction StackAction
+	Action          Action
+	StackAction     StackAction
+	Looking4Someone bool
 
 	Neighbours    []*Human
 	AgentRelation map[string]string
@@ -301,9 +303,11 @@ func (h *Human) DeliberateAtHut() {
 	if h.Body.Hungriness > 80 {
 		if slices.Contains(h.HutInventoryVision, ANIMAL) || slices.Contains(h.HutInventoryVision, FRUIT) {
 			h.Action = EATFROMHOME
+			fmt.Println(h.ID, "want to eat a home")
 			return
 		} else {
 			h.Action = MOVE
+			fmt.Println(h.ID, "want to eat outside home")
 			return
 		}
 	}
@@ -311,16 +315,18 @@ func (h *Human) DeliberateAtHut() {
 	/** If he is tired and have a home, he should sleep **/
 	if h.Body.Tiredness > 0 {
 		h.Action = SLEEP
+		fmt.Println(h.ID, "want to sleep at home")
 		return
 	}
 
 	/** If he has stuff in inventory, he should store it **/
 	if h.Inventory.Weight > 0 {
 		h.Action = STOREATHOME
+		fmt.Println(h.ID, "want to store at home")
 		return
 	}
 
-	if h.Clan != nil && h.Clan.chief == h && len(h.Clan.members) < 15 && len(h.Clan.members) > 0 && h.Hut.Ballot.VoteInProgress == false {
+	if h.Clan != nil && h.Clan.chief == h && len(h.Clan.members) < 15 && len(h.Clan.members) > 0 && h.Hut.Ballot.VoteInProgress == false && h.Looking4Someone == false {
 		h.Action = CREATEVOTENEWMEMBER
 		fmt.Println(h.ID, "want to have a vote")
 		return
@@ -329,7 +335,13 @@ func (h *Human) DeliberateAtHut() {
 		h.Action = VOTE
 		fmt.Println(h.ID, "want to vote")
 		return
-	} // mettre un timeur dans agent et l'utilisait pour savoir quand venir recuperer les votes
+	}
+	if h.Clan != nil && h.Clan.chief == h && h.Hut.Ballot.VoteInProgress == true && h.Hut.Ballot.EndTimeVote.Before(time.Now()) {
+		h.Action = GETRESULT
+		fmt.Println(h.ID, "wants to get result")
+		return
+	}
+	// mettre un timeur dans agent et l'utilisait pour savoir quand venir recuperer les votes
 	// METTRE variable résultat dans la hut pour pouvoir checker si last result et quand on ajoute agent au clan agent manager doit
 
 }
@@ -491,6 +503,7 @@ func (h *Human) Act() {
 			}
 		}
 	case CREATECLAN:
+		fmt.Println("wac")
 		var bestH *Human
 		if len(h.Neighbours) > 1 {
 			//TO DEVELOPP bestH=find bestMatchHuman(humans)
@@ -516,6 +529,7 @@ func (h *Human) Act() {
 			}
 		}
 	case CREATEVOTENEWMEMBER:
+		fmt.Println("here")
 		h.ComOut = agentToManager{AgentID: h.ID, Action: "VoteNewPerson", Pos: h.Position, commOut: make(chan managerToAgent)}
 		h.Board.AgentManager.messIn <- h.ComOut
 		h.ComIn = <-h.ComOut.commOut
@@ -529,6 +543,7 @@ func (h *Human) Act() {
 			}
 		}
 	case VOTE:
+		fmt.Println("la")
 		if Randomizer.Intn(2) >= 1 {
 			h.ComOut = agentToManager{AgentID: h.ID, Action: "VoteYes", Pos: h.Position, commOut: make(chan managerToAgent)}
 		} else {
@@ -538,6 +553,17 @@ func (h *Human) Act() {
 		h.ComIn = <-h.ComOut.commOut
 		if h.ComIn.Valid {
 			fmt.Println(h.ID, "vote made ", h.Hut.Ballot.VotersID)
+		}
+	case GETRESULT:
+		fmt.Println("ici")
+		h.ComOut = agentToManager{AgentID: h.ID, Action: "GetResult", Pos: h.Position, commOut: make(chan managerToAgent)}
+		h.Board.AgentManager.messIn <- h.ComOut
+		h.ComIn = <-h.ComOut.commOut
+		if h.ComIn.Valid {
+			fmt.Println(h.ID, "have to look 4 someone", h.Hut.Ballot.VotersID)
+			h.Looking4Someone = true
+		} else {
+			h.Looking4Someone = false
 		}
 	default:
 		fmt.Println("Should not be here")

@@ -143,7 +143,9 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		} else {
 			fmt.Println(request.AgentID, "cannot voted")
 		}
-
+	case "GetResult":
+		result := agMan.Agents[request.AgentID].Hut.GetResult(agMan.Agents[request.AgentID])
+		request.commOut <- managerToAgent{Valid: result, Map: *agMan.Map, Resource: NONE}
 	}
 }
 
