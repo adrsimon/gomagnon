@@ -81,18 +81,23 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		if agent != nil {
 			if agent.Clan != nil {
 				if agent.Procreate.Partner != nil {
-					//fmt.Println("Partner died", agent.Procreate.Partner)
-					if agent.Clan.chief.ID == agent.ID {
-						agMan.Agents[agent.Clan.chief.ID].Procreate.Partner = nil
-						agMan.Agents[agent.Clan.chief.ID].Procreate.Partner = nil
-					} else {
-						for _, ag := range agent.Clan.members {
-							if ag.Procreate.Partner != nil && ag.Procreate.Partner.ID == agent.ID {
-								agMan.Agents[ag.ID].Procreate.Partner = nil
-								agMan.Agents[agent.ID].Procreate.Partner = nil
-							}
-						}
-					}
+					fmt.Println("Partner died, will put nil for", agent.Procreate.Partner.ID, agent.ID)
+					// if agent.Clan.chief.ID == agent.ID {
+					// 	fmt.Println("PartnerC died for", agent.Clan.chief.ID)
+					// 	agMan.Agents[agent.Clan.chief.ID].Procreate.Partner = nil
+					// 	agMan.Agents[agent.ID].Procreate.Partner = nil
+					// } else {
+					// 	for _, ag := range agent.Clan.members {
+					// 		if ag.Procreate.Partner != nil && ag.Procreate.Partner.ID == agent.ID {
+					// 			fmt.Println("Partner died for", ag.Procreate.Partner.ID)
+					// 			agMan.Agents[ag.ID].Procreate.Partner = nil
+					// 			agMan.Agents[agent.ID].Procreate.Partner = nil
+					// 		}
+					// 	}
+					// }
+					agent.Procreate.Partner.Procreate.Partner = nil
+					agent.Procreate.Partner.Procreate.Timer = 50
+					agent.Procreate.Partner = nil
 				}
 
 				if agent.Clan.chief.ID == request.AgentID {

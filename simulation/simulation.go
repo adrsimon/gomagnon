@@ -28,10 +28,10 @@ type Simulation struct {
 func NewSimulation() Simulation {
 	simu := Simulation{}
 	ressourcesMap := map[typing.ResourceType]int{
-		typing.FRUIT:  20,
-		typing.ANIMAL: 20,
-		typing.ROCK:   20,
-		typing.WOOD:   20,
+		typing.FRUIT:  30,
+		typing.ANIMAL: 30,
+		typing.ROCK:   30,
+		typing.WOOD:   30,
 	}
 
 	simu.Board = typing.NewBoard(46, 41, 40, ressourcesMap)
@@ -49,7 +49,7 @@ func NewSimulation() Simulation {
 
 	simu.Board.AgentManager.Start()
 
-	for i := 0; i < 30; i++ {
+	for i := 0; i < 15; i++ {
 		x, y := -1, -1
 		for x == -1 && y == -1 {
 			x = typing.Randomizer.Intn(simu.Board.XMax)
