@@ -40,7 +40,6 @@ const (
 	EATFROMHOME
 	CREATECLAN
 	PROCREATE
-	EATATHOME
 )
 
 type Race int
