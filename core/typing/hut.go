@@ -9,6 +9,6 @@ var Needs = map[string]map[ResourceType]int{
 
 type Hut struct {
 	Position  *Hexagone
-	Inventory map[ResourceType]int
+	Inventory []ResourceType
 	Owner     *Human
 }
