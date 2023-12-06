@@ -327,7 +327,7 @@ func (h *Human) DeliberateAtHut() {
 	/** If he is home and not partner he should wait **/
 	if h.Procreate.Partner != nil && h.Procreate.Partner.Position.Position != h.Hut.Position.Position {
 		h.Action = SLEEP
-		fmt.Println("Waiting partner", h.ID, h.Procreate.Partner.ID)
+		//fmt.Println("Waiting partner", h.ID, h.Procreate.Partner.ID)
 		return
 	}
 

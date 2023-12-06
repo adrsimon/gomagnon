@@ -81,7 +81,7 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		if agent != nil {
 			if agent.Clan != nil {
 				if agent.Procreate.Partner != nil {
-					fmt.Println("Partner died, will put nil for", agent.Procreate.Partner.ID, agent.ID)
+					//fmt.Println("Partner died, will put nil for", agent.Procreate.Partner.ID, agent.ID)
 					// if agent.Clan.chief.ID == agent.ID {
 					// 	fmt.Println("PartnerC died for", agent.Clan.chief.ID)
 					// 	agMan.Agents[agent.Clan.chief.ID].Procreate.Partner = nil
