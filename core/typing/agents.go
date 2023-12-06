@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"slices"
 	"time"
 )
 
@@ -35,6 +36,8 @@ const (
 	GET
 	BUILD
 	SLEEP
+	STOREATHOME
+	EATFROMHOME
 	CREATECLAN
 	PROCREATE
 	EATATHOME
@@ -48,14 +51,16 @@ const (
 )
 
 const (
-	MaxWeightInv = 10
-	WeightRock   = 2
-	WeighWood    = 1
+	MaxWeightInv = 10.0
+	WeightRock   = 2.0
+	WeightWood   = 1.0
+	WeightAnimal = 0.5
+	WeightFruit  = 0.1
 )
 
 type Inventory struct {
 	Object map[ResourceType]int
-	Weight int
+	Weight float64
 }
 
 type Procreate struct {
@@ -79,7 +84,8 @@ type Human struct {
 	CurrentPath    []*Hexagone
 	Board          *Board
 
-	Hut *Hut
+	Hut                *Hut
+	HutInventoryVision []ResourceType
 
 	ComOut agentToManager
 	ComIn  managerToAgent
@@ -135,8 +141,10 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 	case ANIMAL:
 		if h.Race == NEANDERTHAL {
 			score += AnimalFoodValueMultiplier + 0.5
+			score += AnimalFoodValueMultiplier + 0.5
 		}
 		if h.Race == SAPIENS {
+			score += AnimalFoodValueMultiplier + 1.0
 			score += AnimalFoodValueMultiplier + 1.0
 		}
 		if h.Body.Hungriness > threshold {
@@ -161,9 +169,9 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 			score -= 1
 		}
 	case WOOD:
-		if h.Hut == nil && h.Inventory.Object[WOOD] < Needs["hut"][WOOD] && h.Inventory.Weight <= MaxWeightInv-WeighWood {
+		if h.Hut == nil && h.Inventory.Object[WOOD] < Needs["hut"][WOOD] && h.Inventory.Weight <= MaxWeightInv-WeightWood {
 			score += 3
-		} else if (h.Hut != nil || h.Inventory.Object[WOOD] > Needs["hut"][WOOD]) && h.Inventory.Weight <= MaxWeightInv-WeighWood {
+		} else if (h.Hut != nil || h.Inventory.Object[WOOD] > Needs["hut"][WOOD]) && h.Inventory.Weight <= MaxWeightInv-WeightWood {
 			score += 0.5
 		} else {
 			score -= 1
@@ -181,12 +189,7 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 }
 
 func (h *Human) GetNeighboursWithinAcuity() []*Hexagone {
-	var neighbours []*Hexagone
-	if h.Body.Age < 15 {
-		neighbours = h.Board.GetNeighbours(h.Hut.Position)
-	} else {
-		neighbours = h.Board.GetNeighbours(h.Position)
-	}
+	neighbours := h.Board.GetNeighbours(h.Position)
 	visited := make(map[*Hexagone]bool)
 	for i := 1; i < h.Stats.Acuity; i++ {
 		for _, neighbour := range neighbours {
@@ -244,15 +247,27 @@ func (h *Human) MoveToHexagon(hex *Hexagone) {
 func (h *Human) UpdateState(resource ResourceType) {
 	switch resource {
 	case ANIMAL:
-		h.Body.Hungriness -= 10 * AnimalFoodValueMultiplier
+		if h.Body.Hungriness > 85 || h.Hut == nil || h.Inventory.Weight >= MaxWeightInv-3*WeightAnimal {
+			h.Body.Hungriness -= 10 * AnimalFoodValueMultiplier
+			break
+		} else {
+			h.Inventory.Object[resource] += 3
+			h.Inventory.Weight += 3 * WeightAnimal
+		}
 	case FRUIT:
-		h.Body.Hungriness -= 10 * FruitFoodValueMultiplier
+		if h.Body.Hungriness > 85 || h.Hut == nil || h.Inventory.Weight >= MaxWeightInv-WeightFruit {
+			h.Body.Hungriness -= 10 * FruitFoodValueMultiplier
+			break
+		} else {
+			h.Inventory.Object[resource] += 1
+			h.Inventory.Weight += WeightFruit
+		}
 	case ROCK:
-		h.Inventory.Object[ROCK] += 1
+		h.Inventory.Object[resource] += 1
 		h.Inventory.Weight += WeightRock
 	case WOOD:
-		h.Inventory.Object[WOOD] += 1
-		h.Inventory.Weight += WeighWood
+		h.Inventory.Object[resource] += 1
+		h.Inventory.Weight += WeightWood
 	}
 
 	neighbours := h.Board.GetNeighbours(h.Position)
@@ -298,6 +313,9 @@ func (h *Human) Perceive() {
 		}
 	}
 
+	if h.Hut != nil && h.Position.Position == h.Hut.Position.Position {
+		h.HutInventoryVision = h.Hut.Inventory
+	}
 }
 
 func (h *Human) DeliberateAtHut() {
@@ -321,6 +339,23 @@ func (h *Human) DeliberateAtHut() {
 	if h.Procreate.Partner != nil && h.Procreate.Partner.Position.Position == h.Hut.Position.Position {
 		h.Action = PROCREATE
 		return
+	}
+
+	/** If he has stuff in inventory, he should store it **/
+	if h.Inventory.Weight > 0 {
+		h.Action = STOREATHOME
+		return
+	}
+
+	/** If he is hungry and have food in home, he should eat **/
+	if h.Body.Hungriness > 80 {
+		if slices.Contains(h.HutInventoryVision, ANIMAL) || slices.Contains(h.HutInventoryVision, FRUIT) {
+			h.Action = EATFROMHOME
+			return
+		} else {
+			h.Action = MOVE
+			return
+		}
 	}
 }
 
@@ -451,9 +486,15 @@ func (h *Human) Act() {
 		if !h.MovingToTarget {
 			var targetHexagon *Hexagone
 
-			if (h.Body.Tiredness > 70 && h.Hut != nil) || (h.Hut != nil && h.Procreate.Partner != nil) {
-				targetHexagon = h.Hut.Position
-			} else {
+			if h.Hut != nil {
+				if h.Body.Tiredness > 80 || h.Procreate.Partner != nil {
+					targetHexagon = h.Hut.Position
+				} else if h.Body.Hungriness > 80 && (slices.Contains(h.HutInventoryVision, ANIMAL) || slices.Contains(h.HutInventoryVision, FRUIT)) {
+					targetHexagon = h.Hut.Position
+				}
+			}
+
+			if targetHexagon == nil {
 				surroundingHexagons := h.GetNeighboursWithinAcuity()
 				targetHexagon = h.BestNeighbor(surroundingHexagons)
 			}
@@ -501,11 +542,11 @@ func (h *Human) Act() {
 		h.Board.AgentManager.messIn <- h.ComOut
 		h.ComIn = <-h.ComOut.commOut
 		if h.ComIn.Valid {
-			h.Hut = &Hut{Position: h.Position, Inventory: make(map[ResourceType]int), Owner: h}
+			h.Hut = &Hut{Position: h.Position, Inventory: make([]ResourceType, 0), Owner: h}
 			h.Inventory.Object[WOOD] -= Needs["hut"][WOOD]
 			h.Inventory.Object[ROCK] -= Needs["hut"][ROCK]
-			h.Inventory.Weight -= WeighWood * Needs["hut"][WOOD]
-			h.Inventory.Weight -= WeightRock * Needs["hut"][ROCK]
+			h.Inventory.Weight -= WeightWood * float64(Needs["hut"][WOOD])
+			h.Inventory.Weight -= WeightRock * float64(Needs["hut"][ROCK])
 		}
 	case SLEEP:
 		if h.Body.Tiredness > 0 {
@@ -513,6 +554,24 @@ func (h *Human) Act() {
 			// h.Body.Hungriness += 0.5
 			// h.Body.Thirstiness += 0.5
 			h.StackAction = append(h.StackAction, SLEEP)
+		}
+	case STOREATHOME:
+		h.ComOut = agentToManager{AgentID: h.ID, Action: "store-at-home", Pos: h.Position, commOut: make(chan managerToAgent)}
+		h.Board.AgentManager.messIn <- h.ComOut
+		h.ComIn = <-h.ComOut.commOut
+		if h.ComIn.Valid {
+			h.Inventory.Weight = 0
+		}
+	case EATFROMHOME:
+		h.ComOut = agentToManager{AgentID: h.ID, Action: "eat-from-home", Pos: h.Position, commOut: make(chan managerToAgent)}
+		h.Board.AgentManager.messIn <- h.ComOut
+		h.ComIn = <-h.ComOut.commOut
+		if h.ComIn.Valid {
+			if h.ComIn.Resource == ANIMAL {
+				h.Body.Hungriness -= 10 * AnimalFoodValueMultiplier
+			} else {
+				h.Body.Hungriness -= 10 * FruitFoodValueMultiplier
+			}
 		}
 	case CREATECLAN:
 		var bestH *Human

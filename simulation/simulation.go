@@ -34,7 +34,7 @@ func NewSimulation() Simulation {
 		typing.WOOD:   20,
 	}
 
-	simu.Board = typing.NewBoard(45, 40, 40, ressourcesMap)
+	simu.Board = typing.NewBoard(46, 41, 40, ressourcesMap)
 
 	simu.cameraX = 0
 	simu.cameraY = 0

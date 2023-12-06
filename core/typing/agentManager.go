@@ -3,6 +3,7 @@ package typing
 import (
 	"fmt"
 	"math/rand"
+	"slices"
 )
 
 type agentToManager struct {
@@ -51,7 +52,7 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 			request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: res}
 		}
 	case "build":
-		(*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Hut = &Hut{Position: request.Pos, Inventory: make(map[ResourceType]int), Owner: agMan.Agents[request.AgentID]}
+		(*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Hut = &Hut{Position: request.Pos, Inventory: make([]ResourceType, 0), Owner: agMan.Agents[request.AgentID]}
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 	case "leave-house":
 		ag := agMan.Agents[request.AgentID]
@@ -112,6 +113,42 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 
 			delete(agMan.Agents, request.AgentID)
 			fmt.Println("\033[31mAgent died, current number:\033[0m", len(agMan.Agents))
+		}
+	case "store-at-home":
+		ag := agMan.Agents[request.AgentID]
+		if ag.Inventory.Weight <= 0 {
+			request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
+			return
+		}
+		for res, val := range ag.Inventory.Object {
+			for i := 0; i < val; i++ {
+				ag.Hut.Inventory = append(ag.Hut.Inventory, res)
+			}
+			ag.Inventory.Object[res] = 0
+		}
+		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
+	case "eat-from-home":
+		ag := agMan.Agents[request.AgentID]
+		if !slices.Contains(ag.Hut.Inventory, ANIMAL) && !slices.Contains(ag.Hut.Inventory, FRUIT) {
+			request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
+			return
+		}
+		if slices.Contains(ag.Hut.Inventory, ANIMAL) {
+			i := slices.Index(ag.Hut.Inventory, ANIMAL)
+			if i == -1 {
+				request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
+				return
+			}
+			ag.Hut.Inventory = append(ag.Hut.Inventory[:i], ag.Hut.Inventory[i+1:]...)
+			request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: ANIMAL}
+		} else {
+			i := slices.Index(ag.Hut.Inventory, FRUIT)
+			if i == -1 {
+				request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
+				return
+			}
+			ag.Hut.Inventory = append(ag.Hut.Inventory[:i], ag.Hut.Inventory[i+1:]...)
+			request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: FRUIT}
 		}
 	}
 }
