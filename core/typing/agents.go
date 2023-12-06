@@ -39,6 +39,7 @@ const (
 	CREATEVOTENEWMEMBER
 	VOTE
 	GETRESULT
+	LOOK4SOMEONE
 )
 
 type Race int
@@ -299,50 +300,40 @@ func (h *Human) Perceive() {
 }
 
 func (h *Human) DeliberateAtHut() {
+	/** If he is tired and have a home, he should sleep **/
+	if h.Body.Tiredness > 0 {
+		h.Action = SLEEP
+		return
+	}
+
 	/** If he is hungry and have food in home, he should eat **/
 	if h.Body.Hungriness > 80 {
 		if slices.Contains(h.HutInventoryVision, ANIMAL) || slices.Contains(h.HutInventoryVision, FRUIT) {
 			h.Action = EATFROMHOME
-			fmt.Println(h.ID, "want to eat a home")
 			return
 		} else {
 			h.Action = MOVE
-			fmt.Println(h.ID, "want to eat outside home")
-			return
 		}
-	}
-
-	/** If he is tired and have a home, he should sleep **/
-	if h.Body.Tiredness > 0 {
-		h.Action = SLEEP
-		fmt.Println(h.ID, "want to sleep at home")
-		return
 	}
 
 	/** If he has stuff in inventory, he should store it **/
 	if h.Inventory.Weight > 0 {
 		h.Action = STOREATHOME
-		fmt.Println(h.ID, "want to store at home")
 		return
 	}
 
 	if h.Clan != nil && h.Clan.chief == h && len(h.Clan.members) < 15 && len(h.Clan.members) > 0 && h.Hut.Ballot.VoteInProgress == false && h.Looking4Someone == false {
 		h.Action = CREATEVOTENEWMEMBER
-		fmt.Println(h.ID, "want to have a vote")
 		return
 	}
-	if h.Clan != nil && h.Hut.Ballot.VoteInProgress == true && slices.Contains(h.Hut.Ballot.VotersID, h.ID) {
+	if h.Clan != nil && h.Hut.Ballot.VoteInProgress && slices.Contains(h.Hut.Ballot.VotersID, h.ID) {
 		h.Action = VOTE
-		fmt.Println(h.ID, "want to vote")
 		return
 	}
-	if h.Clan != nil && h.Clan.chief == h && h.Hut.Ballot.VoteInProgress == true && h.Hut.Ballot.EndTimeVote.Before(time.Now()) {
+	if h.Clan != nil && h.Clan.chief == h && h.Hut.Ballot.VoteInProgress && h.Hut.Ballot.EndTimeVote.Before(time.Now()) {
 		h.Action = GETRESULT
-		fmt.Println(h.ID, "wants to get result")
 		return
 	}
-	// mettre un timeur dans agent et l'utilisait pour savoir quand venir recuperer les votes
-	// METTRE variable résultat dans la hut pour pouvoir checker si last result et quand on ajoute agent au clan agent manager doit
 
 }
 
@@ -388,7 +379,14 @@ func (h *Human) Deliberate() {
 		}
 	}
 
-	/** Outside hut actions **/
+	/** General actions **/
+	if h.Body.Thirstiness > 80 || h.Body.Hungriness > 80 {
+		if !h.MovingToTarget {
+			h.Action = MOVE
+			return
+		}
+	}
+
 	if h.Hut != nil {
 		if len(h.Neighbours) > 0 && h.Clan == nil {
 			h.Action = CREATECLAN
@@ -396,12 +394,12 @@ func (h *Human) Deliberate() {
 		}
 	}
 
-	/** General actions **/
-	if !h.MovingToTarget {
-		h.Action = MOVE
+	if h.Clan != nil && h.Clan.chief == h && h.Looking4Someone {
+		h.Action = LOOK4SOMEONE
 		return
 	}
-	if h.MovingToTarget && len(h.CurrentPath) > 0 {
+
+	if !h.MovingToTarget {
 		h.Action = MOVE
 		return
 	}
@@ -503,13 +501,15 @@ func (h *Human) Act() {
 			}
 		}
 	case CREATECLAN:
-		fmt.Println("wac")
 		var bestH *Human
 		if len(h.Neighbours) > 1 {
 			//TO DEVELOPP bestH=find bestMatchHuman(humans)
 			bestH = h.Neighbours[0] // waiting function
-		} else {
+		} else if len(h.Neighbours) == 1 {
 			bestH = h.Neighbours[0]
+		} else {
+			h.StackAction = append(h.StackAction, MOVE)
+			break
 		}
 		if bestH.Terminated == false {
 			select {
@@ -520,7 +520,6 @@ func (h *Human) Act() {
 						clan := &Clan{members: []*Human{bestH}, chief: h}
 						h.Clan = clan
 						bestH.AgentCommIn <- AgentComm{Agent: h, Action: "INVITECLAN", commOut: h.AgentCommIn}
-						fmt.Println("clan created", h.Clan.chief.ID, h.Clan.members[0].ID)
 					}
 				case <-time.After(20 * time.Millisecond):
 				}
@@ -529,21 +528,17 @@ func (h *Human) Act() {
 			}
 		}
 	case CREATEVOTENEWMEMBER:
-		fmt.Println("here")
 		h.ComOut = agentToManager{AgentID: h.ID, Action: "VoteNewPerson", Pos: h.Position, commOut: make(chan managerToAgent)}
 		h.Board.AgentManager.messIn <- h.ComOut
 		h.ComIn = <-h.ComOut.commOut
 		if h.ComIn.Valid {
-			fmt.Println(h.ID, "vote created ", h.Hut.Ballot.VotersID)
 			h.ComOut = agentToManager{AgentID: h.ID, Action: "VoteYes", Pos: h.Position, commOut: make(chan managerToAgent)}
 			h.Board.AgentManager.messIn <- h.ComOut
 			h.ComIn = <-h.ComOut.commOut
 			if h.ComIn.Valid {
-				fmt.Println(h.ID, "vote made ", h.Hut.Ballot.VotersID)
 			}
 		}
 	case VOTE:
-		fmt.Println("la")
 		if Randomizer.Intn(2) >= 1 {
 			h.ComOut = agentToManager{AgentID: h.ID, Action: "VoteYes", Pos: h.Position, commOut: make(chan managerToAgent)}
 		} else {
@@ -552,19 +547,44 @@ func (h *Human) Act() {
 		h.Board.AgentManager.messIn <- h.ComOut
 		h.ComIn = <-h.ComOut.commOut
 		if h.ComIn.Valid {
-			fmt.Println(h.ID, "vote made ", h.Hut.Ballot.VotersID)
 		}
 	case GETRESULT:
-		fmt.Println("ici")
 		h.ComOut = agentToManager{AgentID: h.ID, Action: "GetResult", Pos: h.Position, commOut: make(chan managerToAgent)}
 		h.Board.AgentManager.messIn <- h.ComOut
 		h.ComIn = <-h.ComOut.commOut
 		if h.ComIn.Valid {
-			fmt.Println(h.ID, "have to look 4 someone", h.Hut.Ballot.VotersID)
 			h.Looking4Someone = true
 		} else {
 			h.Looking4Someone = false
 		}
+	case LOOK4SOMEONE:
+		var bestH *Human
+		if len(h.Neighbours) > 1 {
+			//TO DEVELOPP bestH=find bestMatchHuman(humans)
+			bestH = h.Neighbours[0] // waiting function
+		} else if len(h.Neighbours) == 1 {
+			bestH = h.Neighbours[0]
+		} else {
+			h.StackAction = append(h.StackAction, MOVE)
+			break
+		}
+		if bestH.Terminated == false {
+			select {
+			case bestH.AgentCommIn <- AgentComm{Agent: h, Action: "INVITECLAN", commOut: h.AgentCommIn}:
+				select {
+				case res := <-h.AgentCommIn:
+					if res.Action == "ACCEPTCLAN" {
+						h.Looking4Someone = false
+					} else {
+						h.Action = MOVE
+					}
+				case <-time.After(20 * time.Millisecond):
+				}
+			case <-time.After(20 * time.Millisecond):
+
+			}
+		}
+
 	default:
 		fmt.Println("Should not be here")
 	}
@@ -590,6 +610,22 @@ func (h *Human) AnswerAgents(res AgentComm) {
 				}
 				h.Hut = res2.Agent.Hut
 			}
+		}
+	case "INVITECLAN":
+		if h.Clan != nil {
+			res.commOut <- AgentComm{Agent: h, Action: "REFUSECLAN", commOut: h.AgentCommIn}
+		} else {
+			res.commOut <- AgentComm{Agent: h, Action: "ACCEPTCLAN", commOut: h.AgentCommIn}
+			h.Clan = res.Agent.Clan
+			if h.Hut != nil && h.Hut.Owner != nil {
+				h.ComOut = agentToManager{AgentID: h.ID, Action: "leave-house", Pos: h.Position, commOut: make(chan managerToAgent)}
+				h.Board.AgentManager.messIn <- h.ComOut
+				h.ComIn = <-h.ComOut.commOut
+				if h.ComIn.Valid {
+					h.Hut = nil
+				}
+			}
+			h.Hut = res.Agent.Hut
 		}
 	}
 }
