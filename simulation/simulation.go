@@ -60,6 +60,7 @@ func NewSimulation() Simulation {
 		}
 		simu.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", simu.Board.AgentManager.Count)] = &typing.Human{
 			ID:   fmt.Sprintf("ag-%d", i),
+			Type: 'F',
 			Race: typing.Race(typing.Randomizer.Intn(2)),
 			Body: typing.HumanBody{
 				Thirstiness: 50,
@@ -81,7 +82,7 @@ func NewSimulation() Simulation {
 			AgentRelation:  make(map[string]string),
 			AgentCommIn:    make(chan typing.AgentComm),
 			Clan:           nil,
-			Procreate:      typing.Procreate{Partner: nil, Timer: 100, Potential: true},
+			Procreate:      typing.Procreate{Partner: nil, Timer: 100},
 		}
 		simu.Board.AgentManager.Count++
 	}

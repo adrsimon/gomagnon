@@ -2,6 +2,7 @@ package typing
 
 import (
 	"fmt"
+	"math/rand"
 )
 
 type agentToManager struct {
@@ -25,8 +26,8 @@ type AgentManager struct {
 	Count           int
 }
 
-func NewAgentManager(Map [][]*Hexagone, messIn chan agentToManager, agents map[string]*Human, ressourceManager *ResourceManager, count int) *AgentManager {
-	return &AgentManager{Map: &Map, messIn: messIn, Agents: agents, ResourceManager: ressourceManager, Count: count}
+func NewAgentManager(Map [][]*Hexagone, messIn chan agentToManager, agents map[string]*Human, ressourceManager *ResourceManager) *AgentManager {
+	return &AgentManager{Map: &Map, messIn: messIn, Agents: agents, ResourceManager: ressourceManager, Count: 0}
 }
 
 func (agMan *AgentManager) startResources() {
@@ -60,44 +61,58 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 	case "procreate":
 		ag := agMan.Agents[request.AgentID]
 		if ag.Procreate.Partner != nil {
-			newHuman := MakeChild(ag, ag.Procreate.Partner, agMan.Count)
-			if newHuman != nil {
-				agMan.Count++
-				agMan.Agents[newHuman.ID] = newHuman
+			numChildren := rand.Intn(2) + 1
+			for i := 0; i < numChildren; i++ {
+				newHuman := MakeChild(ag, ag.Procreate.Partner, agMan.Count)
+				if newHuman != nil {
+					agMan.Count++
+					agMan.Agents[newHuman.ID] = newHuman
+				}
 			}
 		}
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 	case "die":
 		agent := agMan.Agents[request.AgentID]
-		if agent.Clan != nil {
-			for i, ag := range agent.Clan.members {
-				if ag.ID == request.AgentID {
-					agent.Clan.members = append(agent.Clan.members[:i], agent.Clan.members[i+1:]...)
-					break
+		if agent != nil {
+			if agent.Clan != nil {
+				if agent.Procreate.Partner != nil {
+					//fmt.Println("Partner died", agent.Procreate.Partner)
+					if agent.Clan.chief.ID == agent.ID {
+						agMan.Agents[agent.Clan.chief.ID].Procreate.Partner = nil
+						agMan.Agents[agent.Clan.chief.ID].Procreate.Partner = nil
+						fmt.Println("Chief died so", agMan.Agents[agent.Clan.chief.ID].Procreate.Partner)
+					} else {
+						for _, ag := range agent.Clan.members {
+							if ag.Procreate.Partner != nil && ag.Procreate.Partner.ID == agent.ID {
+								agMan.Agents[ag.ID].Procreate.Partner = nil
+								agMan.Agents[agent.ID].Procreate.Partner = nil
+								fmt.Println(ag.ID, "partner died", ag.Procreate.Partner)
+							}
+						}
+					}
 				}
-			}
 
-			if agent.Clan.chief.ID == request.AgentID {
-				if len(agMan.Agents[request.AgentID].Clan.members) > 0 {
-					agent.Clan.chief = agent.Clan.members[0]
-					agent.Hut.Owner = agent.Clan.members[0]
-					(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = agent.Clan.members[0]
-				} else {
-					agMan.Agents[request.AgentID].Clan = nil
+				if agent.Clan.chief.ID == request.AgentID {
+					if len(agMan.Agents[request.AgentID].Clan.members) > 0 {
+						agent.Clan.chief = agent.Clan.members[0]
+						agent.Hut.Owner = agent.Clan.members[0]
+						(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = agent.Clan.members[0]
+					} else {
+						agMan.Agents[request.AgentID].Clan = nil
+						agent.Hut.Owner = nil
+						(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = nil
+					}
+				}
+			} else {
+				if agent.Hut != nil {
 					agent.Hut.Owner = nil
 					(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = nil
 				}
 			}
-		} else {
-			if agent.Hut != nil {
-				agent.Hut.Owner = nil
-				(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = nil
-			}
-		}
 
-		delete(agMan.Agents, request.AgentID)
-		agMan.Count--
-		fmt.Println("Agent died, current number:", len(agMan.Agents))
+			delete(agMan.Agents, request.AgentID)
+			fmt.Println("\033[31mAgent died, current number:\033[0m", len(agMan.Agents))
+		}
 	}
 }
 
