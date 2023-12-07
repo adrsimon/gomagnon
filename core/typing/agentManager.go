@@ -23,10 +23,11 @@ type AgentManager struct {
 	messIn          chan agentToManager
 	Agents          map[string]*Human
 	ResourceManager *ResourceManager
+	Count           int
 }
 
-func NewAgentManager(Map [][]*Hexagone, messIn chan agentToManager, agents map[string]*Human, resourceManager *ResourceManager) *AgentManager {
-	return &AgentManager{Map: &Map, messIn: messIn, Agents: agents, ResourceManager: resourceManager}
+func NewAgentManager(Map [][]*Hexagone, messIn chan agentToManager, agents map[string]*Human, ressourceManager *ResourceManager) *AgentManager {
+	return &AgentManager{Map: &Map, messIn: messIn, Agents: agents, ResourceManager: ressourceManager, Count: 0}
 }
 
 func (agMan *AgentManager) startResources() {
@@ -45,7 +46,7 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		default:
 			res := (*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Resource
 			(*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Resource = NONE
-			respawnCD := Randomizer.Intn(100) + 150
+			respawnCD := Randomizer.Intn(20) + 10
 			agMan.ResourceManager.RespawnCDs = append(agMan.ResourceManager.RespawnCDs, CoolDown{Current: respawnCD, Resource: res})
 			request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: res}
 		}
@@ -57,35 +58,62 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		ag.Hut.Owner = nil
 		(*agMan.Map)[ag.Hut.Position.Position.X][ag.Hut.Position.Position.Y].Hut.Owner = nil
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
-	case "die":
-		agent := agMan.Agents[request.AgentID]
-		if agent.Clan != nil {
-			for i, ag := range agent.Clan.members {
-				if ag.ID == request.AgentID {
-					agent.Clan.members = append(agent.Clan.members[:i], agent.Clan.members[i+1:]...)
-					break
+	case "isHome":
+		ag := agMan.Agents[request.AgentID]
+		if ag.Procreate.Partner != nil && ag.Procreate.Partner.Position.Position == ag.Hut.Position.Position {
+			request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
+		} else {
+			request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
+		}
+
+	case "procreate":
+		ag := agMan.Agents[request.AgentID]
+		if ag.Procreate.Partner != nil {
+			numChildren := Randomizer.Intn(2) + 1
+			for i := 0; i < numChildren; i++ {
+				newHuman := MakeChild(ag, ag.Procreate.Partner, agMan.Count)
+				if newHuman != nil {
+					agMan.Count++
+					agMan.Agents[newHuman.ID] = newHuman
 				}
 			}
+			ag.Procreate.Partner.Procreate.Partner = nil
+			ag.Procreate.Partner.Procreate.Timer = 50
+			ag.Procreate.Partner = nil
+			ag.Procreate.Timer = 50
+		}
+		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
+	case "die":
+		agent := agMan.Agents[request.AgentID]
+		if agent != nil {
+			if agent.Clan != nil {
+				if agent.Procreate.Partner != nil {
+					agent.Procreate.Partner.Procreate.Partner = nil
+					agent.Procreate.Partner.Procreate.Timer = 50
+					agent.Procreate.Partner = nil
+				}
 
-			if agent.Clan.chief.ID == request.AgentID {
-				if len(agMan.Agents[request.AgentID].Clan.members) > 0 {
-					agent.Clan.chief = agent.Clan.members[0]
-					agent.Hut.Owner = agent.Clan.members[0]
-					(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = agent.Clan.members[0]
-				} else {
-					agMan.Agents[request.AgentID].Clan = nil
+				if agent.Clan.chief.ID == request.AgentID {
+					if len(agMan.Agents[request.AgentID].Clan.members) > 0 {
+						agent.Clan.chief = agent.Clan.members[0]
+						agent.Hut.Owner = agent.Clan.members[0]
+						(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = agent.Clan.members[0]
+					} else {
+						agMan.Agents[request.AgentID].Clan = nil
+						agent.Hut.Owner = nil
+						(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = nil
+					}
+				}
+			} else {
+				if agent.Hut != nil {
 					agent.Hut.Owner = nil
 					(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = nil
 				}
 			}
-		} else {
-			if agent.Hut != nil {
-				agent.Hut.Owner = nil
-				(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = nil
-			}
-		}
 
-		delete(agMan.Agents, request.AgentID)
+			delete(agMan.Agents, request.AgentID)
+			fmt.Println("\033[31mAgent died, current number:\033[0m", len(agMan.Agents))
+		}
 	case "store-at-home":
 		ag := agMan.Agents[request.AgentID]
 		if ag.Inventory.Weight <= 0 {

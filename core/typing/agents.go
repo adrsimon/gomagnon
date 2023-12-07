@@ -1,5 +1,7 @@
 package typing
 
+// check if everyone make childs, add age + childs behaviour,
+
 import (
 	"fmt"
 	"math"
@@ -15,7 +17,7 @@ type HumanStats struct {
 }
 
 type HumanBody struct {
-	Age    int
+	Age    float64
 	Gender rune
 
 	Hungriness  float64
@@ -37,6 +39,7 @@ const (
 	STOREATHOME
 	EATFROMHOME
 	CREATECLAN
+	PROCREATE
 )
 
 type Race int
@@ -57,6 +60,13 @@ const (
 type Inventory struct {
 	Object map[ResourceType]int
 	Weight float64
+}
+
+type Procreate struct {
+	Partner   *Human
+	Potential *Human
+	Timer     int
+	isHome    bool
 }
 
 type Human struct {
@@ -87,6 +97,7 @@ type Human struct {
 	AgentRelation map[string]string
 	AgentCommIn   chan AgentComm
 	Clan          *Clan
+	Procreate     Procreate
 	Terminated    bool
 }
 
@@ -102,8 +113,8 @@ type Clan struct {
 }
 
 const (
-	AnimalFoodValueMultiplier = 3.0
-	FruitFoodValueMultiplier  = 1.0
+	AnimalFoodValueMultiplier = 5.0
+	FruitFoodValueMultiplier  = 3.0
 	WaterValueMultiplier      = 2.0
 	DistanceMultiplier        = 0.2
 )
@@ -130,8 +141,10 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 	case ANIMAL:
 		if h.Race == NEANDERTHAL {
 			score += AnimalFoodValueMultiplier + 0.5
+			score += AnimalFoodValueMultiplier + 0.5
 		}
 		if h.Race == SAPIENS {
+			score += AnimalFoodValueMultiplier + 1.0
 			score += AnimalFoodValueMultiplier + 1.0
 		}
 		if h.Body.Hungriness > threshold {
@@ -142,7 +155,7 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 			score += FruitFoodValueMultiplier + 0.01
 		}
 		if h.Race == SAPIENS {
-			score += FruitFoodValueMultiplier + 0.3
+			score += FruitFoodValueMultiplier + 0.5
 		}
 		if h.Body.Hungriness > threshold {
 			score += 3
@@ -226,9 +239,9 @@ func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
 
 func (h *Human) MoveToHexagon(hex *Hexagone) {
 	h.Position = hex
-	h.Body.Hungriness += 0.2
-	h.Body.Thirstiness += 0.4
-	h.Body.Tiredness += 0.4
+	// h.Body.Hungriness += 1
+	// h.Body.Thirstiness += 2
+	h.Body.Tiredness += 0.5
 }
 
 func (h *Human) UpdateState(resource ResourceType) {
@@ -263,7 +276,7 @@ func (h *Human) UpdateState(resource ResourceType) {
 			continue
 		}
 		if neighbour.Biome == WATER {
-			h.Body.Thirstiness -= 10
+			h.Body.Thirstiness = 0
 		}
 	}
 }
@@ -289,6 +302,20 @@ func (h *Human) Perceive() {
 		}
 	}
 	h.Neighbours = listHumans
+	if h.Hut != nil && h.Procreate.Partner == nil && h.Procreate.Timer <= 0 {
+		for _, neighbour := range h.Neighbours {
+			if neighbour.Clan == h.Clan && neighbour.Procreate.Partner == nil && neighbour.Hut == h.Hut && neighbour.Body.Age > 15 /*&& h.Type != neighbour.Type */ {
+				h.Procreate.Partner = neighbour
+				neighbour.Procreate.Partner = h
+				break
+			}
+		}
+	} else if h.Hut != nil && h.Procreate.Partner != nil && h.Position.Position == h.Hut.Position.Position {
+		h.ComOut = agentToManager{AgentID: h.ID, Action: "isHome", Pos: h.Position, commOut: make(chan managerToAgent)}
+		h.Board.AgentManager.messIn <- h.ComOut
+		h.ComIn = <-h.ComOut.commOut
+		h.Procreate.isHome = h.ComIn.Valid
+	}
 
 	if h.Hut != nil && h.Position.Position == h.Hut.Position.Position {
 		h.HutInventoryVision = h.Hut.Inventory
@@ -299,6 +326,21 @@ func (h *Human) DeliberateAtHut() {
 	/** If he is tired and have a home, he should sleep **/
 	if h.Body.Tiredness > 0 {
 		h.Action = SLEEP
+		return
+	}
+	/** If he is home and not partner he should wait **/
+	if h.Procreate.Partner != nil && !h.Procreate.isHome {
+		h.Action = SLEEP
+		return
+	}
+
+	if h.Procreate.Partner == nil {
+		h.Action = MOVE
+	}
+
+	/** If he is home with partner he should procreate **/
+	if h.Procreate.Partner != nil && h.Procreate.isHome {
+		h.Action = PROCREATE
 		return
 	}
 
@@ -371,14 +413,72 @@ func (h *Human) Deliberate() {
 	}
 
 	/** General actions **/
+	if h.Procreate.Partner != nil && h.Position != h.Hut.Position {
+		h.Action = MOVE
+		return
+	}
+
 	if !h.MovingToTarget {
 		h.Action = MOVE
 		return
 	}
+
 	if h.MovingToTarget && len(h.CurrentPath) > 0 {
 		h.Action = MOVE
 		return
 	}
+
+	if h.Target.Position == h.Position.Position {
+		h.Action = GET
+		return
+	}
+}
+
+func MakeChild(parent1 *Human, parent2 *Human, count int) *Human {
+	var failChance int
+	var newHuman *Human
+	newHuman = nil
+	if parent1.Race == NEANDERTHAL {
+		failChance = rand.Intn(2)
+	} else {
+		failChance = rand.Intn(1)
+	}
+	if failChance == 0 {
+		newHuman = &Human{
+			ID: fmt.Sprintf("ag-%d", count),
+			Type: func() rune {
+				if rand.Intn(2) == 0 {
+					return 'M'
+				} else {
+					return 'F'
+				}
+			}(),
+			Race: parent1.Race,
+			Body: HumanBody{
+				Thirstiness: 50,
+				Hungriness:  50,
+				Age:         0,
+			},
+			Stats: HumanStats{
+				Strength:    int((parent1.Stats.Strength + parent2.Stats.Strength) / 2),
+				Sociability: int((parent1.Stats.Sociability + parent2.Stats.Sociability) / 2),
+				Acuity:      int((parent1.Stats.Acuity + parent2.Stats.Acuity) / 2),
+			},
+			Position:       parent1.Position,
+			Target:         nil,
+			MovingToTarget: false,
+			CurrentPath:    nil,
+			Hut:            parent1.Hut,
+			Board:          parent1.Board,
+			Inventory:      Inventory{Weight: 0, Object: make(map[ResourceType]int)},
+			AgentRelation:  make(map[string]string),
+			AgentCommIn:    make(chan AgentComm),
+			Clan:           parent1.Clan,
+			Procreate:      Procreate{Partner: nil, Timer: 50},
+		}
+		fmt.Println("\033[32mProcreated race:\033[0m", parent1.Race, "\033[32mfrom:\033[0m", parent1.ID, parent2.ID, "\033[32mNew human id:\033[0m", newHuman.ID, "\033[32mNb of Agents:\033[0m", len(parent1.Board.AgentManager.Agents))
+	}
+	return newHuman
 }
 
 func (h *Human) Act() {
@@ -390,7 +490,7 @@ func (h *Human) Act() {
 			var targetHexagon *Hexagone
 
 			if h.Hut != nil {
-				if h.Body.Tiredness > 80 {
+				if h.Body.Tiredness > 80 || h.Procreate.Partner != nil {
 					targetHexagon = h.Hut.Position
 				} else if h.Body.Hungriness > 80 && (slices.Contains(h.HutInventoryVision, ANIMAL) || slices.Contains(h.HutInventoryVision, FRUIT)) {
 					targetHexagon = h.Hut.Position
@@ -454,8 +554,8 @@ func (h *Human) Act() {
 	case SLEEP:
 		if h.Body.Tiredness > 0 {
 			h.Body.Tiredness -= 3
-			h.Body.Hungriness += 0.5
-			h.Body.Thirstiness += 0.5
+			// h.Body.Hungriness += 0.5
+			// h.Body.Thirstiness += 0.5
 			h.StackAction = append(h.StackAction, SLEEP)
 		}
 	case STOREATHOME:
@@ -484,7 +584,7 @@ func (h *Human) Act() {
 		} else {
 			bestH = h.Neighbours[0]
 		}
-		if bestH.Terminated == false {
+		if !bestH.Terminated {
 			select {
 			case bestH.AgentCommIn <- AgentComm{Agent: h, Action: "CREATECLAN", commOut: h.AgentCommIn}:
 				select {
@@ -494,15 +594,23 @@ func (h *Human) Act() {
 						h.Clan = clan
 						bestH.AgentCommIn <- AgentComm{Agent: h, Action: "INVITECLAN", commOut: h.AgentCommIn}
 					}
-				case <-time.After(10 * time.Millisecond):
+				case <-time.After(20 * time.Millisecond):
 				}
-			case <-time.After(10 * time.Millisecond):
+			case <-time.After(20 * time.Millisecond):
 
 			}
 		}
+	case PROCREATE:
+		if h.Type == 'F' {
+			h.ComOut = agentToManager{AgentID: h.ID, Action: "procreate", Pos: h.Position, commOut: make(chan managerToAgent)}
+			h.Board.AgentManager.messIn <- h.ComOut
+			h.ComIn = <-h.ComOut.commOut
+		}
+		//h.StackAction = append(h.StackAction, MOVE)
 	default:
 		fmt.Println("Should not be here")
 	}
+
 }
 
 func (h *Human) AnswerAgents(res AgentComm) {
@@ -539,6 +647,11 @@ func (h *Human) CloseUpdate() {
 		h.Board.AgentManager.messIn <- h.ComOut
 	} else {
 		h.UpdateState(NONE)
+		h.Body.Age += 0.05
+		h.Procreate.Timer -= 1
+		h.Body.Hungriness += 0.2
+		h.Body.Thirstiness += 0.4
+		h.Body.Tiredness += 0.4
 	}
 }
 
