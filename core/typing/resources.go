@@ -8,7 +8,6 @@ const (
 	ANIMAL
 	ROCK
 	WOOD
-	BOTTLE
 	NUM_RESOURCE_TYPES
 )
 
