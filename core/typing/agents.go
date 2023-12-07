@@ -307,7 +307,6 @@ func (h *Human) Perceive() {
 			if neighbour.Clan == h.Clan && neighbour.Procreate.Partner == nil && neighbour.Hut == h.Hut && neighbour.Body.Age > 15 /*&& h.Type != neighbour.Type */ {
 				h.Procreate.Partner = neighbour
 				neighbour.Procreate.Partner = h
-				//fmt.Println("\033[33mProcreation partners:\033[0m", h.ID, "\033[33mwith:\033[0m", neighbour.ID)
 				break
 			}
 		}
@@ -332,7 +331,6 @@ func (h *Human) DeliberateAtHut() {
 	/** If he is home and not partner he should wait **/
 	if h.Procreate.Partner != nil && !h.Procreate.isHome {
 		h.Action = SLEEP
-		//fmt.Println("Waiting partner", h.ID, h.Procreate.Partner.ID)
 		return
 	}
 
