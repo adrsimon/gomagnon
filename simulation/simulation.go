@@ -28,10 +28,10 @@ type Simulation struct {
 func NewSimulation() Simulation {
 	simu := Simulation{}
 	ressourcesMap := map[typing.ResourceType]int{
-		typing.FRUIT:  20,
-		typing.ANIMAL: 20,
-		typing.ROCK:   20,
-		typing.WOOD:   20,
+		typing.FRUIT:  30,
+		typing.ANIMAL: 30,
+		typing.ROCK:   30,
+		typing.WOOD:   30,
 	}
 
 	simu.Board = typing.NewBoard(46, 41, 40, ressourcesMap)
@@ -49,7 +49,7 @@ func NewSimulation() Simulation {
 
 	simu.Board.AgentManager.Start()
 
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 15; i++ {
 		x, y := -1, -1
 		for x == -1 && y == -1 {
 			x = typing.Randomizer.Intn(simu.Board.XMax)
@@ -58,13 +58,14 @@ func NewSimulation() Simulation {
 				x, y = -1, -1
 			}
 		}
-
-		simu.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", i)] = &typing.Human{
+		simu.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", simu.Board.AgentManager.Count)] = &typing.Human{
 			ID:   fmt.Sprintf("ag-%d", i),
+			Type: 'F',
 			Race: typing.Race(typing.Randomizer.Intn(2)),
 			Body: typing.HumanBody{
 				Thirstiness: 50,
 				Hungriness:  50,
+				Age:         float64(25),
 			},
 			Stats: typing.HumanStats{
 				Strength:    10,
@@ -81,7 +82,9 @@ func NewSimulation() Simulation {
 			AgentRelation:  make(map[string]string),
 			AgentCommIn:    make(chan typing.AgentComm),
 			Clan:           nil,
+			Procreate:      typing.Procreate{Partner: nil, Timer: 100},
 		}
+		simu.Board.AgentManager.Count++
 	}
 
 	simu.debug = false

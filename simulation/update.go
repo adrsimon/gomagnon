@@ -1,8 +1,9 @@
 package simulation
 
 import (
-	"github.com/adrsimon/gomagnon/core/typing"
 	"sync"
+
+	"github.com/adrsimon/gomagnon/core/typing"
 )
 
 func (s *Simulation) Update() error {
@@ -46,6 +47,5 @@ func (s *Simulation) Update() error {
 		}(agent)
 	}
 	wg.Wait()
-
 	return nil
 }
