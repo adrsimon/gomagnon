@@ -129,15 +129,11 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 	case "VoteYes":
 		valid := agMan.Agents[request.AgentID].Hut.Vote(agMan.Agents[request.AgentID], "VoteYes")
 		request.commOut <- managerToAgent{Valid: valid, Map: *agMan.Map, Resource: NONE}
-		if valid {
-		} else {
-		}
+
 	case "VoteNo":
 		valid := agMan.Agents[request.AgentID].Hut.Vote(agMan.Agents[request.AgentID], "VoteNo")
 		request.commOut <- managerToAgent{Valid: valid, Map: *agMan.Map, Resource: NONE}
-		if valid {
-		} else {
-		}
+
 	case "GetResult":
 		result := agMan.Agents[request.AgentID].Hut.GetResult(agMan.Agents[request.AgentID])
 		request.commOut <- managerToAgent{Valid: result, Map: *agMan.Map, Resource: NONE}
