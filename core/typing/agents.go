@@ -66,10 +66,9 @@ type Inventory struct {
 }
 
 type Procreate struct {
-	Partner   *Human
-	Potential *Human
-	Timer     int
-	isHome    bool
+	Partner *Human
+	Timer   int
+	isHome  bool
 }
 
 type Human struct {
@@ -243,8 +242,8 @@ func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
 
 func (h *Human) MoveToHexagon(hex *Hexagone) {
 	h.Position = hex
-	// h.Body.Hungriness += 1
-	// h.Body.Thirstiness += 2
+	h.Body.Hungriness += 0.5
+	h.Body.Thirstiness += 1
 	h.Body.Tiredness += 0.5
 }
 
@@ -306,7 +305,7 @@ func (h *Human) Perceive() {
 		}
 	}
 	h.Neighbours = listHumans
-	if h.Hut != nil && h.Procreate.Partner == nil && h.Procreate.Timer <= 0 {
+	if h.Hut != nil && h.Procreate.Partner == nil && h.Procreate.Timer <= 0 && h.Clan != nil && len(h.Clan.members) < 16 {
 		for _, neighbour := range h.Neighbours {
 			if neighbour.Clan == h.Clan && neighbour.Procreate.Partner == nil && neighbour.Hut == h.Hut && neighbour.Body.Age > 15 /*&& h.Type != neighbour.Type */ {
 				h.Procreate.Partner = neighbour
@@ -458,20 +457,14 @@ func MakeChild(parent1 *Human, parent2 *Human, count int) *Human {
 	var newHuman *Human
 	newHuman = nil
 	if parent1.Race == NEANDERTHAL {
-		failChance = Randomizer.Intn(2)
+		failChance = Randomizer.Intn(3)
 	} else {
-		failChance = Randomizer.Intn(1)
+		failChance = Randomizer.Intn(2)
 	}
 	if failChance == 0 {
 		newHuman = &Human{
-			ID: fmt.Sprintf("ag-%d", count),
-			Type: func() rune {
-				if Randomizer.Intn(2) == 0 {
-					return 'M'
-				} else {
-					return 'F'
-				}
-			}(),
+			ID:   fmt.Sprintf("ag-%d", count),
+			Type: []rune{'M', 'F'}[Randomizer.Intn(2)],
 			Race: parent1.Race,
 			Body: HumanBody{
 				Thirstiness: 50,
@@ -493,7 +486,7 @@ func MakeChild(parent1 *Human, parent2 *Human, count int) *Human {
 			AgentRelation:  make(map[string]string),
 			AgentCommIn:    make(chan AgentComm),
 			Clan:           parent1.Clan,
-			Procreate:      Procreate{Partner: nil, Timer: 50},
+			Procreate:      Procreate{Partner: nil, Timer: 200},
 		}
 		fmt.Println("\033[32mProcreated race:\033[0m", parent1.Race, "\033[32mfrom:\033[0m", parent1.ID, parent2.ID, "\033[32mNew human id:\033[0m", newHuman.ID, "\033[32mNb of Agents:\033[0m", len(parent1.Board.AgentManager.Agents))
 	}
