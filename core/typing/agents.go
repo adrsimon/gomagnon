@@ -467,7 +467,7 @@ func MakeChild(parent1 *Human, parent2 *Human, count int) *Human {
 			AgentRelation:  make(map[string]string),
 			AgentCommIn:    make(chan AgentComm),
 			Clan:           parent1.Clan,
-			Procreate:      Procreate{Partner: nil, Timer: 50},
+			Procreate:      Procreate{Partner: nil, Timer: 200},
 		}
 		fmt.Println("\033[32mProcreated race:\033[0m", parent1.Race, "\033[32mfrom:\033[0m", parent1.ID, parent2.ID, "\033[32mNew human id:\033[0m", newHuman.ID, "\033[32mNb of Agents:\033[0m", len(parent1.Board.AgentManager.Agents))
 	}

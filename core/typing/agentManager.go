@@ -78,9 +78,9 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 				}
 			}
 			ag.Procreate.Partner.Procreate.Partner = nil
-			ag.Procreate.Partner.Procreate.Timer = 100
+			ag.Procreate.Partner.Procreate.Timer = 200
 			ag.Procreate.Partner = nil
-			ag.Procreate.Timer = 100
+			ag.Procreate.Timer = 200
 		}
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 	case "die":
@@ -89,7 +89,7 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 			if agent.Clan != nil {
 				if agent.Procreate.Partner != nil {
 					agent.Procreate.Partner.Procreate.Partner = nil
-					agent.Procreate.Partner.Procreate.Timer = 50
+					agent.Procreate.Partner.Procreate.Timer = 300
 					agent.Procreate.Partner = nil
 				}
 
