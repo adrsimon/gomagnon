@@ -98,11 +98,15 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 						agent.Clan.chief = agent.Clan.members[0]
 						agent.Hut.Owner = agent.Clan.members[0]
 						(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = agent.Clan.members[0]
+						agent.Clan.members = agent.Clan.members[1:]
 					} else {
 						agMan.Agents[request.AgentID].Clan = nil
 						agent.Hut.Owner = nil
 						(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = nil
+
 					}
+				} else {
+					// JE PENSE QUIL FAUT LE VIRER DES MEMBRES DU CLANS ICI
 				}
 			} else {
 				if agent.Hut != nil {
@@ -112,7 +116,6 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 			}
 
 			delete(agMan.Agents, request.AgentID)
-			fmt.Println("\033[31mAgent died, current number:\033[0m", len(agMan.Agents))
 		}
 	case "store-at-home":
 		ag := agMan.Agents[request.AgentID]
@@ -150,6 +153,20 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 			ag.Hut.Inventory = append(ag.Hut.Inventory[:i], ag.Hut.Inventory[i+1:]...)
 			request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: FRUIT}
 		}
+	case "VoteNewPerson":
+		valid := agMan.Agents[request.AgentID].Hut.StartNewVote(agMan.Agents[request.AgentID], "VoteNewPerson") //(*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Hut.StartNewVote(agMan.Agents[request.AgentID], "VoteNewPerson")
+		request.commOut <- managerToAgent{Valid: valid, Map: *agMan.Map, Resource: NONE}
+	case "VoteYes":
+		valid := agMan.Agents[request.AgentID].Hut.Vote(agMan.Agents[request.AgentID], "VoteYes")
+		request.commOut <- managerToAgent{Valid: valid, Map: *agMan.Map, Resource: NONE}
+
+	case "VoteNo":
+		valid := agMan.Agents[request.AgentID].Hut.Vote(agMan.Agents[request.AgentID], "VoteNo")
+		request.commOut <- managerToAgent{Valid: valid, Map: *agMan.Map, Resource: NONE}
+
+	case "GetResult":
+		result := agMan.Agents[request.AgentID].Hut.GetResult(agMan.Agents[request.AgentID])
+		request.commOut <- managerToAgent{Valid: result, Map: *agMan.Map, Resource: NONE}
 	}
 }
 
