@@ -2,7 +2,6 @@ package typing
 
 import (
 	"fmt"
-	"math/rand"
 	"slices"
 )
 
@@ -59,10 +58,18 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		ag.Hut.Owner = nil
 		(*agMan.Map)[ag.Hut.Position.Position.X][ag.Hut.Position.Position.Y].Hut.Owner = nil
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
+	case "isHome":
+		ag := agMan.Agents[request.AgentID]
+		if ag.Procreate.Partner != nil && ag.Procreate.Partner.Position.Position == ag.Hut.Position.Position {
+			request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
+		} else {
+			request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
+		}
+
 	case "procreate":
 		ag := agMan.Agents[request.AgentID]
 		if ag.Procreate.Partner != nil {
-			numChildren := rand.Intn(2) + 1
+			numChildren := Randomizer.Intn(2) + 1
 			for i := 0; i < numChildren; i++ {
 				newHuman := MakeChild(ag, ag.Procreate.Partner, agMan.Count)
 				if newHuman != nil {
@@ -81,20 +88,6 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		if agent != nil {
 			if agent.Clan != nil {
 				if agent.Procreate.Partner != nil {
-					//fmt.Println("Partner died, will put nil for", agent.Procreate.Partner.ID, agent.ID)
-					// if agent.Clan.chief.ID == agent.ID {
-					// 	fmt.Println("PartnerC died for", agent.Clan.chief.ID)
-					// 	agMan.Agents[agent.Clan.chief.ID].Procreate.Partner = nil
-					// 	agMan.Agents[agent.ID].Procreate.Partner = nil
-					// } else {
-					// 	for _, ag := range agent.Clan.members {
-					// 		if ag.Procreate.Partner != nil && ag.Procreate.Partner.ID == agent.ID {
-					// 			fmt.Println("Partner died for", ag.Procreate.Partner.ID)
-					// 			agMan.Agents[ag.ID].Procreate.Partner = nil
-					// 			agMan.Agents[agent.ID].Procreate.Partner = nil
-					// 		}
-					// 	}
-					// }
 					agent.Procreate.Partner.Procreate.Partner = nil
 					agent.Procreate.Partner.Procreate.Timer = 50
 					agent.Procreate.Partner = nil

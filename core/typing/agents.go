@@ -64,8 +64,9 @@ type Inventory struct {
 
 type Procreate struct {
 	Partner   *Human
-	Timer     int
 	Potential *Human
+	Timer     int
+	isHome    bool
 }
 
 type Human struct {
@@ -310,6 +311,11 @@ func (h *Human) Perceive() {
 				break
 			}
 		}
+	} else if h.Hut != nil && h.Procreate.Partner != nil && h.Position.Position == h.Hut.Position.Position {
+		h.ComOut = agentToManager{AgentID: h.ID, Action: "isHome", Pos: h.Position, commOut: make(chan managerToAgent)}
+		h.Board.AgentManager.messIn <- h.ComOut
+		h.ComIn = <-h.ComOut.commOut
+		h.Procreate.isHome = h.ComIn.Valid
 	}
 
 	if h.Hut != nil && h.Position.Position == h.Hut.Position.Position {
@@ -324,7 +330,7 @@ func (h *Human) DeliberateAtHut() {
 		return
 	}
 	/** If he is home and not partner he should wait **/
-	if h.Procreate.Partner != nil && h.Procreate.Partner.Position.Position != h.Hut.Position.Position {
+	if h.Procreate.Partner != nil && !h.Procreate.isHome {
 		h.Action = SLEEP
 		//fmt.Println("Waiting partner", h.ID, h.Procreate.Partner.ID)
 		return
@@ -335,7 +341,7 @@ func (h *Human) DeliberateAtHut() {
 	}
 
 	/** If he is home with partner he should procreate **/
-	if h.Procreate.Partner != nil && h.Procreate.Partner.Position.Position == h.Hut.Position.Position {
+	if h.Procreate.Partner != nil && h.Procreate.isHome {
 		h.Action = PROCREATE
 		return
 	}
@@ -645,8 +651,9 @@ func (h *Human) CloseUpdate() {
 		h.UpdateState(NONE)
 		h.Body.Age += 0.05
 		h.Procreate.Timer -= 1
-		h.Body.Hungriness += 1
-		h.Body.Thirstiness += 1
+		h.Body.Hungriness += 0.2
+		h.Body.Thirstiness += 0.4
+		h.Body.Tiredness += 0.4
 	}
 }
 
