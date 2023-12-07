@@ -58,9 +58,10 @@ func NewSimulation() Simulation {
 				x, y = -1, -1
 			}
 		}
+
 		simu.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", simu.Board.AgentManager.Count)] = &typing.Human{
 			ID:   fmt.Sprintf("ag-%d", i),
-			Type: 'F',
+			Type: []rune{'M', 'F'}[typing.Randomizer.Intn(2)],
 			Race: typing.Race(typing.Randomizer.Intn(2)),
 			Body: typing.HumanBody{
 				Thirstiness: 50,

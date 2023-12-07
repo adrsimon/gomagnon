@@ -78,9 +78,9 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 				}
 			}
 			ag.Procreate.Partner.Procreate.Partner = nil
-			ag.Procreate.Partner.Procreate.Timer = 50
+			ag.Procreate.Partner.Procreate.Timer = 100
 			ag.Procreate.Partner = nil
-			ag.Procreate.Timer = 50
+			ag.Procreate.Timer = 100
 		}
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 	case "die":
