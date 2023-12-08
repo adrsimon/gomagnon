@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"slices"
+	"strings"
 	"time"
 )
 
@@ -111,6 +112,7 @@ type AgentComm struct {
 }
 
 type Clan struct {
+	ID      string
 	members []*Human
 	chief   *Human
 }
@@ -305,7 +307,7 @@ func (h *Human) Perceive() {
 		}
 	}
 	h.Neighbours = listHumans
-	if h.Hut != nil && h.Procreate.Partner == nil && h.Procreate.Timer <= 0 && h.Clan != nil && len(h.Clan.members) < 16 {
+	if h.Hut != nil && h.Procreate.Partner == nil && h.Procreate.Timer <= 0 && h.Clan != nil {
 		for _, neighbour := range h.Neighbours {
 			if neighbour.Clan == h.Clan && neighbour.Procreate.Partner == nil && neighbour.Hut == h.Hut && neighbour.Body.Age > 15 /*&& h.Type != neighbour.Type */ {
 				h.Procreate.Partner = neighbour
@@ -452,47 +454,6 @@ func (h *Human) Deliberate() {
 
 }
 
-func MakeChild(parent1 *Human, parent2 *Human, count int) *Human {
-	var failChance int
-	var newHuman *Human
-	newHuman = nil
-	if parent1.Race == NEANDERTHAL {
-		failChance = Randomizer.Intn(3)
-	} else {
-		failChance = Randomizer.Intn(2)
-	}
-	if failChance == 0 {
-		newHuman = &Human{
-			ID:   fmt.Sprintf("ag-%d", count),
-			Type: []rune{'M', 'F'}[Randomizer.Intn(2)],
-			Race: parent1.Race,
-			Body: HumanBody{
-				Thirstiness: 50,
-				Hungriness:  50,
-				Age:         0,
-			},
-			Stats: HumanStats{
-				Strength:    int((parent1.Stats.Strength + parent2.Stats.Strength) / 2),
-				Sociability: int((parent1.Stats.Sociability + parent2.Stats.Sociability) / 2),
-				Acuity:      int((parent1.Stats.Acuity + parent2.Stats.Acuity) / 2),
-			},
-			Position:       parent1.Position,
-			Target:         nil,
-			MovingToTarget: false,
-			CurrentPath:    nil,
-			Hut:            parent1.Hut,
-			Board:          parent1.Board,
-			Inventory:      Inventory{Weight: 0, Object: make(map[ResourceType]int)},
-			AgentRelation:  make(map[string]string),
-			AgentCommIn:    make(chan AgentComm),
-			Clan:           parent1.Clan,
-			Procreate:      Procreate{Partner: nil, Timer: 200},
-		}
-		fmt.Println("\033[32mProcreated race:\033[0m", parent1.Race, "\033[32mfrom:\033[0m", parent1.ID, parent2.ID, "\033[32mNew human id:\033[0m", newHuman.ID, "\033[32mNb of Agents:\033[0m", len(parent1.Board.AgentManager.Agents))
-	}
-	return newHuman
-}
-
 func (h *Human) Act() {
 	switch h.Action {
 	case NOOP:
@@ -605,7 +566,8 @@ func (h *Human) Act() {
 				select {
 				case res := <-h.AgentCommIn:
 					if res.Action == "ACCEPTCLAN" {
-						clan := &Clan{members: []*Human{bestH}, chief: h}
+						clanID := fmt.Sprintf("clan-%s", strings.Split(h.ID, "-")[1])
+						clan := &Clan{ID: clanID, members: []*Human{bestH}, chief: h}
 						h.Clan = clan
 						bestH.AgentCommIn <- AgentComm{Agent: h, Action: "INVITECLAN", commOut: h.AgentCommIn}
 					}
@@ -676,7 +638,6 @@ func (h *Human) Act() {
 		if h.Type == 'F' {
 			h.ComOut = agentToManager{AgentID: h.ID, Action: "procreate", Pos: h.Position, commOut: make(chan managerToAgent)}
 			h.Board.AgentManager.messIn <- h.ComOut
-			h.ComIn = <-h.ComOut.commOut
 		}
 	default:
 		fmt.Println("Should not be here")
