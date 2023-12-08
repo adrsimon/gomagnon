@@ -110,8 +110,10 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		ag := agMan.Agents[request.AgentID]
 		if len(ag.Clan.members) > 15 {
 			fmt.Println("\033[35mAgent\033[0m", request.AgentID, "\033[35mtried to procreate but his clan\033[0m", ag.Clan.ID, "\033[35mwas too big\033[0m")
-			ag.Procreate.Partner.Procreate.Partner = nil
-			ag.Procreate.Partner.Procreate.Timer = 100
+			if ag.Procreate.Partner != nil {
+				ag.Procreate.Partner.Procreate.Partner = nil
+				ag.Procreate.Partner.Procreate.Timer = 100
+			}
 			ag.Procreate.Partner = nil
 			ag.Procreate.Timer = 100
 			return
