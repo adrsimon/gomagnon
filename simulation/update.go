@@ -11,10 +11,10 @@ func (s *Simulation) Update() error {
 		return nil
 	}
 	if ebiten.IsKeyPressed(ebiten.Key1) {
-		ebiten.SetTPS(1)
+		ebiten.SetTPS(2)
 	}
 	if ebiten.IsKeyPressed(ebiten.Key2) {
-		ebiten.SetTPS(10)
+		ebiten.SetTPS(20)
 	}
 
 	/**

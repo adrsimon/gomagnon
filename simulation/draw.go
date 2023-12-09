@@ -40,7 +40,7 @@ func (s *Simulation) Draw(screen *ebiten.Image) {
 		s.zoomFactor = 1.5
 	}
 
-	if ebiten.IsKeyPressed(ebiten.KeyEnter) {
+	if ebiten.IsKeyPressed(ebiten.KeySpace) {
 		s.debug = false
 	} else {
 		s.debug = true
