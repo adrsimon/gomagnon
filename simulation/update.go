@@ -41,7 +41,7 @@ func (s *Simulation) Update() error {
 	var wg sync.WaitGroup
 	for _, agent := range s.Board.AgentManager.Agents {
 		wg.Add(1)
-		go func(a *typing.Human) {
+		go func(a *typing.Agent) {
 			defer wg.Done()
 			a.UpdateAgent()
 		}(agent)

@@ -59,7 +59,7 @@ func NewSimulation() Simulation {
 			}
 		}
 
-		simu.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", simu.Board.AgentManager.Count)] = &typing.Human{
+		simu.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", simu.Board.AgentManager.Count)] = &typing.Agent{
 			ID:   fmt.Sprintf("ag-%d", i),
 			Type: []rune{'M', 'F'}[typing.Randomizer.Intn(2)],
 			Race: typing.Race(typing.Randomizer.Intn(2)),
