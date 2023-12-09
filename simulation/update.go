@@ -7,7 +7,7 @@ import (
 )
 
 func (s *Simulation) Update() error {
-	if ebiten.IsKeyPressed(ebiten.KeySpace) {
+	if ebiten.IsKeyPressed(ebiten.KeyEnter) {
 		return nil
 	}
 	if ebiten.IsKeyPressed(ebiten.Key1) {
