@@ -1,10 +1,12 @@
 package typing
 
+// check if everyone make childs, add age + childs behaviour,
+
 import (
 	"fmt"
 	"math"
-	"math/rand"
 	"slices"
+	"strings"
 	"time"
 )
 
@@ -15,7 +17,7 @@ type HumanStats struct {
 }
 
 type HumanBody struct {
-	Age    int
+	Age    float64
 	Gender rune
 
 	Hungriness  float64
@@ -37,6 +39,11 @@ const (
 	STOREATHOME
 	EATFROMHOME
 	CREATECLAN
+	CREATEVOTENEWMEMBER
+	VOTE
+	GETRESULT
+	LOOK4SOMEONE
+	PROCREATE
 )
 
 type Race int
@@ -57,6 +64,12 @@ const (
 type Inventory struct {
 	Object map[ResourceType]int
 	Weight float64
+}
+
+type Procreate struct {
+	Partner *Human
+	Timer   int
+	isHome  bool
 }
 
 type Human struct {
@@ -80,13 +93,15 @@ type Human struct {
 	ComOut agentToManager
 	ComIn  managerToAgent
 
-	Action      Action
-	StackAction StackAction
+	Action          Action
+	StackAction     StackAction
+	Looking4Someone bool
 
 	Neighbours    []*Human
 	AgentRelation map[string]string
 	AgentCommIn   chan AgentComm
 	Clan          *Clan
+	Procreate     Procreate
 	Terminated    bool
 }
 
@@ -97,13 +112,14 @@ type AgentComm struct {
 }
 
 type Clan struct {
+	ID      string
 	members []*Human
 	chief   *Human
 }
 
 const (
-	AnimalFoodValueMultiplier = 3.0
-	FruitFoodValueMultiplier  = 1.0
+	AnimalFoodValueMultiplier = 5.0
+	FruitFoodValueMultiplier  = 3.0
 	WaterValueMultiplier      = 2.0
 	DistanceMultiplier        = 0.2
 )
@@ -130,8 +146,10 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 	case ANIMAL:
 		if h.Race == NEANDERTHAL {
 			score += AnimalFoodValueMultiplier + 0.5
+			score += AnimalFoodValueMultiplier + 0.5
 		}
 		if h.Race == SAPIENS {
+			score += AnimalFoodValueMultiplier + 1.0
 			score += AnimalFoodValueMultiplier + 1.0
 		}
 		if h.Body.Hungriness > threshold {
@@ -142,7 +160,7 @@ func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 			score += FruitFoodValueMultiplier + 0.01
 		}
 		if h.Race == SAPIENS {
-			score += FruitFoodValueMultiplier + 0.3
+			score += FruitFoodValueMultiplier + 0.5
 		}
 		if h.Body.Hungriness > threshold {
 			score += 3
@@ -226,9 +244,9 @@ func (h *Human) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
 
 func (h *Human) MoveToHexagon(hex *Hexagone) {
 	h.Position = hex
-	h.Body.Hungriness += 0.2
-	h.Body.Thirstiness += 0.4
-	h.Body.Tiredness += 0.4
+	h.Body.Hungriness += 0.5
+	h.Body.Thirstiness += 1
+	h.Body.Tiredness += 0.5
 }
 
 func (h *Human) UpdateState(resource ResourceType) {
@@ -263,7 +281,7 @@ func (h *Human) UpdateState(resource ResourceType) {
 			continue
 		}
 		if neighbour.Biome == WATER {
-			h.Body.Thirstiness -= 10
+			h.Body.Thirstiness = 0
 		}
 	}
 }
@@ -279,7 +297,7 @@ func (h *Human) Perceive() {
 				_, ok := h.AgentRelation[p.ID]
 				listHumans = append(listHumans, p)
 				if !ok {
-					if rand.Intn(2) >= 1 {
+					if Randomizer.Intn(2) >= 1 {
 						h.AgentRelation[p.ID] = "Friend"
 					} else {
 						h.AgentRelation[p.ID] = "Enemy"
@@ -289,6 +307,20 @@ func (h *Human) Perceive() {
 		}
 	}
 	h.Neighbours = listHumans
+	if h.Hut != nil && h.Procreate.Partner == nil && h.Procreate.Timer <= 0 && h.Clan != nil {
+		for _, neighbour := range h.Neighbours {
+			if neighbour.Clan == h.Clan && neighbour.Procreate.Partner == nil && neighbour.Hut == h.Hut && neighbour.Body.Age > 15 /*&& h.Type != neighbour.Type */ {
+				h.Procreate.Partner = neighbour
+				neighbour.Procreate.Partner = h
+				break
+			}
+		}
+	} else if h.Hut != nil && h.Procreate.Partner != nil && h.Position.Position == h.Hut.Position.Position {
+		h.ComOut = agentToManager{AgentID: h.ID, Action: "isHome", Pos: h.Position, commOut: make(chan managerToAgent)}
+		h.Board.AgentManager.messIn <- h.ComOut
+		h.ComIn = <-h.ComOut.commOut
+		h.Procreate.isHome = h.ComIn.Valid
+	}
 
 	if h.Hut != nil && h.Position.Position == h.Hut.Position.Position {
 		h.HutInventoryVision = h.Hut.Inventory
@@ -301,10 +333,19 @@ func (h *Human) DeliberateAtHut() {
 		h.Action = SLEEP
 		return
 	}
+	/** If he is home and not partner he should wait **/
+	if h.Procreate.Partner != nil && !h.Procreate.isHome {
+		h.Action = SLEEP
+		return
+	}
 
-	/** If he has stuff in inventory, he should store it **/
-	if h.Inventory.Weight > 0 {
-		h.Action = STOREATHOME
+	if h.Procreate.Partner == nil {
+		h.Action = MOVE
+	}
+
+	/** If he is home with partner he should procreate **/
+	if h.Procreate.Partner != nil && h.Procreate.isHome {
+		h.Action = PROCREATE
 		return
 	}
 
@@ -315,9 +356,28 @@ func (h *Human) DeliberateAtHut() {
 			return
 		} else {
 			h.Action = MOVE
-			return
 		}
 	}
+
+	/** If he has stuff in inventory, he should store it **/
+	if h.Inventory.Weight > 0 {
+		h.Action = STOREATHOME
+		return
+	}
+
+	if h.Clan != nil && h.Clan.chief == h && len(h.Clan.members) < 15 && len(h.Clan.members) > 0 && h.Hut.Ballot.VoteInProgress == false && h.Looking4Someone == false {
+		h.Action = CREATEVOTENEWMEMBER
+		return
+	}
+	if h.Clan != nil && h.Hut.Ballot.VoteInProgress && slices.Contains(h.Hut.Ballot.VotersID, h.ID) {
+		h.Action = VOTE
+		return
+	}
+	if h.Clan != nil && h.Clan.chief == h && h.Hut.Ballot.VoteInProgress && h.Hut.Ballot.EndTimeVote.Before(time.Now()) {
+		h.Action = GETRESULT
+		return
+	}
+
 }
 
 func (h *Human) Deliberate() {
@@ -362,7 +422,14 @@ func (h *Human) Deliberate() {
 		}
 	}
 
-	/** Outside hut actions **/
+	/** General actions **/
+	if h.Body.Thirstiness > 80 || h.Body.Hungriness > 80 {
+		if !h.MovingToTarget {
+			h.Action = MOVE
+			return
+		}
+	}
+
 	if h.Hut != nil {
 		if len(h.Neighbours) > 0 && h.Clan == nil {
 			h.Action = CREATECLAN
@@ -370,15 +437,21 @@ func (h *Human) Deliberate() {
 		}
 	}
 
-	/** General actions **/
+	if h.Procreate.Partner != nil && h.Position != h.Hut.Position {
+		h.Action = MOVE
+		return
+	}
+
+	if h.Clan != nil && h.Clan.chief == h && h.Looking4Someone {
+		h.Action = LOOK4SOMEONE
+		return
+	}
+
 	if !h.MovingToTarget {
 		h.Action = MOVE
 		return
 	}
-	if h.MovingToTarget && len(h.CurrentPath) > 0 {
-		h.Action = MOVE
-		return
-	}
+
 }
 
 func (h *Human) Act() {
@@ -390,7 +463,7 @@ func (h *Human) Act() {
 			var targetHexagon *Hexagone
 
 			if h.Hut != nil {
-				if h.Body.Tiredness > 80 {
+				if h.Body.Tiredness > 80 || h.Procreate.Partner != nil {
 					targetHexagon = h.Hut.Position
 				} else if h.Body.Hungriness > 80 && (slices.Contains(h.HutInventoryVision, ANIMAL) || slices.Contains(h.HutInventoryVision, FRUIT)) {
 					targetHexagon = h.Hut.Position
@@ -454,8 +527,8 @@ func (h *Human) Act() {
 	case SLEEP:
 		if h.Body.Tiredness > 0 {
 			h.Body.Tiredness -= 3
-			h.Body.Hungriness += 0.5
-			h.Body.Thirstiness += 0.5
+			// h.Body.Hungriness += 0.5
+			// h.Body.Thirstiness += 0.5
 			h.StackAction = append(h.StackAction, SLEEP)
 		}
 	case STOREATHOME:
@@ -481,28 +554,95 @@ func (h *Human) Act() {
 		if len(h.Neighbours) > 1 {
 			//TO DEVELOPP bestH=find bestMatchHuman(humans)
 			bestH = h.Neighbours[0] // waiting function
-		} else {
+		} else if len(h.Neighbours) == 1 {
 			bestH = h.Neighbours[0]
+		} else {
+			h.StackAction = append(h.StackAction, MOVE)
+			break
 		}
-		if bestH.Terminated == false {
+		if !bestH.Terminated {
 			select {
 			case bestH.AgentCommIn <- AgentComm{Agent: h, Action: "CREATECLAN", commOut: h.AgentCommIn}:
 				select {
 				case res := <-h.AgentCommIn:
 					if res.Action == "ACCEPTCLAN" {
-						clan := &Clan{members: []*Human{bestH}, chief: h}
+						clanID := fmt.Sprintf("clan-%s", strings.Split(h.ID, "-")[1])
+						clan := &Clan{ID: clanID, members: []*Human{bestH}, chief: h}
 						h.Clan = clan
 						bestH.AgentCommIn <- AgentComm{Agent: h, Action: "INVITECLAN", commOut: h.AgentCommIn}
 					}
-				case <-time.After(10 * time.Millisecond):
+				case <-time.After(20 * time.Millisecond):
 				}
-			case <-time.After(10 * time.Millisecond):
+			case <-time.After(20 * time.Millisecond):
 
 			}
+		}
+	case CREATEVOTENEWMEMBER:
+		h.ComOut = agentToManager{AgentID: h.ID, Action: "VoteNewPerson", Pos: h.Position, commOut: make(chan managerToAgent)}
+		h.Board.AgentManager.messIn <- h.ComOut
+		h.ComIn = <-h.ComOut.commOut
+		if h.ComIn.Valid {
+			h.ComOut = agentToManager{AgentID: h.ID, Action: "VoteYes", Pos: h.Position, commOut: make(chan managerToAgent)}
+			h.Board.AgentManager.messIn <- h.ComOut
+			h.ComIn = <-h.ComOut.commOut
+			if h.ComIn.Valid {
+			}
+		}
+	case VOTE:
+		if Randomizer.Intn(2) >= 1 {
+			h.ComOut = agentToManager{AgentID: h.ID, Action: "VoteYes", Pos: h.Position, commOut: make(chan managerToAgent)}
+		} else {
+			h.ComOut = agentToManager{AgentID: h.ID, Action: "VoteNo", Pos: h.Position, commOut: make(chan managerToAgent)}
+		}
+		h.Board.AgentManager.messIn <- h.ComOut
+		h.ComIn = <-h.ComOut.commOut
+		if h.ComIn.Valid {
+		}
+	case GETRESULT:
+		h.ComOut = agentToManager{AgentID: h.ID, Action: "GetResult", Pos: h.Position, commOut: make(chan managerToAgent)}
+		h.Board.AgentManager.messIn <- h.ComOut
+		h.ComIn = <-h.ComOut.commOut
+		if h.ComIn.Valid {
+			h.Looking4Someone = true
+		} else {
+			h.Looking4Someone = false
+		}
+	case LOOK4SOMEONE:
+		var bestH *Human
+		if len(h.Neighbours) > 1 {
+			//TO DEVELOPP bestH=find bestMatchHuman(humans)
+			bestH = h.Neighbours[0] // waiting function
+		} else if len(h.Neighbours) == 1 {
+			bestH = h.Neighbours[0]
+		} else {
+			h.StackAction = append(h.StackAction, MOVE)
+			break
+		}
+		if bestH.Terminated == false {
+			select {
+			case bestH.AgentCommIn <- AgentComm{Agent: h, Action: "INVITECLAN", commOut: h.AgentCommIn}:
+				select {
+				case res := <-h.AgentCommIn:
+					if res.Action == "ACCEPTCLAN" {
+						h.Looking4Someone = false
+					} else {
+						h.Action = MOVE
+					}
+				case <-time.After(20 * time.Millisecond):
+				}
+			case <-time.After(20 * time.Millisecond):
+
+			}
+		}
+	case PROCREATE:
+		if h.Type == 'F' {
+			h.ComOut = agentToManager{AgentID: h.ID, Action: "procreate", Pos: h.Position, commOut: make(chan managerToAgent)}
+			h.Board.AgentManager.messIn <- h.ComOut
 		}
 	default:
 		fmt.Println("Should not be here")
 	}
+
 }
 
 func (h *Human) AnswerAgents(res AgentComm) {
@@ -526,6 +666,22 @@ func (h *Human) AnswerAgents(res AgentComm) {
 				h.Hut = res2.Agent.Hut
 			}
 		}
+	case "INVITECLAN":
+		if h.Clan != nil {
+			res.commOut <- AgentComm{Agent: h, Action: "REFUSECLAN", commOut: h.AgentCommIn}
+		} else {
+			res.commOut <- AgentComm{Agent: h, Action: "ACCEPTCLAN", commOut: h.AgentCommIn}
+			h.Clan = res.Agent.Clan
+			if h.Hut != nil && h.Hut.Owner != nil {
+				h.ComOut = agentToManager{AgentID: h.ID, Action: "leave-house", Pos: h.Position, commOut: make(chan managerToAgent)}
+				h.Board.AgentManager.messIn <- h.ComOut
+				h.ComIn = <-h.ComOut.commOut
+				if h.ComIn.Valid {
+					h.Hut = nil
+				}
+			}
+			h.Hut = res.Agent.Hut
+		}
 	}
 }
 
@@ -539,6 +695,11 @@ func (h *Human) CloseUpdate() {
 		h.Board.AgentManager.messIn <- h.ComOut
 	} else {
 		h.UpdateState(NONE)
+		h.Body.Age += 0.05
+		h.Procreate.Timer -= 1
+		h.Body.Hungriness += 0.2
+		h.Body.Thirstiness += 0.4
+		h.Body.Tiredness += 0.4
 	}
 }
 
