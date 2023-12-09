@@ -41,12 +41,14 @@ func (s *Simulation) Draw(screen *ebiten.Image) {
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeySpace) {
-		s.debug = false
+		s.Debug = false
 	} else {
-		s.debug = true
+		s.Debug = true
 	}
 
 	screen.Fill(s.backgroundColor)
 	drawing.DrawBoard(screen, s.Board, s.cameraX, s.cameraY, s.zoomFactor)
-	drawing.DrawAgents(screen, s.Board, s.cameraX, s.cameraY, s.zoomFactor, s.debug)
+	drawing.DrawAgents(screen, s.Board, s.cameraX, s.cameraY, s.zoomFactor, s.Debug)
+
+	s.UI.Draw(screen)
 }

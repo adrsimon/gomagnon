@@ -7,7 +7,9 @@ import (
 )
 
 func (s *Simulation) Update() error {
-	if ebiten.IsKeyPressed(ebiten.KeyEnter) {
+	s.UI.Update()
+
+	if ebiten.IsKeyPressed(ebiten.KeyEnter) || s.Paused {
 		return nil
 	}
 	if ebiten.IsKeyPressed(ebiten.Key1) {

@@ -5,6 +5,7 @@ import (
 	"image/color"
 
 	"github.com/adrsimon/gomagnon/core/typing"
+	"github.com/ebitenui/ebitenui"
 )
 
 const (
@@ -22,7 +23,10 @@ type Simulation struct {
 	cameraX, cameraY float32
 	zoomFactor       float32
 
-	debug bool
+	Debug  bool
+	Paused bool
+
+	UI *ebitenui.UI
 }
 
 func NewSimulation() Simulation {
@@ -88,7 +92,7 @@ func NewSimulation() Simulation {
 		simu.Board.AgentManager.Count++
 	}
 
-	simu.debug = false
+	simu.Debug = false
 
 	return simu
 }
