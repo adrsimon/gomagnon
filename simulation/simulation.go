@@ -85,6 +85,7 @@ func NewSimulation() Simulation {
 			Clan:           nil,
 			Procreate:      typing.Procreate{Partner: nil, Timer: 100},
 		}
+		simu.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", simu.Board.AgentManager.Count)].Behavior = &typing.HumanBehavior{H: simu.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", simu.Board.AgentManager.Count)]}
 		simu.Board.AgentManager.Count++
 	}
 

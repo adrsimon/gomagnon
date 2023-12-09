@@ -43,7 +43,7 @@ func (s *Simulation) Update() error {
 		wg.Add(1)
 		go func(a *typing.Agent) {
 			defer wg.Done()
-			a.UpdateAgent()
+			a.Behavior.UpdateAgent()
 		}(agent)
 	}
 	wg.Wait()

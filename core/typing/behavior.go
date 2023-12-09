@@ -15,94 +15,94 @@ type HumanActions interface {
 }
 
 type HumanBehavior struct {
-	H *Human
+	H *Agent
 }
 
 type ChildBehavior struct {
-	C *Child
+	C *Agent
 }
 
 func (hb *HumanBehavior) DeliberateAtHut() {
 	/** If he is tired and have a home, he should sleep **/
-	if hb.H.Ag.Body.Tiredness > 0 {
-		hb.H.Ag.Action = SLEEP
+	if hb.H.Body.Tiredness > 0 {
+		hb.H.Action = SLEEP
 		return
 	}
 	/** If he is home and not partner he should wait **/
-	if hb.H.Ag.Procreate.Partner != nil && !hb.H.Ag.Procreate.isHome {
-		hb.H.Ag.Action = SLEEP
+	if hb.H.Procreate.Partner != nil && !hb.H.Procreate.isHome {
+		hb.H.Action = SLEEP
 		return
 	}
 
-	if hb.H.Ag.Procreate.Partner == nil {
-		hb.H.Ag.Action = MOVE
+	if hb.H.Procreate.Partner == nil {
+		hb.H.Action = MOVE
 	}
 
 	/** If he is home with partner he should procreate **/
-	if hb.H.Ag.Procreate.Partner != nil && hb.H.Ag.Procreate.isHome {
-		hb.H.Ag.Action = PROCREATE
+	if hb.H.Procreate.Partner != nil && hb.H.Procreate.isHome {
+		hb.H.Action = PROCREATE
 		return
 	}
 
 	/** If he is hungry and have food in home, he should eat **/
-	if hb.H.Ag.Body.Hungriness > 80 {
-		if slices.Contains(hb.H.Ag.HutInventoryVision, ANIMAL) || slices.Contains(hb.H.Ag.HutInventoryVision, FRUIT) {
-			hb.H.Ag.Action = EATFROMHOME
+	if hb.H.Body.Hungriness > 80 {
+		if slices.Contains(hb.H.HutInventoryVision, ANIMAL) || slices.Contains(hb.H.HutInventoryVision, FRUIT) {
+			hb.H.Action = EATFROMHOME
 			return
 		} else {
-			hb.H.Ag.Action = MOVE
+			hb.H.Action = MOVE
 		}
 	}
 
 	/** If he has stuff in inventory, he should store it **/
-	if hb.H.Ag.Inventory.Weight > 0 {
-		hb.H.Ag.Action = STOREATHOME
+	if hb.H.Inventory.Weight > 0 {
+		hb.H.Action = STOREATHOME
 		return
 	}
 
-	if hb.H.Ag.Clan != nil && hb.H.Ag.Clan.chief == hb.H.Ag && len(hb.H.Ag.Clan.members) < 15 && len(hb.H.Ag.Clan.members) > 0 && hb.H.Ag.Hut.Ballot.VoteInProgress == false && hb.H.Ag.Looking4Someone == false {
-		hb.H.Ag.Action = CREATEVOTENEWMEMBER
+	if hb.H.Clan != nil && hb.H.Clan.chief == hb.H && len(hb.H.Clan.members) < 15 && len(hb.H.Clan.members) > 0 && hb.H.Hut.Ballot.VoteInProgress == false && hb.H.Looking4Someone == false {
+		hb.H.Action = CREATEVOTENEWMEMBER
 		return
 	}
-	if hb.H.Ag.Clan != nil && hb.H.Ag.Hut.Ballot.VoteInProgress && slices.Contains(hb.H.Ag.Hut.Ballot.VotersID, hb.H.Ag.ID) {
-		hb.H.Ag.Action = VOTE
+	if hb.H.Clan != nil && hb.H.Hut.Ballot.VoteInProgress && slices.Contains(hb.H.Hut.Ballot.VotersID, hb.H.ID) {
+		hb.H.Action = VOTE
 		return
 	}
-	if hb.H.Ag.Clan != nil && hb.H.Ag.Clan.chief == hb.H.Ag && hb.H.Ag.Hut.Ballot.VoteInProgress && hb.H.Ag.Hut.Ballot.EndTimeVote.Before(time.Now()) {
-		hb.H.Ag.Action = GETRESULT
+	if hb.H.Clan != nil && hb.H.Clan.chief == hb.H && hb.H.Hut.Ballot.VoteInProgress && hb.H.Hut.Ballot.EndTimeVote.Before(time.Now()) {
+		hb.H.Action = GETRESULT
 		return
 	}
 
 }
 
 func (hb *HumanBehavior) Deliberate() {
-	hb.H.Ag.Action = NOOP
+	hb.H.Action = NOOP
 
 	/** Stacked actions **/
-	if len(hb.H.Ag.StackAction) > 0 {
-		hb.H.Ag.Action = hb.H.Ag.StackAction[0]
-		hb.H.Ag.StackAction = hb.H.Ag.StackAction[1:]
+	if len(hb.H.StackAction) > 0 {
+		hb.H.Action = hb.H.StackAction[0]
+		hb.H.StackAction = hb.H.StackAction[1:]
 		return
 	}
 
 	/** Early game actions **/
-	if hb.H.Ag.Hut == nil {
+	if hb.H.Hut == nil {
 		/** if the agent is tired and don't have a home, he should rest in the nature **/
-		if hb.H.Ag.Body.Tiredness > 80 {
-			hb.H.Ag.StackAction = append(hb.H.Ag.StackAction, NOOP)
-			hb.H.Ag.StackAction = append(hb.H.Ag.StackAction, NOOP)
-			hb.H.Ag.StackAction = append(hb.H.Ag.StackAction, NOOP)
+		if hb.H.Body.Tiredness > 80 {
+			hb.H.StackAction = append(hb.H.StackAction, NOOP)
+			hb.H.StackAction = append(hb.H.StackAction, NOOP)
+			hb.H.StackAction = append(hb.H.StackAction, NOOP)
 			return
 		}
 
 		/** if he can build a home and don't have one, he should build it **/
-		if hb.H.Ag.Inventory.Object[WOOD] >= Needs["hut"][WOOD] && hb.H.Ag.Inventory.Object[ROCK] >= Needs["hut"][ROCK] {
-			for _, v := range hb.H.Ag.Board.GetNeighbours(hb.H.Ag.Position) {
+		if hb.H.Inventory.Object[WOOD] >= Needs["hut"][WOOD] && hb.H.Inventory.Object[ROCK] >= Needs["hut"][ROCK] {
+			for _, v := range hb.H.Board.GetNeighbours(hb.H.Position) {
 				if v == nil {
 					continue
 				}
 				if v.Biome == WATER {
-					hb.H.Ag.Action = BUILD
+					hb.H.Action = BUILD
 					return
 				}
 			}
@@ -110,161 +110,161 @@ func (hb *HumanBehavior) Deliberate() {
 	}
 
 	/** In Hut actions **/
-	if hb.H.Ag.Hut != nil && hb.H.Ag.Position.Position == hb.H.Ag.Hut.Position.Position {
+	if hb.H.Hut != nil && hb.H.Position.Position == hb.H.Hut.Position.Position {
 		hb.DeliberateAtHut()
-		if hb.H.Ag.Action != NOOP {
+		if hb.H.Action != NOOP {
 			return
 		}
 	}
 
 	/** General actions **/
-	if hb.H.Ag.Body.Thirstiness > 80 || hb.H.Ag.Body.Hungriness > 80 {
-		if !hb.H.Ag.MovingToTarget {
-			hb.H.Ag.Action = MOVE
+	if hb.H.Body.Thirstiness > 80 || hb.H.Body.Hungriness > 80 {
+		if !hb.H.MovingToTarget {
+			hb.H.Action = MOVE
 			return
 		}
 	}
 
-	if hb.H.Ag.Hut != nil {
-		if len(hb.H.Ag.Neighbours) > 0 && hb.H.Ag.Clan == nil {
-			hb.H.Ag.Action = CREATECLAN
+	if hb.H.Hut != nil {
+		if len(hb.H.Neighbours) > 0 && hb.H.Clan == nil {
+			hb.H.Action = CREATECLAN
 			return
 		}
 	}
 
-	if hb.H.Ag.Procreate.Partner != nil && hb.H.Ag.Position != hb.H.Ag.Hut.Position {
-		hb.H.Ag.Action = MOVE
+	if hb.H.Procreate.Partner != nil && hb.H.Position != hb.H.Hut.Position {
+		hb.H.Action = MOVE
 		return
 	}
 
-	if hb.H.Ag.Clan != nil && hb.H.Ag.Clan.chief == hb.H.Ag && hb.H.Ag.Looking4Someone {
-		hb.H.Ag.Action = LOOK4SOMEONE
+	if hb.H.Clan != nil && hb.H.Clan.chief == hb.H && hb.H.Looking4Someone {
+		hb.H.Action = LOOK4SOMEONE
 		return
 	}
 
-	if !hb.H.Ag.MovingToTarget {
-		hb.H.Ag.Action = MOVE
+	if !hb.H.MovingToTarget {
+		hb.H.Action = MOVE
 		return
 	}
 
 }
 
 func (hb *HumanBehavior) Act() {
-	switch hb.H.Ag.Action {
+	switch hb.H.Action {
 	case NOOP:
-		hb.H.Ag.Body.Tiredness -= 1
+		hb.H.Body.Tiredness -= 1
 	case MOVE:
-		if !hb.H.Ag.MovingToTarget {
+		if !hb.H.MovingToTarget {
 			var targetHexagon *Hexagone
 
-			if hb.H.Ag.Hut != nil {
-				if hb.H.Ag.Body.Tiredness > 80 || hb.H.Ag.Procreate.Partner != nil {
-					targetHexagon = hb.H.Ag.Hut.Position
-				} else if hb.H.Ag.Body.Hungriness > 80 && (slices.Contains(hb.H.Ag.HutInventoryVision, ANIMAL) || slices.Contains(hb.H.Ag.HutInventoryVision, FRUIT)) {
-					targetHexagon = hb.H.Ag.Hut.Position
+			if hb.H.Hut != nil {
+				if hb.H.Body.Tiredness > 80 || hb.H.Procreate.Partner != nil {
+					targetHexagon = hb.H.Hut.Position
+				} else if hb.H.Body.Hungriness > 80 && (slices.Contains(hb.H.HutInventoryVision, ANIMAL) || slices.Contains(hb.H.HutInventoryVision, FRUIT)) {
+					targetHexagon = hb.H.Hut.Position
 				}
 			}
 
 			if targetHexagon == nil {
-				surroundingHexagons := hb.H.Ag.GetNeighboursWithinAcuity()
-				targetHexagon = hb.H.Ag.BestNeighbor(surroundingHexagons)
+				surroundingHexagons := hb.H.GetNeighboursWithinAcuity()
+				targetHexagon = hb.H.BestNeighbor(surroundingHexagons)
 			}
 
-			res := AStar(*hb.H.Ag, targetHexagon)
-			hb.H.Ag.CurrentPath = createPath(res, targetHexagon)
-			if len(hb.H.Ag.CurrentPath) < 2 {
-				hb.H.Ag.CurrentPath = nil
+			res := AStar(*hb.H, targetHexagon)
+			hb.H.CurrentPath = createPath(res, targetHexagon)
+			if len(hb.H.CurrentPath) < 2 {
+				hb.H.CurrentPath = nil
 				break
 			}
-			hb.H.Ag.CurrentPath = hb.H.Ag.CurrentPath[:len(hb.H.Ag.CurrentPath)-2]
-			hb.H.Ag.Target = targetHexagon
-			hb.H.Ag.MovingToTarget = true
+			hb.H.CurrentPath = hb.H.CurrentPath[:len(hb.H.CurrentPath)-2]
+			hb.H.Target = targetHexagon
+			hb.H.MovingToTarget = true
 		}
 
-		if hb.H.Ag.MovingToTarget && len(hb.H.Ag.CurrentPath) > 0 {
-			nextHexagon := hb.H.Ag.CurrentPath[len(hb.H.Ag.CurrentPath)-1]
-			hb.H.Ag.MoveToHexagon(hb.H.Ag.Board.Cases[nextHexagon.Position.X][nextHexagon.Position.Y])
-			hb.H.Ag.CurrentPath = hb.H.Ag.CurrentPath[:len(hb.H.Ag.CurrentPath)-1]
+		if hb.H.MovingToTarget && len(hb.H.CurrentPath) > 0 {
+			nextHexagon := hb.H.CurrentPath[len(hb.H.CurrentPath)-1]
+			hb.H.MoveToHexagon(hb.H.Board.Cases[nextHexagon.Position.X][nextHexagon.Position.Y])
+			hb.H.CurrentPath = hb.H.CurrentPath[:len(hb.H.CurrentPath)-1]
 		}
 
 		/** Next move stacking **/
-		if hb.H.Ag.MovingToTarget && len(hb.H.Ag.CurrentPath) > 0 {
-			hb.H.Ag.StackAction = append(hb.H.Ag.StackAction, MOVE)
+		if hb.H.MovingToTarget && len(hb.H.CurrentPath) > 0 {
+			hb.H.StackAction = append(hb.H.StackAction, MOVE)
 		}
 
-		if hb.H.Ag.Position.Position == hb.H.Ag.Target.Position {
-			if hb.H.Ag.Target.Resource != NONE {
-				hb.H.Ag.StackAction = append(hb.H.Ag.StackAction, GET)
+		if hb.H.Position.Position == hb.H.Target.Position {
+			if hb.H.Target.Resource != NONE {
+				hb.H.StackAction = append(hb.H.StackAction, GET)
 			}
-			hb.H.Ag.Target = nil
-			hb.H.Ag.MovingToTarget = false
+			hb.H.Target = nil
+			hb.H.MovingToTarget = false
 		}
 	case GET:
-		if hb.H.Ag.Position.Resource != NONE {
-			hb.H.Ag.ComOut = agentToManager{AgentID: hb.H.Ag.ID, Action: "get", Pos: hb.H.Ag.Position, commOut: make(chan managerToAgent)}
-			hb.H.Ag.Board.AgentManager.messIn <- hb.H.Ag.ComOut
-			hb.H.Ag.ComIn = <-hb.H.Ag.ComOut.commOut
-			if hb.H.Ag.ComIn.Valid {
-				hb.H.Ag.UpdateState(hb.H.Ag.ComIn.Resource)
+		if hb.H.Position.Resource != NONE {
+			hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "get", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
+			hb.H.Board.AgentManager.messIn <- hb.H.ComOut
+			hb.H.ComIn = <-hb.H.ComOut.commOut
+			if hb.H.ComIn.Valid {
+				hb.H.UpdateState(hb.H.ComIn.Resource)
 			}
 		}
 	case BUILD:
-		hb.H.Ag.ComOut = agentToManager{AgentID: hb.H.Ag.ID, Action: "build", Pos: hb.H.Ag.Position, commOut: make(chan managerToAgent)}
-		hb.H.Ag.Board.AgentManager.messIn <- hb.H.Ag.ComOut
-		hb.H.Ag.ComIn = <-hb.H.Ag.ComOut.commOut
-		if hb.H.Ag.ComIn.Valid {
-			hb.H.Ag.Hut = &Hut{Position: hb.H.Ag.Position, Inventory: make([]ResourceType, 0), Owner: hb.H.Ag}
-			hb.H.Ag.Inventory.Object[WOOD] -= Needs["hut"][WOOD]
-			hb.H.Ag.Inventory.Object[ROCK] -= Needs["hut"][ROCK]
-			hb.H.Ag.Inventory.Weight -= WeightWood * float64(Needs["hut"][WOOD])
-			hb.H.Ag.Inventory.Weight -= WeightRock * float64(Needs["hut"][ROCK])
+		hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "build", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
+		hb.H.Board.AgentManager.messIn <- hb.H.ComOut
+		hb.H.ComIn = <-hb.H.ComOut.commOut
+		if hb.H.ComIn.Valid {
+			hb.H.Hut = &Hut{Position: hb.H.Position, Inventory: make([]ResourceType, 0), Owner: hb.H}
+			hb.H.Inventory.Object[WOOD] -= Needs["hut"][WOOD]
+			hb.H.Inventory.Object[ROCK] -= Needs["hut"][ROCK]
+			hb.H.Inventory.Weight -= WeightWood * float64(Needs["hut"][WOOD])
+			hb.H.Inventory.Weight -= WeightRock * float64(Needs["hut"][ROCK])
 		}
 	case SLEEP:
-		if hb.H.Ag.Body.Tiredness > 0 {
-			hb.H.Ag.Body.Tiredness -= 3
-			// hb.H.Ag.Body.Hungriness += 0.5
-			// hb.H.Ag.Body.Thirstiness += 0.5
-			hb.H.Ag.StackAction = append(hb.H.Ag.StackAction, SLEEP)
+		if hb.H.Body.Tiredness > 0 {
+			hb.H.Body.Tiredness -= 3
+			// hb.H.Body.Hungriness += 0.5
+			// hb.H.Body.Thirstiness += 0.5
+			hb.H.StackAction = append(hb.H.StackAction, SLEEP)
 		}
 	case STOREATHOME:
-		hb.H.Ag.ComOut = agentToManager{AgentID: hb.H.Ag.ID, Action: "store-at-home", Pos: hb.H.Ag.Position, commOut: make(chan managerToAgent)}
-		hb.H.Ag.Board.AgentManager.messIn <- hb.H.Ag.ComOut
-		hb.H.Ag.ComIn = <-hb.H.Ag.ComOut.commOut
-		if hb.H.Ag.ComIn.Valid {
-			hb.H.Ag.Inventory.Weight = 0
+		hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "store-at-home", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
+		hb.H.Board.AgentManager.messIn <- hb.H.ComOut
+		hb.H.ComIn = <-hb.H.ComOut.commOut
+		if hb.H.ComIn.Valid {
+			hb.H.Inventory.Weight = 0
 		}
 	case EATFROMHOME:
-		hb.H.Ag.ComOut = agentToManager{AgentID: hb.H.Ag.ID, Action: "eat-from-home", Pos: hb.H.Ag.Position, commOut: make(chan managerToAgent)}
-		hb.H.Ag.Board.AgentManager.messIn <- hb.H.Ag.ComOut
-		hb.H.Ag.ComIn = <-hb.H.Ag.ComOut.commOut
-		if hb.H.Ag.ComIn.Valid {
-			if hb.H.Ag.ComIn.Resource == ANIMAL {
-				hb.H.Ag.Body.Hungriness -= 10 * AnimalFoodValueMultiplier
+		hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "eat-from-home", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
+		hb.H.Board.AgentManager.messIn <- hb.H.ComOut
+		hb.H.ComIn = <-hb.H.ComOut.commOut
+		if hb.H.ComIn.Valid {
+			if hb.H.ComIn.Resource == ANIMAL {
+				hb.H.Body.Hungriness -= 10 * AnimalFoodValueMultiplier
 			} else {
-				hb.H.Ag.Body.Hungriness -= 10 * FruitFoodValueMultiplier
+				hb.H.Body.Hungriness -= 10 * FruitFoodValueMultiplier
 			}
 		}
 	case CREATECLAN:
 		var bestH *Agent
-		if len(hb.H.Ag.Neighbours) > 1 {
+		if len(hb.H.Neighbours) > 1 {
 			//TO DEVELOPP bestH=find bestMatchHuman(humans)
-			bestH = hb.H.Ag.Neighbours[0] // waiting function
-		} else if len(hb.H.Ag.Neighbours) == 1 {
-			bestH = hb.H.Ag.Neighbours[0]
+			bestH = hb.H.Neighbours[0] // waiting function
+		} else if len(hb.H.Neighbours) == 1 {
+			bestH = hb.H.Neighbours[0]
 		} else {
-			hb.H.Ag.StackAction = append(hb.H.Ag.StackAction, MOVE)
+			hb.H.StackAction = append(hb.H.StackAction, MOVE)
 			break
 		}
 		if !bestH.Terminated {
 			select {
-			case bestH.AgentCommIn <- AgentComm{Agent: hb.H.Ag, Action: "CREATECLAN", commOut: hb.H.Ag.AgentCommIn}:
+			case bestH.AgentCommIn <- AgentComm{Agent: hb.H, Action: "CREATECLAN", commOut: hb.H.AgentCommIn}:
 				select {
-				case res := <-hb.H.Ag.AgentCommIn:
+				case res := <-hb.H.AgentCommIn:
 					if res.Action == "ACCEPTCLAN" {
-						clanID := fmt.Sprintf("clan-%s", strings.Split(hb.H.Ag.ID, "-")[1])
-						clan := &Clan{ID: clanID, members: []*Agent{bestH}, chief: hb.H.Ag}
-						hb.H.Ag.Clan = clan
-						bestH.AgentCommIn <- AgentComm{Agent: hb.H.Ag, Action: "INVITECLAN", commOut: hb.H.Ag.AgentCommIn}
+						clanID := fmt.Sprintf("clan-%s", strings.Split(hb.H.ID, "-")[1])
+						clan := &Clan{ID: clanID, members: []*Agent{bestH}, chief: hb.H}
+						hb.H.Clan = clan
+						bestH.AgentCommIn <- AgentComm{Agent: hb.H, Action: "INVITECLAN", commOut: hb.H.AgentCommIn}
 					}
 				case <-time.After(20 * time.Millisecond):
 				}
@@ -273,55 +273,55 @@ func (hb *HumanBehavior) Act() {
 			}
 		}
 	case CREATEVOTENEWMEMBER:
-		hb.H.Ag.ComOut = agentToManager{AgentID: hb.H.Ag.ID, Action: "VoteNewPerson", Pos: hb.H.Ag.Position, commOut: make(chan managerToAgent)}
-		hb.H.Ag.Board.AgentManager.messIn <- hb.H.Ag.ComOut
-		hb.H.Ag.ComIn = <-hb.H.Ag.ComOut.commOut
-		if hb.H.Ag.ComIn.Valid {
-			hb.H.Ag.ComOut = agentToManager{AgentID: hb.H.Ag.ID, Action: "VoteYes", Pos: hb.H.Ag.Position, commOut: make(chan managerToAgent)}
-			hb.H.Ag.Board.AgentManager.messIn <- hb.H.Ag.ComOut
-			hb.H.Ag.ComIn = <-hb.H.Ag.ComOut.commOut
-			if hb.H.Ag.ComIn.Valid {
+		hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "VoteNewPerson", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
+		hb.H.Board.AgentManager.messIn <- hb.H.ComOut
+		hb.H.ComIn = <-hb.H.ComOut.commOut
+		if hb.H.ComIn.Valid {
+			hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "VoteYes", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
+			hb.H.Board.AgentManager.messIn <- hb.H.ComOut
+			hb.H.ComIn = <-hb.H.ComOut.commOut
+			if hb.H.ComIn.Valid {
 			}
 		}
 	case VOTE:
 		if Randomizer.Intn(2) >= 1 {
-			hb.H.Ag.ComOut = agentToManager{AgentID: hb.H.Ag.ID, Action: "VoteYes", Pos: hb.H.Ag.Position, commOut: make(chan managerToAgent)}
+			hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "VoteYes", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
 		} else {
-			hb.H.Ag.ComOut = agentToManager{AgentID: hb.H.Ag.ID, Action: "VoteNo", Pos: hb.H.Ag.Position, commOut: make(chan managerToAgent)}
+			hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "VoteNo", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
 		}
-		hb.H.Ag.Board.AgentManager.messIn <- hb.H.Ag.ComOut
-		hb.H.Ag.ComIn = <-hb.H.Ag.ComOut.commOut
-		if hb.H.Ag.ComIn.Valid {
+		hb.H.Board.AgentManager.messIn <- hb.H.ComOut
+		hb.H.ComIn = <-hb.H.ComOut.commOut
+		if hb.H.ComIn.Valid {
 		}
 	case GETRESULT:
-		hb.H.Ag.ComOut = agentToManager{AgentID: hb.H.Ag.ID, Action: "GetResult", Pos: hb.H.Ag.Position, commOut: make(chan managerToAgent)}
-		hb.H.Ag.Board.AgentManager.messIn <- hb.H.Ag.ComOut
-		hb.H.Ag.ComIn = <-hb.H.Ag.ComOut.commOut
-		if hb.H.Ag.ComIn.Valid {
-			hb.H.Ag.Looking4Someone = true
+		hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "GetResult", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
+		hb.H.Board.AgentManager.messIn <- hb.H.ComOut
+		hb.H.ComIn = <-hb.H.ComOut.commOut
+		if hb.H.ComIn.Valid {
+			hb.H.Looking4Someone = true
 		} else {
-			hb.H.Ag.Looking4Someone = false
+			hb.H.Looking4Someone = false
 		}
 	case LOOK4SOMEONE:
 		var bestH *Agent
-		if len(hb.H.Ag.Neighbours) > 1 {
+		if len(hb.H.Neighbours) > 1 {
 			//TO DEVELOPP bestH=find bestMatchHuman(humans)
-			bestH = hb.H.Ag.Neighbours[0] // waiting function
-		} else if len(hb.H.Ag.Neighbours) == 1 {
-			bestH = hb.H.Ag.Neighbours[0]
+			bestH = hb.H.Neighbours[0] // waiting function
+		} else if len(hb.H.Neighbours) == 1 {
+			bestH = hb.H.Neighbours[0]
 		} else {
-			hb.H.Ag.StackAction = append(hb.H.Ag.StackAction, MOVE)
+			hb.H.StackAction = append(hb.H.StackAction, MOVE)
 			break
 		}
 		if bestH.Terminated == false {
 			select {
-			case bestH.AgentCommIn <- AgentComm{Agent: hb.H.Ag, Action: "INVITECLAN", commOut: hb.H.Ag.AgentCommIn}:
+			case bestH.AgentCommIn <- AgentComm{Agent: hb.H, Action: "INVITECLAN", commOut: hb.H.AgentCommIn}:
 				select {
-				case res := <-hb.H.Ag.AgentCommIn:
+				case res := <-hb.H.AgentCommIn:
 					if res.Action == "ACCEPTCLAN" {
-						hb.H.Ag.Looking4Someone = false
+						hb.H.Looking4Someone = false
 					} else {
-						hb.H.Ag.Action = MOVE
+						hb.H.Action = MOVE
 					}
 				case <-time.After(20 * time.Millisecond):
 				}
@@ -330,9 +330,9 @@ func (hb *HumanBehavior) Act() {
 			}
 		}
 	case PROCREATE:
-		if hb.H.Ag.Type == 'F' {
-			hb.H.Ag.ComOut = agentToManager{AgentID: hb.H.Ag.ID, Action: "procreate", Pos: hb.H.Ag.Position, commOut: make(chan managerToAgent)}
-			hb.H.Ag.Board.AgentManager.messIn <- hb.H.Ag.ComOut
+		if hb.H.Type == 'F' {
+			hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "procreate", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
+			hb.H.Board.AgentManager.messIn <- hb.H.ComOut
 		}
 	default:
 		fmt.Println("Should not be here")
@@ -341,16 +341,16 @@ func (hb *HumanBehavior) Act() {
 }
 
 func (hb *HumanBehavior) UpdateAgent() {
-	hb.H.Ag.Terminated = false
-	hb.H.Ag.Perceive()
+	hb.H.Terminated = false
+	hb.H.Perceive()
 	hb.Deliberate()
 	hb.Act()
 	select {
-	case res := <-hb.H.Ag.AgentCommIn:
-		hb.H.Ag.Terminated = true
-		hb.H.Ag.AnswerAgents(res)
+	case res := <-hb.H.AgentCommIn:
+		hb.H.Terminated = true
+		hb.H.AnswerAgents(res)
 	default:
-		hb.H.Ag.Terminated = true
+		hb.H.Terminated = true
 	}
-	hb.H.Ag.CloseUpdate()
+	hb.H.CloseUpdate()
 }

@@ -100,17 +100,7 @@ type Agent struct {
 	Procreate     Procreate
 	Terminated    bool
 
-	HumanBehavior HumanActions
-}
-
-type Human struct {
-	Ag       *Agent
-	Behavior HumanBehavior
-}
-
-type Child struct {
-	Ag       *Agent
-	Behavior HumanBehavior
+	Behavior HumanActions
 }
 
 type AgentComm struct {
