@@ -28,7 +28,7 @@ func DrawBoard(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFact
 }
 
 func DrawAgents(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFactor float32, debug bool) {
-	agents := make([]*typing.Human, 0)
+	agents := make([]*typing.Agent, 0)
 	for _, ag := range b.AgentManager.Agents {
 		agents = append(agents, ag)
 	}
