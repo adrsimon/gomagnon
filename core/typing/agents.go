@@ -133,6 +133,38 @@ func NewHuman(id string, Type rune, Race Race, body HumanBody, stats HumanStats,
 	return &Human{ID: id, Type: Type, Race: Race, Body: body, Stats: stats, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn, Hut: hut, Inventory: inventory, AgentRelation: agentRelation}
 }
 
+func (h *Human) BestMatchHuman() *Human {
+	if len(h.Neighbours) == 0 {
+		return nil
+	}
+
+	bestMatch := h.Neighbours[0]
+	highestScore := calculateScore(h, bestMatch)
+
+	for _, neighbour := range h.Neighbours[1:] {
+		score := calculateScore(h, neighbour)
+		if score > highestScore {
+			bestMatch = neighbour
+			highestScore = score
+		}
+	}
+
+	return bestMatch
+}
+
+func calculateScore(h, n *Human) float64 {
+	var score float64
+	score += float64(n.Stats.Sociability / 100)
+	score += float64(n.Stats.Strength / 100)
+	if n.Type != h.Type && h.Clan != nil && len(h.Clan.members) < 4 {
+		score += 2
+	}
+	if n.Race == h.Race {
+		score += 1
+	}
+	return score
+}
+
 func (h *Human) EvaluateOneHex(hex *Hexagone) float64 {
 	var score = 0.0
 	threshold := 85.0
@@ -371,7 +403,7 @@ func (h *Human) DeliberateAtHut() {
 		return
 	}
 
-	if h.Clan != nil && h.Clan.chief == h && len(h.Clan.members) < 15 && len(h.Clan.members) > 0 && h.Hut.Ballot.VoteInProgress == false && h.Looking4Someone == false {
+	if h.Clan != nil && h.Clan.chief == h && len(h.Clan.members) < 15 && len(h.Clan.members) > 0 && !h.Hut.Ballot.VoteInProgress && !h.Looking4Someone {
 		h.Action = CREATEVOTENEWMEMBER
 		return
 	}
@@ -558,16 +590,7 @@ func (h *Human) Act() {
 	case CREATECLAN:
 		var bestH *Human
 		if len(h.Neighbours) > 1 {
-			h.ComOut = agentToManager{AgentID: h.ID, Action: "VoteNewPerson", Pos: h.Position, commOut: make(chan managerToAgent)}
-			h.Board.AgentManager.messIn <- h.ComOut
-			h.ComIn = <-h.ComOut.commOut
-			if h.ComIn.Valid {
-				h.ComOut = agentToManager{AgentID: h.ID, Action: "VoteYes", Pos: h.Position, commOut: make(chan managerToAgent)}
-				h.Board.AgentManager.messIn <- h.ComOut
-				h.ComIn = <-h.ComOut.commOut
-				if h.ComIn.Valid {
-				}
-			}
+			bestH = h.BestMatchHuman()
 		} else if len(h.Neighbours) == 1 {
 			bestH = h.Neighbours[0]
 		} else {
@@ -599,8 +622,6 @@ func (h *Human) Act() {
 			h.ComOut = agentToManager{AgentID: h.ID, Action: "VoteYes", Pos: h.Position, commOut: make(chan managerToAgent)}
 			h.Board.AgentManager.messIn <- h.ComOut
 			h.ComIn = <-h.ComOut.commOut
-			if h.ComIn.Valid {
-			}
 		}
 	case VOTE:
 		if h.PerformAction() {
@@ -610,8 +631,7 @@ func (h *Human) Act() {
 		}
 		h.Board.AgentManager.messIn <- h.ComOut
 		h.ComIn = <-h.ComOut.commOut
-		if h.ComIn.Valid {
-		}
+
 	case GETRESULT:
 		h.ComOut = agentToManager{AgentID: h.ID, Action: "GetResult", Pos: h.Position, commOut: make(chan managerToAgent)}
 		h.Board.AgentManager.messIn <- h.ComOut
@@ -632,7 +652,7 @@ func (h *Human) Act() {
 			h.StackAction = append(h.StackAction, MOVE)
 			break
 		}
-		if bestH.Terminated == false {
+		if !bestH.Terminated {
 			select {
 			case bestH.AgentCommIn <- AgentComm{Agent: h, Action: "INVITECLAN", commOut: h.AgentCommIn}:
 				select {

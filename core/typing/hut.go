@@ -35,7 +35,7 @@ func (hu *Hut) removeVoter(agID string) {
 	}
 }
 func (hu *Hut) StartNewVote(agent *Human, reason string) bool {
-	if hu.Ballot.VoteInProgress == false && agent == agent.Clan.chief {
+	if !hu.Ballot.VoteInProgress && agent == agent.Clan.chief {
 		switch reason {
 		case "VoteNewPerson":
 			hu.Ballot.VoteInProgress = true
