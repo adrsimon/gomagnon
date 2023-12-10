@@ -138,6 +138,10 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		} else {
 			request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
 		}
+	case "bestMatch":
+		ag := agMan.Agents[request.AgentID]
+		best := BestMatchHuman(ag)
+		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 	case "procreate":
 		ag := agMan.Agents[request.AgentID]
 		if len(ag.Clan.members) > 15 {
