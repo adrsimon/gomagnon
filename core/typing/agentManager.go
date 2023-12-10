@@ -37,14 +37,46 @@ func (agMan *AgentManager) startResources() {
 	}
 }
 
+func BestMatchHuman(h *Human) *Human {
+	if len(h.Neighbours) == 0 {
+		return nil
+	}
+
+	bestMatch := h.Neighbours[0]
+	highestScore := calculateScore(h, bestMatch)
+
+	for _, neighbour := range h.Neighbours[1:] {
+		score := calculateScore(h, neighbour)
+		if score > highestScore {
+			bestMatch = neighbour
+			highestScore = score
+		}
+	}
+
+	return bestMatch
+}
+
+func calculateScore(h, n *Human) float64 {
+	var score float64
+	score += float64(n.Stats.Sociability / 100)
+	score += float64(n.Stats.Strength / 100)
+	if n.Type != h.Type && h.Clan != nil && len(h.Clan.members) < 4 {
+		score += 2
+	}
+	if n.Race == h.Race {
+		score += 1
+	}
+	return score
+}
+
 func MakeChild(parent1 *Human, parent2 *Human, count int) *Human {
 	var failChance int
 	var newHuman *Human
 	newHuman = nil
 	if parent1.Race == NEANDERTHAL {
-		failChance = Randomizer.Intn(3)
-	} else {
 		failChance = Randomizer.Intn(2)
+	} else {
+		failChance = Randomizer.Intn(1)
 	}
 	if failChance == 0 {
 		newHuman = &Human{

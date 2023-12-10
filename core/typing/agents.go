@@ -105,6 +105,11 @@ type Human struct {
 	Terminated    bool
 }
 
+func (h *Human) PerformAction() bool {
+	randomNumber := Randomizer.Intn(101)
+	return randomNumber <= h.Stats.Sociability
+}
+
 type AgentComm struct {
 	Agent   *Human
 	Action  string
@@ -307,7 +312,7 @@ func (h *Human) Perceive() {
 		}
 	}
 	h.Neighbours = listHumans
-	if h.Hut != nil && h.Procreate.Partner == nil && h.Procreate.Timer <= 0 && h.Clan != nil {
+	if h.Hut != nil && h.Procreate.Partner == nil && h.Procreate.Timer <= 0 && h.Clan != nil && h.PerformAction() {
 		for _, neighbour := range h.Neighbours {
 			if neighbour.Clan == h.Clan && neighbour.Procreate.Partner == nil && neighbour.Hut == h.Hut && neighbour.Body.Age > 15 /*&& h.Type != neighbour.Type */ {
 				h.Procreate.Partner = neighbour
@@ -315,6 +320,7 @@ func (h *Human) Perceive() {
 				break
 			}
 		}
+
 	} else if h.Hut != nil && h.Procreate.Partner != nil && h.Position.Position == h.Hut.Position.Position {
 		h.ComOut = agentToManager{AgentID: h.ID, Action: "isHome", Pos: h.Position, commOut: make(chan managerToAgent)}
 		h.Board.AgentManager.messIn <- h.ComOut
@@ -552,8 +558,16 @@ func (h *Human) Act() {
 	case CREATECLAN:
 		var bestH *Human
 		if len(h.Neighbours) > 1 {
-			//TO DEVELOPP bestH=find bestMatchHuman(humans)
-			bestH = h.Neighbours[0] // waiting function
+			h.ComOut = agentToManager{AgentID: h.ID, Action: "VoteNewPerson", Pos: h.Position, commOut: make(chan managerToAgent)}
+			h.Board.AgentManager.messIn <- h.ComOut
+			h.ComIn = <-h.ComOut.commOut
+			if h.ComIn.Valid {
+				h.ComOut = agentToManager{AgentID: h.ID, Action: "VoteYes", Pos: h.Position, commOut: make(chan managerToAgent)}
+				h.Board.AgentManager.messIn <- h.ComOut
+				h.ComIn = <-h.ComOut.commOut
+				if h.ComIn.Valid {
+				}
+			}
 		} else if len(h.Neighbours) == 1 {
 			bestH = h.Neighbours[0]
 		} else {
@@ -589,7 +603,7 @@ func (h *Human) Act() {
 			}
 		}
 	case VOTE:
-		if Randomizer.Intn(2) >= 1 {
+		if h.PerformAction() {
 			h.ComOut = agentToManager{AgentID: h.ID, Action: "VoteYes", Pos: h.Position, commOut: make(chan managerToAgent)}
 		} else {
 			h.ComOut = agentToManager{AgentID: h.ID, Action: "VoteNo", Pos: h.Position, commOut: make(chan managerToAgent)}
