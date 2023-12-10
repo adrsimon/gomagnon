@@ -196,23 +196,7 @@ func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
 	return score
 }
 
-func (h *Agent) GetNeighboursWithinAcuity() []*Hexagone {
-	neighbours := h.Board.GetNeighbours(h.Position)
-	visited := make(map[*Hexagone]bool)
-	for i := 1; i < h.Stats.Acuity; i++ {
-		for _, neighbour := range neighbours {
-			if neighbour == nil {
-				continue
-			}
-			if _, ok := visited[neighbour]; !ok {
-				visited[neighbour] = true
-				neighbours = append(neighbours, h.Board.GetNeighbours(neighbour)...)
-			}
-		}
-	}
 
-	return neighbours
-}
 
 func (h *Agent) BestMatchHuman() *Agent {
 	if len(h.Neighbours) == 0 {
@@ -419,4 +403,22 @@ func (h *Agent) CloseUpdate() {
 		h.Body.Thirstiness += 0.4
 		h.Body.Tiredness += 0.4
 	}
+	if h.Body.Age > 10 {
+		h.Behavior = &HumanBehavior{H: h}
+	}
+}
+
+func (h *Agent) UpdateAgent() {
+	h.Terminated = false
+	h.Perceive()
+	h.Behavior.Deliberate()
+	h.Behavior.Act()
+	select {
+	case res := <-h.AgentCommIn:
+		h.Terminated = true
+		h.AnswerAgents(res)
+	default:
+		h.Terminated = true
+	}
+	h.CloseUpdate()
 }

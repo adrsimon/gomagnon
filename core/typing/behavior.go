@@ -11,7 +11,7 @@ type HumanActions interface {
 	DeliberateAtHut()
 	Deliberate()
 	Act()
-	UpdateAgent()
+	GetNeighboursWithinAcuity() []*Hexagone
 }
 
 type HumanBehavior struct {
@@ -20,6 +20,24 @@ type HumanBehavior struct {
 
 type ChildBehavior struct {
 	C *Agent
+}
+
+func (hb *HumanBehavior) GetNeighboursWithinAcuity() []*Hexagone {
+	neighbours := hb.H.Board.GetNeighbours(hb.H.Position)
+	visited := make(map[*Hexagone]bool)
+	for i := 1; i < hb.H.Stats.Acuity; i++ {
+		for _, neighbour := range neighbours {
+			if neighbour == nil {
+				continue
+			}
+			if _, ok := visited[neighbour]; !ok {
+				visited[neighbour] = true
+				neighbours = append(neighbours, hb.H.Board.GetNeighbours(neighbour)...)
+			}
+		}
+	}
+
+	return neighbours
 }
 
 func (hb *HumanBehavior) DeliberateAtHut() {
@@ -166,7 +184,7 @@ func (hb *HumanBehavior) Act() {
 			}
 
 			if targetHexagon == nil {
-				surroundingHexagons := hb.H.GetNeighboursWithinAcuity()
+				surroundingHexagons := hb.GetNeighboursWithinAcuity()
 				targetHexagon = hb.H.BestNeighbor(surroundingHexagons)
 			}
 
@@ -335,17 +353,171 @@ func (hb *HumanBehavior) Act() {
 
 }
 
-func (hb *HumanBehavior) UpdateAgent() {
-	hb.H.Terminated = false
-	hb.H.Perceive()
-	hb.Deliberate()
-	hb.Act()
-	select {
-	case res := <-hb.H.AgentCommIn:
-		hb.H.Terminated = true
-		hb.H.AnswerAgents(res)
-	default:
-		hb.H.Terminated = true
+func (hb *ChildBehavior) GetNeighboursWithinAcuity() []*Hexagone {
+	neighbours := hb.C.Board.GetNeighbours(hb.C.Position)
+	visited := make(map[*Hexagone]bool)
+	for i := 1; i < hb.C.Stats.Acuity; i++ {
+		for _, neighbour := range neighbours {
+			if neighbour == nil {
+				continue
+			}
+			if _, ok := visited[neighbour]; !ok {
+				visited[neighbour] = true
+				for _, neigbour2 := range hb.C.Board.GetNeighbours(neighbour) {
+					if distance(*hb.C.Hut.Position, *neigbour2) <= 5 {
+						neighbours = append(neighbours, neigbour2)
+					}
+				}
+			}
+		}
 	}
-	hb.H.CloseUpdate()
+
+	return neighbours
+}
+
+func (hb *ChildBehavior) Deliberate() {
+	hb.C.Action = NOOP
+
+	/** Stacked actions **/
+	if len(hb.C.StackAction) > 0 {
+		hb.C.Action = hb.C.StackAction[0]
+		hb.C.StackAction = hb.C.StackAction[1:]
+		return
+	}
+
+	/** In Hut actions **/
+	if hb.C.Position.Position == hb.C.Hut.Position.Position {
+		hb.DeliberateAtHut()
+		if hb.C.Action != NOOP {
+			return
+		}
+	}
+
+	if hb.C.Body.Age > 5 {
+		if hb.C.Body.Thirstiness > 80 || hb.C.Body.Hungriness > 80 {
+			if !hb.C.MovingToTarget {
+				hb.C.Action = MOVE
+				return
+			}
+		}
+		if !hb.C.MovingToTarget {
+			hb.C.Action = MOVE
+			return
+		}
+	}
+
+}
+
+func (hb *ChildBehavior) DeliberateAtHut() {
+	/** If he is tired and have a home, he should sleep **/
+	if hb.C.Body.Tiredness > 0 {
+		hb.C.Action = SLEEP
+		return
+	}
+
+	/** If he is hungry and have food in home, he should eat **/
+	if hb.C.Body.Hungriness > 80 {
+		if slices.Contains(hb.C.HutInventoryVision, ANIMAL) || slices.Contains(hb.C.HutInventoryVision, FRUIT) {
+			hb.C.Action = EATFROMHOME
+			return
+		} else if hb.C.Body.Age > 5 {
+			hb.C.Action = MOVE
+		}
+	}
+
+	/** If he has stuff in inventory, he should store it **/
+	if hb.C.Inventory.Weight > 0 {
+		hb.C.Action = STOREATHOME
+		return
+	}
+}
+
+func (hb *ChildBehavior) Act() {
+	switch hb.C.Action {
+	case NOOP:
+		hb.C.Body.Tiredness -= 1
+	case MOVE:
+		if !hb.C.MovingToTarget {
+			var targetHexagon *Hexagone
+
+			if hb.C.Hut != nil {
+				if hb.C.Body.Tiredness > 80 || hb.C.Procreate.Partner != nil {
+					targetHexagon = hb.C.Hut.Position
+				} else if hb.C.Body.Hungriness > 80 && (slices.Contains(hb.C.HutInventoryVision, ANIMAL) || slices.Contains(hb.C.HutInventoryVision, FRUIT)) {
+					targetHexagon = hb.C.Hut.Position
+				}
+			}
+
+			if targetHexagon == nil {
+				surroundingHexagons := hb.GetNeighboursWithinAcuity()
+				targetHexagon = hb.C.BestNeighbor(surroundingHexagons)
+			}
+
+			res := AStar(*hb.C, targetHexagon)
+			hb.C.CurrentPath = createPath(res, targetHexagon)
+			if len(hb.C.CurrentPath) < 2 {
+				hb.C.CurrentPath = nil
+				break
+			}
+			hb.C.CurrentPath = hb.C.CurrentPath[:len(hb.C.CurrentPath)-2]
+			hb.C.Target = targetHexagon
+			hb.C.MovingToTarget = true
+		}
+
+		if hb.C.MovingToTarget && len(hb.C.CurrentPath) > 0 {
+			nextHexagon := hb.C.CurrentPath[len(hb.C.CurrentPath)-1]
+			hb.C.MoveToHexagon(hb.C.Board.Cases[nextHexagon.Position.X][nextHexagon.Position.Y])
+			hb.C.CurrentPath = hb.C.CurrentPath[:len(hb.C.CurrentPath)-1]
+		}
+
+		/** Next move stacking **/
+		if hb.C.MovingToTarget && len(hb.C.CurrentPath) > 0 {
+			hb.C.StackAction = append(hb.C.StackAction, MOVE)
+		}
+
+		if hb.C.Position.Position == hb.C.Target.Position {
+			if hb.C.Target.Resource != NONE {
+				hb.C.StackAction = append(hb.C.StackAction, GET)
+			}
+			hb.C.Target = nil
+			hb.C.MovingToTarget = false
+		}
+	case GET:
+		if hb.C.Position.Resource != NONE {
+			hb.C.ComOut = agentToManager{AgentID: hb.C.ID, Action: "get", Pos: hb.C.Position, commOut: make(chan managerToAgent)}
+			hb.C.Board.AgentManager.messIn <- hb.C.ComOut
+			hb.C.ComIn = <-hb.C.ComOut.commOut
+			if hb.C.ComIn.Valid {
+				hb.C.UpdateState(hb.C.ComIn.Resource)
+			}
+		}
+	case SLEEP:
+		if hb.C.Body.Tiredness > 0 {
+			hb.C.Body.Tiredness -= 3
+			// hb.H.Body.Hungriness += 0.5
+			// hb.H.Body.Thirstiness += 0.5
+			hb.C.StackAction = append(hb.C.StackAction, SLEEP)
+		}
+	case STOREATHOME:
+		hb.C.ComOut = agentToManager{AgentID: hb.C.ID, Action: "store-at-home", Pos: hb.C.Position, commOut: make(chan managerToAgent)}
+		hb.C.Board.AgentManager.messIn <- hb.C.ComOut
+		hb.C.ComIn = <-hb.C.ComOut.commOut
+		if hb.C.ComIn.Valid {
+			hb.C.Inventory.Weight = 0
+		}
+	case EATFROMHOME:
+		hb.C.ComOut = agentToManager{AgentID: hb.C.ID, Action: "eat-from-home", Pos: hb.C.Position, commOut: make(chan managerToAgent)}
+		hb.C.Board.AgentManager.messIn <- hb.C.ComOut
+		hb.C.ComIn = <-hb.C.ComOut.commOut
+		if hb.C.ComIn.Valid {
+			if hb.C.ComIn.Resource == ANIMAL {
+				hb.C.Body.Hungriness -= 10 * AnimalFoodValueMultiplier
+			} else {
+				hb.C.Body.Hungriness -= 10 * FruitFoodValueMultiplier
+			}
+		}
+	default:
+		fmt.Println("Should not be here")
+	}
+
 }

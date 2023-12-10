@@ -73,7 +73,7 @@ func MakeChild(parent1 *Agent, parent2 *Agent, count int) *Agent {
 			Clan:           parent1.Clan,
 			Procreate:      Procreate{Partner: nil, Timer: 200},
 		}
-		newHuman.Behavior = &HumanBehavior{H: newHuman}
+		newHuman.Behavior = &ChildBehavior{C: newHuman}
 	}
 	return newHuman
 }
