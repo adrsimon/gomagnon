@@ -1,7 +1,7 @@
 package typing
 
 type Item struct { // Une fois Agent crée stocker des agents avec priorité
-	value    Human
+	value    Agent
 	priority float64
 }
 

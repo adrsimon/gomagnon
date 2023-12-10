@@ -18,7 +18,7 @@ func NewBoard(xmax, ymax int, hexSize float32, maxResources map[ResourceType]int
 	for x := 0; x < xmax; x++ {
 		cases = append(cases, make([]*Hexagone, ymax))
 	}
-	agents := make(map[string]*Human)
+	agents := make(map[string]*Agent)
 	resMan := NewResourceManager(maxResources)
 	return &Board{
 		Cases:           cases,
