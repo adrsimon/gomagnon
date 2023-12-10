@@ -102,8 +102,12 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		fmt.Println("\033[33mAgent\033[0m", request.AgentID, "\033[33mleft his house and joined clan\033[0m", ag.Clan.ID)
 	case "isHome":
 		ag := agMan.Agents[request.AgentID]
-		if ag.Procreate.Partner != nil && ag.Procreate.Partner.Position.Position == ag.Hut.Position.Position {
-			request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
+		if ag.Procreate.Partner != nil {
+			if ag.Procreate.Partner.Position.Position == ag.Hut.Position.Position {
+				request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
+			} else {
+				request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
+			}
 		} else {
 			request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
 		}
