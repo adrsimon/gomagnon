@@ -103,6 +103,11 @@ type Agent struct {
 	Behavior HumanActions
 }
 
+func (h *Agent) PerformAction() bool {
+	randomNumber := Randomizer.Intn(101)
+	return randomNumber <= h.Stats.Sociability
+}
+
 type AgentComm struct {
 	Agent   *Agent
 	Action  string
@@ -188,6 +193,40 @@ func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
 		}
 	}
 
+	return score
+}
+
+
+
+func (h *Agent) BestMatchHuman() *Agent {
+	if len(h.Neighbours) == 0 {
+		return nil
+	}
+
+	bestMatch := h.Neighbours[0]
+	highestScore := calculateScore(h, bestMatch)
+
+	for _, neighbour := range h.Neighbours[1:] {
+		score := calculateScore(h, neighbour)
+		if score > highestScore {
+			bestMatch = neighbour
+			highestScore = score
+		}
+	}
+
+	return bestMatch
+}
+
+func calculateScore(h, n *Agent) float64 {
+	var score float64
+	score += float64(n.Stats.Sociability / 100)
+	score += float64(n.Stats.Strength / 100)
+	if n.Type != h.Type && h.Clan != nil && len(h.Clan.members) < 4 {
+		score += 2
+	}
+	if n.Race == h.Race {
+		score += 1
+	}
 	return score
 }
 
@@ -287,14 +326,15 @@ func (h *Agent) Perceive() {
 		}
 	}
 	h.Neighbours = listHumans
-	if h.Hut != nil && h.Procreate.Partner == nil && h.Procreate.Timer <= 0 && h.Clan != nil {
+	if h.Hut != nil && h.Procreate.Partner == nil && h.Procreate.Timer <= 0 && h.Clan != nil && h.PerformAction() {
 		for _, neighbour := range h.Neighbours {
-			if neighbour.Clan == h.Clan && neighbour.Procreate.Partner == nil && neighbour.Hut == h.Hut && neighbour.Body.Age > 15 /*&& h.Type != neighbour.Type */ {
+			if neighbour.Clan == h.Clan && neighbour.Procreate.Partner == nil && neighbour.Hut == h.Hut && neighbour.Body.Age > 10 && h.Type != neighbour.Type && h.PerformAction() {
 				h.Procreate.Partner = neighbour
 				neighbour.Procreate.Partner = h
 				break
 			}
 		}
+
 	} else if h.Hut != nil && h.Procreate.Partner != nil && h.Position.Position == h.Hut.Position.Position {
 		h.ComOut = agentToManager{AgentID: h.ID, Action: "isHome", Pos: h.Position, commOut: make(chan managerToAgent)}
 		h.Board.AgentManager.messIn <- h.ComOut

@@ -78,7 +78,7 @@ func (hb *HumanBehavior) DeliberateAtHut() {
 		return
 	}
 
-	if hb.H.Clan != nil && hb.H.Clan.chief == hb.H && len(hb.H.Clan.members) < 15 && len(hb.H.Clan.members) > 0 && hb.H.Hut.Ballot.VoteInProgress == false && hb.H.Looking4Someone == false {
+	if hb.H.Clan != nil && hb.H.Clan.chief == hb.H && len(hb.H.Clan.members) < 15 && len(hb.H.Clan.members) > 0 && !hb.H.Hut.Ballot.VoteInProgress && !hb.H.Looking4Someone {
 		hb.H.Action = CREATEVOTENEWMEMBER
 		return
 	}
@@ -265,8 +265,7 @@ func (hb *HumanBehavior) Act() {
 	case CREATECLAN:
 		var bestH *Agent
 		if len(hb.H.Neighbours) > 1 {
-			//TO DEVELOPP bestH=find bestMatchHuman(humans)
-			bestH = hb.H.Neighbours[0] // waiting function
+			bestH = hb.H.BestMatchHuman()
 		} else if len(hb.H.Neighbours) == 1 {
 			bestH = hb.H.Neighbours[0]
 		} else {
@@ -298,8 +297,6 @@ func (hb *HumanBehavior) Act() {
 			hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "VoteYes", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
 			hb.H.Board.AgentManager.messIn <- hb.H.ComOut
 			hb.H.ComIn = <-hb.H.ComOut.commOut
-			if hb.H.ComIn.Valid {
-			}
 		}
 	case VOTE:
 		if Randomizer.Intn(2) >= 1 {
@@ -309,8 +306,7 @@ func (hb *HumanBehavior) Act() {
 		}
 		hb.H.Board.AgentManager.messIn <- hb.H.ComOut
 		hb.H.ComIn = <-hb.H.ComOut.commOut
-		if hb.H.ComIn.Valid {
-		}
+
 	case GETRESULT:
 		hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "GetResult", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
 		hb.H.Board.AgentManager.messIn <- hb.H.ComOut
@@ -323,15 +319,14 @@ func (hb *HumanBehavior) Act() {
 	case LOOK4SOMEONE:
 		var bestH *Agent
 		if len(hb.H.Neighbours) > 1 {
-			//TO DEVELOPP bestH=find bestMatchHuman(humans)
-			bestH = hb.H.Neighbours[0] // waiting function
+			bestH = hb.H.BestMatchHuman()
 		} else if len(hb.H.Neighbours) == 1 {
 			bestH = hb.H.Neighbours[0]
 		} else {
 			hb.H.StackAction = append(hb.H.StackAction, MOVE)
 			break
 		}
-		if bestH.Terminated == false {
+		if !bestH.Terminated {
 			select {
 			case bestH.AgentCommIn <- AgentComm{Agent: hb.H, Action: "INVITECLAN", commOut: hb.H.AgentCommIn}:
 				select {
