@@ -103,12 +103,7 @@ type Agent struct {
 	Behavior HumanActions
 }
 
-func (h *Human) PerformAction() bool {
-	randomNumber := Randomizer.Intn(101)
-	return randomNumber <= h.Stats.Sociability
-}
-
-func (h *Human) PerformAction() bool {
+func (h *Agent) PerformAction() bool {
 	randomNumber := Randomizer.Intn(101)
 	return randomNumber <= h.Stats.Sociability
 }
@@ -134,70 +129,6 @@ const (
 
 func NewHuman(id string, Type rune, Race Race, body HumanBody, stats HumanStats, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Hexagone, board *Board, comOut agentToManager, comIn managerToAgent, hut *Hut, inventory Inventory, agentRelation map[string]string) *Agent {
 	return &Agent{ID: id, Type: Type, Race: Race, Body: body, Stats: stats, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn, Hut: hut, Inventory: inventory, AgentRelation: agentRelation}
-}
-
-func (h *Human) BestMatchHuman() *Human {
-	if len(h.Neighbours) == 0 {
-		return nil
-	}
-
-	bestMatch := h.Neighbours[0]
-	highestScore := calculateScore(h, bestMatch)
-
-	for _, neighbour := range h.Neighbours[1:] {
-		score := calculateScore(h, neighbour)
-		if score > highestScore {
-			bestMatch = neighbour
-			highestScore = score
-		}
-	}
-
-	return bestMatch
-}
-
-func calculateScore(h, n *Human) float64 {
-	var score float64
-	score += float64(n.Stats.Sociability / 100)
-	score += float64(n.Stats.Strength / 100)
-	if n.Type != h.Type && h.Clan != nil && len(h.Clan.members) < 4 {
-		score += 2
-	}
-	if n.Race == h.Race {
-		score += 1
-	}
-	return score
-}
-
-func (h *Human) BestMatchHuman() *Human {
-	if len(h.Neighbours) == 0 {
-		return nil
-	}
-
-	bestMatch := h.Neighbours[0]
-	highestScore := calculateScore(h, bestMatch)
-
-	for _, neighbour := range h.Neighbours[1:] {
-		score := calculateScore(h, neighbour)
-		if score > highestScore {
-			bestMatch = neighbour
-			highestScore = score
-		}
-	}
-
-	return bestMatch
-}
-
-func calculateScore(h, n *Human) float64 {
-	var score float64
-	score += float64(n.Stats.Sociability / 100)
-	score += float64(n.Stats.Strength / 100)
-	if n.Type != h.Type && h.Clan != nil && len(h.Clan.members) < 4 {
-		score += 2
-	}
-	if n.Race == h.Race {
-		score += 1
-	}
-	return score
 }
 
 func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
@@ -281,6 +212,38 @@ func (h *Agent) GetNeighboursWithinAcuity() []*Hexagone {
 	}
 
 	return neighbours
+}
+
+func (h *Agent) BestMatchHuman() *Agent {
+	if len(h.Neighbours) == 0 {
+		return nil
+	}
+
+	bestMatch := h.Neighbours[0]
+	highestScore := calculateScore(h, bestMatch)
+
+	for _, neighbour := range h.Neighbours[1:] {
+		score := calculateScore(h, neighbour)
+		if score > highestScore {
+			bestMatch = neighbour
+			highestScore = score
+		}
+	}
+
+	return bestMatch
+}
+
+func calculateScore(h, n *Agent) float64 {
+	var score float64
+	score += float64(n.Stats.Sociability / 100)
+	score += float64(n.Stats.Strength / 100)
+	if n.Type != h.Type && h.Clan != nil && len(h.Clan.members) < 4 {
+		score += 2
+	}
+	if n.Race == h.Race {
+		score += 1
+	}
+	return score
 }
 
 func (h *Agent) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
