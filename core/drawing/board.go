@@ -35,7 +35,11 @@ func DrawAgents(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFac
 
 	for _, agent := range agents {
 		var col color.Color
-		if agent.Race == typing.SAPIENS {
+		if agent.Body.Age < 5 {
+			col = colornames.Pink
+		} else if agent.Body.Age < 10 {
+			col = colornames.Green
+		} else if agent.Race == typing.SAPIENS {
 			col = colornames.Blue
 		} else {
 			col = colornames.Red
@@ -54,7 +58,7 @@ func DrawAgents(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFac
 			continue
 		}
 
-		for _, neighbor := range agent.GetNeighboursWithinAcuity() {
+		for _, neighbor := range agent.Behavior.GetNeighboursWithinAcuity() {
 			if neighbor == nil {
 				continue
 			}
