@@ -228,7 +228,7 @@ func newAgentChoice(sim *Simulation) *widget.List {
 }
 
 func makeAgentDetails() *widget.TextArea {
-	face, _ := loadFont(12)
+	face, _ := loadFont(14)
 
 	textarea := widget.NewTextArea(
 		widget.TextAreaOpts.ContainerOpts(

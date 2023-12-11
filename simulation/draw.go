@@ -44,6 +44,7 @@ func (s *Simulation) Draw(screen *ebiten.Image) {
 			s.cameraX = camX - float32(s.ScreenHeight/2)
 			s.cameraY = camY - float32(s.ScreenWidth/4)
 			s.zoomFactor = 1.5
+			s.AgentDesc.SetText(ag.String())
 		}
 	}
 
