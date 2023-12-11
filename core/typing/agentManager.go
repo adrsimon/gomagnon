@@ -21,12 +21,12 @@ type managerToAgent struct {
 type AgentManager struct {
 	Map             *[][]*Hexagone
 	messIn          chan agentToManager
-	Agents          map[string]*Human
+	Agents          map[string]*Agent
 	ResourceManager *ResourceManager
 	Count           int
 }
 
-func NewAgentManager(Map [][]*Hexagone, messIn chan agentToManager, agents map[string]*Human, ressourceManager *ResourceManager) *AgentManager {
+func NewAgentManager(Map [][]*Hexagone, messIn chan agentToManager, agents map[string]*Agent, ressourceManager *ResourceManager) *AgentManager {
 	return &AgentManager{Map: &Map, messIn: messIn, Agents: agents, ResourceManager: ressourceManager, Count: 0}
 }
 
@@ -37,17 +37,17 @@ func (agMan *AgentManager) startResources() {
 	}
 }
 
-func MakeChild(parent1 *Human, parent2 *Human, count int) *Human {
+func MakeChild(parent1 *Agent, parent2 *Agent, count int) *Agent {
 	var failChance int
-	var newHuman *Human
+	var newHuman *Agent
 	newHuman = nil
 	if parent1.Race == NEANDERTHAL {
-		failChance = Randomizer.Intn(3)
-	} else {
 		failChance = Randomizer.Intn(2)
+	} else {
+		failChance = Randomizer.Intn(1)
 	}
 	if failChance == 0 {
-		newHuman = &Human{
+		newHuman = &Agent{
 			ID:   fmt.Sprintf("ag-%d", count),
 			Type: []rune{'M', 'F'}[Randomizer.Intn(2)],
 			Race: parent1.Race,
@@ -73,6 +73,7 @@ func MakeChild(parent1 *Human, parent2 *Human, count int) *Human {
 			Clan:           parent1.Clan,
 			Procreate:      Procreate{Partner: nil, Timer: 200},
 		}
+		newHuman.Behavior = &ChildBehavior{C: newHuman}
 	}
 	return newHuman
 }
@@ -101,8 +102,12 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		fmt.Println("\033[33mAgent\033[0m", request.AgentID, "\033[33mleft his house and joined clan\033[0m", ag.Clan.ID)
 	case "isHome":
 		ag := agMan.Agents[request.AgentID]
-		if ag.Procreate.Partner != nil && ag.Procreate.Partner.Position.Position == ag.Hut.Position.Position {
-			request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
+		if ag != nil {
+			if ag.Procreate.Partner != nil && ag.Procreate.Partner.Position.Position == ag.Hut.Position.Position {
+				request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
+			} else {
+				request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
+			}
 		} else {
 			request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
 		}
