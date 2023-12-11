@@ -32,6 +32,7 @@ type Simulation struct {
 	SavedLen      int
 	Selector      *widget.List
 	AgentDesc     *widget.TextArea
+	Agents        map[string]*typing.Agent
 
 	UI *ebitenui.UI
 }

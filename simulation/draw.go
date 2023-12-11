@@ -31,11 +31,12 @@ func (s *Simulation) Draw(screen *ebiten.Image) {
 		s.cameraX = 0
 		s.cameraY = 0
 		s.SelectedAgent = ""
+		s.AgentDesc.SetText("Select an agent to see it's statistics")
 		s.Selector.SetSelectedEntry(AgentChoice{id: ""})
 	}
 
 	if s.SelectedAgent != "" {
-		ag, ok := s.Board.AgentManager.Agents[s.SelectedAgent]
+		ag, ok := s.Agents[s.SelectedAgent]
 		if !ok {
 			s.SelectedAgent = ""
 			s.AgentDesc.SetText("Select an agent to see it's statistics")
@@ -50,7 +51,7 @@ func (s *Simulation) Draw(screen *ebiten.Image) {
 
 	screen.Fill(s.backgroundColor)
 	drawing.DrawBoard(screen, s.Board, s.cameraX, s.cameraY, s.zoomFactor)
-	drawing.DrawAgents(screen, s.Board, s.cameraX, s.cameraY, s.zoomFactor, s.Debug)
+	drawing.DrawAgents(screen, s.Agents, s.cameraX, s.cameraY, s.zoomFactor, s.Board.HexSize, s.Debug)
 
 	if !ebiten.IsKeyPressed(ebiten.KeySpace) {
 		s.UI.Draw(screen)
