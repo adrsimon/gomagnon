@@ -27,12 +27,7 @@ func DrawBoard(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFact
 	}
 }
 
-func DrawAgents(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFactor float32, debug bool) {
-	agents := make([]*typing.Agent, 0)
-	for _, ag := range b.AgentManager.Agents {
-		agents = append(agents, ag)
-	}
-
+func DrawAgents(screen *ebiten.Image, agents map[string]*typing.Agent, cameraX, cameraY, zoomFactor, hexSize float32, debug bool) {
 	for _, agent := range agents {
 		var col color.Color
 		if agent.Body.Age < 5 {
@@ -45,7 +40,6 @@ func DrawAgents(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFac
 			col = colornames.Red
 		}
 
-		hexSize := b.HexSize
 		x := agent.Position.Position.X
 		y := agent.Position.Position.Y
 

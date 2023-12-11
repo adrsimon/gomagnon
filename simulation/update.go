@@ -7,8 +7,16 @@ import (
 )
 
 func (s *Simulation) Update() error {
+	/**
+	 * UI UPDATE
+	 */
 	s.UI.Update()
 
+	if s.Paused {
+		return nil
+	}
+
+	s.Agents = s.Board.AgentManager.Agents
 	m := makeAgentList(s)
 	if len(m) != s.SavedLen {
 		s.Selector.SetEntries(m)
@@ -16,9 +24,6 @@ func (s *Simulation) Update() error {
 		s.SavedLen = len(m)
 	}
 
-	if s.Paused {
-		return nil
-	}
 	ebiten.SetTPS(s.TPS)
 
 	/**

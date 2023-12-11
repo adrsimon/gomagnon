@@ -44,6 +44,38 @@ const (
 	PROCREATE
 )
 
+func (h *Agent) actionToStr() (action string) {
+	switch h.Action {
+	case NOOP:
+		action = "NOOP"
+	case MOVE:
+		action = "MOVE"
+	case GET:
+		action = "GET"
+	case BUILD:
+		action = "BUILD"
+	case SLEEP:
+		action = "SLEEP"
+	case STOREATHOME:
+		action = "STOREATHOME"
+	case EATFROMHOME:
+		action = "EATFROMHOME"
+	case CREATECLAN:
+		action = "CREATECLAN"
+	case CREATEVOTENEWMEMBER:
+		action = "CREATEVOTENEWMEMBER"
+	case VOTE:
+		action = "VOTE"
+	case GETRESULT:
+		action = "GETRESULT"
+	case LOOK4SOMEONE:
+		action = "LOOK4SOMEONE"
+	case PROCREATE:
+		action = "PROCREATE"
+	}
+	return
+}
+
 type Race int
 
 const (
@@ -424,12 +456,17 @@ func (h *Agent) UpdateAgent() {
 }
 
 func (h *Agent) String() string {
-	str := h.ID + "\n\n"
+	race := "Neanderthal"
+	if h.Race == SAPIENS {
+		race = "Sapiens"
+	}
+
+	str := h.ID + " - " + race + "\n\n"
 	str += "--- Body ---" + "\n"
-	str += "Age : " + fmt.Sprintf("%f", h.Body.Age) + "\n"
-	str += "Hungriness : " + fmt.Sprintf("%f", h.Body.Hungriness) + "\n"
-	str += "Thirstiness : " + fmt.Sprintf("%f", h.Body.Thirstiness) + "\n"
-	str += "Tiredness : " + fmt.Sprintf("%f", h.Body.Tiredness) + "\n\n"
+	str += "Age : " + fmt.Sprintf("%d", int(h.Body.Age)) + "\n"
+	str += "Hungriness : " + fmt.Sprintf("%d", int(h.Body.Hungriness)) + "\n"
+	str += "Thirstiness : " + fmt.Sprintf("%d", int(h.Body.Thirstiness)) + "\n"
+	str += "Tiredness : " + fmt.Sprintf("%d", int(h.Body.Tiredness)) + "\n\n"
 	str += "--- Hut and Clan ---\n"
 	if h.Hut != nil {
 		str += "Hut pos : " + strconv.Itoa(h.Hut.Position.Position.X) + " " + strconv.Itoa(h.Hut.Position.Position.Y) + "\n"
@@ -447,7 +484,8 @@ func (h *Agent) String() string {
 	str += "Fruits : " + strconv.Itoa(h.Inventory.Object[FRUIT]) + "\n"
 	str += "Animals : " + strconv.Itoa(h.Inventory.Object[ANIMAL]) + "\n"
 	str += "Woods : " + strconv.Itoa(h.Inventory.Object[WOOD]) + "\n"
-	str += "Rocks : " + strconv.Itoa(h.Inventory.Object[ROCK]) + "\n"
-	return str
+	str += "Rocks : " + strconv.Itoa(h.Inventory.Object[ROCK]) + "\n\n"
 
+	str += "Doing : " + h.actionToStr()
+	return str
 }

@@ -148,7 +148,7 @@ type AgentChoice struct {
 
 func makeAgentList(sim *Simulation) []any {
 	var agents []any
-	for _, agent := range sim.Board.AgentManager.Agents {
+	for _, agent := range sim.Agents {
 		agents = append(agents, AgentChoice{id: fmt.Sprintf("%s", agent.ID)})
 	}
 	slices.SortFunc(agents, func(i, j any) int {
