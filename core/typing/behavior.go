@@ -346,6 +346,10 @@ func (hb *HumanBehavior) Act() {
 		if hb.H.Type == 'F' {
 			hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "procreate", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
 			hb.H.Board.AgentManager.messIn <- hb.H.ComOut
+			hb.H.ComIn = <-hb.H.ComOut.commOut
+			if !hb.H.ComIn.Valid {
+				hb.H.StackAction = append(hb.H.StackAction, MOVE)
+			}
 		}
 	default:
 		fmt.Println("Should not be here")
