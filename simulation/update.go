@@ -1,12 +1,26 @@
 package simulation
 
 import (
-	"sync"
-
 	"github.com/adrsimon/gomagnon/core/typing"
+	"github.com/hajimehoshi/ebiten/v2"
+	"sync"
 )
 
 func (s *Simulation) Update() error {
+	s.UI.Update()
+
+	m := makeAgentList(s)
+	if len(m) != s.SavedLen {
+		s.Selector.SetEntries(m)
+		s.Selector.SetSelectedEntry(AgentChoice{id: s.SelectedAgent})
+		s.SavedLen = len(m)
+	}
+
+	if s.Paused {
+		return nil
+	}
+	ebiten.SetTPS(s.TPS)
+
 	/**
 	 * ENVIRONMENT UPDATE
 	 */

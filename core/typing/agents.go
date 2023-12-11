@@ -3,7 +3,9 @@ package typing
 // check if everyone make childs, add age + childs behaviour,
 
 import (
+	"fmt"
 	"math"
+	"strconv"
 )
 
 type HumanStats struct {
@@ -195,8 +197,6 @@ func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
 
 	return score
 }
-
-
 
 func (h *Agent) BestMatchHuman() *Agent {
 	if len(h.Neighbours) == 0 {
@@ -421,4 +421,33 @@ func (h *Agent) UpdateAgent() {
 		h.Terminated = true
 	}
 	h.CloseUpdate()
+}
+
+func (h *Agent) String() string {
+	str := h.ID + "\n\n"
+	str += "--- Body ---" + "\n"
+	str += "Age : " + fmt.Sprintf("%f", h.Body.Age) + "\n"
+	str += "Hungriness : " + fmt.Sprintf("%f", h.Body.Hungriness) + "\n"
+	str += "Thirstiness : " + fmt.Sprintf("%f", h.Body.Thirstiness) + "\n"
+	str += "Tiredness : " + fmt.Sprintf("%f", h.Body.Tiredness) + "\n\n"
+	str += "--- Hut and Clan ---\n"
+	if h.Hut != nil {
+		str += "Hut pos : " + strconv.Itoa(h.Hut.Position.Position.X) + " " + strconv.Itoa(h.Hut.Position.Position.Y) + "\n"
+	} else {
+		str += "No hut" + "\n"
+	}
+	if h.Clan != nil {
+		str += "Clan ID : " + h.Clan.ID + "\n"
+		str += "Chief : " + h.Clan.chief.ID + "\n"
+		str += "Members : " + strconv.Itoa(len(h.Clan.members)) + "\n\n"
+	} else {
+		str += "No clan" + "\n\n"
+	}
+	str += "--- Inventory ---" + "\n"
+	str += "Fruits : " + strconv.Itoa(h.Inventory.Object[FRUIT]) + "\n"
+	str += "Animals : " + strconv.Itoa(h.Inventory.Object[ANIMAL]) + "\n"
+	str += "Woods : " + strconv.Itoa(h.Inventory.Object[WOOD]) + "\n"
+	str += "Rocks : " + strconv.Itoa(h.Inventory.Object[ROCK]) + "\n"
+	return str
+
 }

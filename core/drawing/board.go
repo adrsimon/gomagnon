@@ -14,7 +14,7 @@ func DrawBoard(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFact
 			x := hex.Position.X
 			y := hex.Position.Y
 
-			xc, yc := getHexGraphicalCenter(x, y, hexSize)
+			xc, yc := GetHexGraphicalCenter(x, y, hexSize)
 			xc, yc = xc-cameraX, yc-cameraY
 			xc, yc = xc*zoomFactor, yc*zoomFactor
 
@@ -49,7 +49,7 @@ func DrawAgents(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFac
 		x := agent.Position.Position.X
 		y := agent.Position.Position.Y
 
-		xA, yA := getHexGraphicalCenter(x, y, hexSize)
+		xA, yA := GetHexGraphicalCenter(x, y, hexSize)
 		xA, yA = xA-cameraX, yA-cameraY
 		xA, yA = xA*zoomFactor, yA*zoomFactor
 		DrawAgent(screen, xA, yA, hexSize*zoomFactor, col)
@@ -62,23 +62,23 @@ func DrawAgents(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFac
 			if neighbor == nil {
 				continue
 			}
-			xN, yN := getHexGraphicalCenter(neighbor.Position.X, neighbor.Position.Y, hexSize)
+			xN, yN := GetHexGraphicalCenter(neighbor.Position.X, neighbor.Position.Y, hexSize)
 			xN, yN = xN-cameraX, yN-cameraY
 			xN, yN = xN*zoomFactor, yN*zoomFactor
 			DrawAgentNeighbor(screen, xN, yN, hexSize*zoomFactor, col)
 		}
 
 		if agent.CurrentPath != nil && len(agent.CurrentPath) > 0 {
-			x0, y0 := getHexGraphicalCenter(agent.Position.Position.X, agent.Position.Position.Y, hexSize)
-			x1, y1 := getHexGraphicalCenter(agent.CurrentPath[len(agent.CurrentPath)-1].Position.X, agent.CurrentPath[len(agent.CurrentPath)-1].Position.Y, hexSize)
+			x0, y0 := GetHexGraphicalCenter(agent.Position.Position.X, agent.Position.Position.Y, hexSize)
+			x1, y1 := GetHexGraphicalCenter(agent.CurrentPath[len(agent.CurrentPath)-1].Position.X, agent.CurrentPath[len(agent.CurrentPath)-1].Position.Y, hexSize)
 			x0, y0 = x0-cameraX, y0-cameraY
 			x1, y1 = x1-cameraX, y1-cameraY
 			x0, y0 = x0*zoomFactor, y0*zoomFactor
 			x1, y1 = x1*zoomFactor, y1*zoomFactor
 			DrawAgentPath(screen, x0, y0, x1, y1, col)
 			for i := 0; i < len(agent.CurrentPath)-1; i++ {
-				xa, ya := getHexGraphicalCenter(agent.CurrentPath[i].Position.X, agent.CurrentPath[i].Position.Y, hexSize)
-				xb, yb := getHexGraphicalCenter(agent.CurrentPath[i+1].Position.X, agent.CurrentPath[i+1].Position.Y, hexSize)
+				xa, ya := GetHexGraphicalCenter(agent.CurrentPath[i].Position.X, agent.CurrentPath[i].Position.Y, hexSize)
+				xb, yb := GetHexGraphicalCenter(agent.CurrentPath[i+1].Position.X, agent.CurrentPath[i+1].Position.Y, hexSize)
 				xa, ya = xa-cameraX, ya-cameraY
 				xb, yb = xb-cameraX, yb-cameraY
 				xa, ya = xa*zoomFactor, ya*zoomFactor
@@ -89,7 +89,7 @@ func DrawAgents(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFac
 	}
 }
 
-func getHexGraphicalCenter(x, y int, hexSize float32) (float32, float32) {
+func GetHexGraphicalCenter(x, y int, hexSize float32) (float32, float32) {
 	var offsetX, offsetY float32
 	offsetY = 0.75 * hexSize
 	offsetX = 0
