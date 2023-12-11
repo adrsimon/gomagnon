@@ -9,15 +9,17 @@ import (
 func (s *Simulation) Update() error {
 	s.UI.Update()
 
-	if ebiten.IsKeyPressed(ebiten.KeyEnter) || s.Paused {
+	m := makeAgentList(s)
+	if len(m) != s.SavedLen {
+		s.Selector.SetEntries(m)
+		s.Selector.SetSelectedEntry(AgentChoice{id: s.SelectedAgent})
+		s.SavedLen = len(m)
+	}
+
+	if s.Paused {
 		return nil
 	}
-	if ebiten.IsKeyPressed(ebiten.Key1) {
-		ebiten.SetTPS(2)
-	}
-	if ebiten.IsKeyPressed(ebiten.Key2) {
-		ebiten.SetTPS(20)
-	}
+	ebiten.SetTPS(s.TPS)
 
 	/**
 	 * ENVIRONMENT UPDATE

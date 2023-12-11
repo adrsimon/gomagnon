@@ -27,28 +27,31 @@ func (s *Simulation) Draw(screen *ebiten.Image) {
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyR) {
+		s.zoomFactor = 0.6
 		s.cameraX = 0
 		s.cameraY = 0
-		s.zoomFactor = 1
+		s.SelectedAgent = ""
+		s.Selector.SetSelectedEntry(AgentChoice{id: ""})
 	}
 
-	if ebiten.IsKeyPressed(ebiten.KeyC) {
-		ag := s.Board.AgentManager.Agents["ag-0"]
-		camX, camY := drawing.GetHexGraphicalCenter(ag.Position.Position.X, ag.Position.Position.Y, s.Board.HexSize)
-		s.cameraX = camX - float32(s.ScreenHeight/2)
-		s.cameraY = camY - float32(s.ScreenWidth/4)
-		s.zoomFactor = 1.5
-	}
-
-	if ebiten.IsKeyPressed(ebiten.KeySpace) {
-		s.Debug = false
-	} else {
-		s.Debug = true
+	if s.SelectedAgent != "" {
+		ag, ok := s.Board.AgentManager.Agents[s.SelectedAgent]
+		if !ok {
+			s.SelectedAgent = ""
+			s.AgentDesc.SetText("Select an agent to see it's statistics")
+		} else {
+			camX, camY := drawing.GetHexGraphicalCenter(ag.Position.Position.X, ag.Position.Position.Y, s.Board.HexSize)
+			s.cameraX = camX - float32(s.ScreenHeight/2)
+			s.cameraY = camY - float32(s.ScreenWidth/4)
+			s.zoomFactor = 1.5
+		}
 	}
 
 	screen.Fill(s.backgroundColor)
 	drawing.DrawBoard(screen, s.Board, s.cameraX, s.cameraY, s.zoomFactor)
 	drawing.DrawAgents(screen, s.Board, s.cameraX, s.cameraY, s.zoomFactor, s.Debug)
 
-	s.UI.Draw(screen)
+	if !ebiten.IsKeyPressed(ebiten.KeySpace) {
+		s.UI.Draw(screen)
+	}
 }

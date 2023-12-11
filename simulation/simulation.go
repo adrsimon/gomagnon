@@ -2,6 +2,7 @@ package simulation
 
 import (
 	"fmt"
+	"github.com/ebitenui/ebitenui/widget"
 	"image/color"
 
 	"github.com/adrsimon/gomagnon/core/typing"
@@ -25,6 +26,12 @@ type Simulation struct {
 
 	Debug  bool
 	Paused bool
+	TPS    int
+
+	SelectedAgent string
+	SavedLen      int
+	Selector      *widget.List
+	AgentDesc     *widget.TextArea
 
 	UI *ebitenui.UI
 }
@@ -93,6 +100,9 @@ func NewSimulation() Simulation {
 	}
 
 	simu.Debug = false
+	simu.Paused = false
+	simu.SelectedAgent = ""
+	simu.TPS = 20
 
 	return simu
 }
