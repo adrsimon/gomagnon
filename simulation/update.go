@@ -16,7 +16,11 @@ func (s *Simulation) Update() error {
 		return nil
 	}
 
-	s.Agents = s.Board.AgentManager.Agents
+	s.Agents = &sync.Map{}
+	for id, agent := range s.Board.AgentManager.Agents {
+		s.Agents.Store(id, agent)
+	}
+
 	m := makeAgentList(s)
 	if len(m) != s.SavedLen {
 		s.Selector.SetEntries(m)

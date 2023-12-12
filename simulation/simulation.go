@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ebitenui/ebitenui/widget"
 	"image/color"
+	"sync"
 
 	"github.com/adrsimon/gomagnon/core/typing"
 	"github.com/ebitenui/ebitenui"
@@ -32,7 +33,7 @@ type Simulation struct {
 	SavedLen      int
 	Selector      *widget.List
 	AgentDesc     *widget.TextArea
-	Agents        map[string]*typing.Agent
+	Agents        *sync.Map
 
 	UI *ebitenui.UI
 }
@@ -105,6 +106,7 @@ func NewSimulation() Simulation {
 	simu.Paused = false
 	simu.SelectedAgent = ""
 	simu.TPS = 20
+	simu.Agents = &sync.Map{}
 
 	return simu
 }

@@ -14,7 +14,12 @@ func main() {
 	ebiten.SetWindowTitle("Gomagnon - Neanderthal vs Sapiens")
 	ebiten.SetTPS(20)
 
-	if err := ebiten.RunGame(&sim); err != nil {
+	if err := ebiten.RunGameWithOptions(&sim, &ebiten.RunGameOptions{
+		GraphicsLibrary:   0,
+		InitUnfocused:     false,
+		ScreenTransparent: false,
+		SkipTaskbar:       false,
+	}); err != nil {
 		log.Fatal(err)
 	}
 }

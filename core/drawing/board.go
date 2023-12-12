@@ -5,6 +5,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"golang.org/x/image/colornames"
 	"image/color"
+	"sync"
 )
 
 func DrawBoard(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFactor float32) {
@@ -27,8 +28,12 @@ func DrawBoard(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFact
 	}
 }
 
-func DrawAgents(screen *ebiten.Image, agents map[string]*typing.Agent, cameraX, cameraY, zoomFactor, hexSize float32, debug bool) {
-	for _, agent := range agents {
+func DrawAgents(screen *ebiten.Image, agents *sync.Map, cameraX, cameraY, zoomFactor, hexSize float32, debug bool) {
+	agents.Range(func(_, ag interface{}) bool {
+		if ag == nil {
+			return true
+		}
+		agent := ag.(*typing.Agent)
 		var col color.Color
 		if agent.Body.Age < 5 {
 			col = colornames.Pink
@@ -49,7 +54,7 @@ func DrawAgents(screen *ebiten.Image, agents map[string]*typing.Agent, cameraX, 
 		DrawAgent(screen, xA, yA, hexSize*zoomFactor, col)
 
 		if !debug {
-			continue
+			return true
 		}
 
 		for _, neighbor := range agent.Behavior.GetNeighboursWithinAcuity() {
@@ -80,7 +85,8 @@ func DrawAgents(screen *ebiten.Image, agents map[string]*typing.Agent, cameraX, 
 				DrawAgentPath(screen, xa, ya, xb, yb, col)
 			}
 		}
-	}
+		return true
+	})
 }
 
 func GetHexGraphicalCenter(x, y int, hexSize float32) (float32, float32) {

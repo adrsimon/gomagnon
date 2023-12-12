@@ -2,6 +2,7 @@ package simulation
 
 import (
 	"fmt"
+	"github.com/adrsimon/gomagnon/core/typing"
 	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
@@ -148,9 +149,15 @@ type AgentChoice struct {
 
 func makeAgentList(sim *Simulation) []any {
 	var agents []any
-	for _, agent := range sim.Agents {
+	sim.Agents.Range(func(_, ag interface{}) bool {
+		if ag == nil {
+			return true
+		}
+		agent := ag.(*typing.Agent)
 		agents = append(agents, AgentChoice{id: fmt.Sprintf("%s", agent.ID)})
-	}
+		return true
+	})
+
 	slices.SortFunc(agents, func(i, j any) int {
 		iId, _ := strconv.Atoi(strings.Split(i.(AgentChoice).id, "-")[1])
 		jId, _ := strconv.Atoi(strings.Split(j.(AgentChoice).id, "-")[1])

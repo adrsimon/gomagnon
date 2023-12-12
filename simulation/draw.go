@@ -2,6 +2,7 @@ package simulation
 
 import (
 	"github.com/adrsimon/gomagnon/core/drawing"
+	"github.com/adrsimon/gomagnon/core/typing"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -36,16 +37,18 @@ func (s *Simulation) Draw(screen *ebiten.Image) {
 	}
 
 	if s.SelectedAgent != "" {
-		ag, ok := s.Agents[s.SelectedAgent]
+		agent, ok := s.Agents.Load(s.SelectedAgent)
 		if !ok {
 			s.SelectedAgent = ""
 			s.AgentDesc.SetText("Select an agent to see it's statistics")
 		} else {
+			ag := agent.(*typing.Agent)
+
 			camX, camY := drawing.GetHexGraphicalCenter(ag.Position.Position.X, ag.Position.Position.Y, s.Board.HexSize)
 			s.cameraX = camX - float32(s.ScreenHeight/2)
 			s.cameraY = camY - float32(s.ScreenWidth/4)
 			s.zoomFactor = 1.5
-			s.AgentDesc.SetText(ag.String())
+			s.AgentDesc.SetText(ag.String)
 		}
 	}
 
