@@ -2,11 +2,10 @@ package simulation
 
 import (
 	"fmt"
-	"github.com/ebitenui/ebitenui/widget"
-	"image/color"
-
 	"github.com/adrsimon/gomagnon/core/typing"
 	"github.com/ebitenui/ebitenui"
+	"github.com/ebitenui/ebitenui/widget"
+	"image/color"
 )
 
 const (
@@ -32,7 +31,6 @@ type Simulation struct {
 	SavedLen      int
 	Selector      *widget.List
 	AgentDesc     *widget.TextArea
-	Agents        map[string]*typing.Agent
 
 	UI *ebitenui.UI
 }
@@ -71,7 +69,7 @@ func NewSimulation() Simulation {
 			}
 		}
 
-		simu.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", simu.Board.AgentManager.Count)] = &typing.Agent{
+		ag := &typing.Agent{
 			ID:   fmt.Sprintf("ag-%d", i),
 			Type: []rune{'M', 'F'}[typing.Randomizer.Intn(2)],
 			Race: typing.Race(typing.Randomizer.Intn(2)),
@@ -97,7 +95,8 @@ func NewSimulation() Simulation {
 			Clan:           nil,
 			Procreate:      typing.Procreate{Partner: nil, Timer: 100},
 		}
-		simu.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", simu.Board.AgentManager.Count)].Behavior = &typing.HumanBehavior{H: simu.Board.AgentManager.Agents[fmt.Sprintf("ag-%d", simu.Board.AgentManager.Count)]}
+		simu.Board.AgentManager.Agents = append(simu.Board.AgentManager.Agents, ag)
+		ag.Behavior = &typing.HumanBehavior{H: ag}
 		simu.Board.AgentManager.Count++
 	}
 
