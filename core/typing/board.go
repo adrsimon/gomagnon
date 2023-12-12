@@ -115,9 +115,9 @@ func (b *Board) GenerateResources() {
 			if hex.Resource != NONE {
 				continue
 			}
-			if (res == ANIMAL && hex.Biome != PLAINS) || b.CountResourcesAround(hex, ANIMAL, FRUIT, 5) > 3 {
+			if (res == ANIMAL && hex.Biome != PLAINS) || b.CountResourcesAround(hex, ANIMAL, FRUIT, 5) > 2 {
 				continue
-			} else if res == FRUIT && hex.Biome != FOREST || b.CountResourcesAround(hex, ANIMAL, FRUIT, 5) > 3 {
+			} else if res == FRUIT && hex.Biome != FOREST || b.CountResourcesAround(hex, ANIMAL, FRUIT, 5) > 2 {
 				continue
 			} else if res == WOOD && hex.Biome != FOREST {
 				continue
