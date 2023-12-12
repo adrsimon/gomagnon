@@ -7,8 +7,8 @@ import (
 
 var Needs = map[string]map[ResourceType]int{
 	"hut": map[ResourceType]int{
-		WOOD: 1,
-		ROCK: 1,
+		WOOD: 3,
+		ROCK: 3,
 	},
 }
 
