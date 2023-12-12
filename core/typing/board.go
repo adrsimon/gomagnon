@@ -115,9 +115,9 @@ func (b *Board) GenerateResources() {
 			if hex.Resource != NONE {
 				continue
 			}
-			if res == ANIMAL && hex.Biome != PLAINS {
+			if (res == ANIMAL && hex.Biome != PLAINS) || b.CountResourcesAround(hex, ANIMAL, FRUIT, 5) > 2 {
 				continue
-			} else if res == FRUIT && hex.Biome != FOREST {
+			} else if res == FRUIT && hex.Biome != FOREST || b.CountResourcesAround(hex, ANIMAL, FRUIT, 5) > 2 {
 				continue
 			} else if res == WOOD && hex.Biome != FOREST {
 				continue
@@ -130,6 +130,30 @@ func (b *Board) GenerateResources() {
 			b.ResourceManager.CurrentQuantities[res]++
 		}
 	}
+}
+
+func (b *Board) CountResourcesAround(hex *Hexagone, resType1, resType2 ResourceType, acuity int) int {
+	neighbours := b.GetNeighbours(hex)
+	visited := make(map[*Hexagone]bool)
+	count := 0
+
+	for i := 0; i < acuity; i++ {
+		newNeighbours := []*Hexagone{}
+		for _, neighbour := range neighbours {
+			if neighbour == nil || visited[neighbour] {
+				continue
+			}
+			visited[neighbour] = true
+
+			if neighbour.Resource == resType1 || neighbour.Resource == resType2 {
+				count++
+			}
+
+			newNeighbours = append(newNeighbours, b.GetNeighbours(neighbour)...)
+		}
+		neighbours = newNeighbours
+	}
+	return count
 }
 
 func (b *Board) isValidHex(hex *Hexagone) bool {
