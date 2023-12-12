@@ -134,6 +134,8 @@ type Agent struct {
 	Procreate     Procreate
 	Terminated    bool
 
+	String string
+
 	Behavior HumanActions
 }
 
@@ -426,7 +428,7 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 }
 
 func (h *Agent) IsDead() bool {
-	return h.Body.Hungriness >= 100 || h.Body.Thirstiness >= 100 || h.Body.Tiredness >= 100
+	return h.Body.Hungriness >= 100 || h.Body.Thirstiness >= 100 || h.Body.Tiredness >= 100 || h.Body.Age >= 100
 }
 
 func (h *Agent) CloseUpdate() {
@@ -459,9 +461,10 @@ func (h *Agent) UpdateAgent() {
 		h.Terminated = true
 	}
 	h.CloseUpdate()
+	h.String = h.ToString()
 }
 
-func (h *Agent) String() string {
+func (h *Agent) ToString() string {
 	race := "Neanderthal"
 	if h.Race == SAPIENS {
 		race = "Sapiens"

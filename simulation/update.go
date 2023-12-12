@@ -16,7 +16,6 @@ func (s *Simulation) Update() error {
 		return nil
 	}
 
-	s.Agents = s.Board.AgentManager.Agents
 	m := makeAgentList(s)
 	if len(m) != s.SavedLen {
 		s.Selector.SetEntries(m)

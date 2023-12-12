@@ -148,9 +148,10 @@ type AgentChoice struct {
 
 func makeAgentList(sim *Simulation) []any {
 	var agents []any
-	for _, agent := range sim.Agents {
+	for _, agent := range sim.Board.AgentManager.Agents {
 		agents = append(agents, AgentChoice{id: fmt.Sprintf("%s", agent.ID)})
 	}
+
 	slices.SortFunc(agents, func(i, j any) int {
 		iId, _ := strconv.Atoi(strings.Split(i.(AgentChoice).id, "-")[1])
 		jId, _ := strconv.Atoi(strings.Split(j.(AgentChoice).id, "-")[1])
