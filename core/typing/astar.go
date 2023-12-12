@@ -33,7 +33,7 @@ func HauteurNoeud(node *Hexagone, save map[*Hexagone]*Hexagone) int {
 	return cnt
 }
 
-func AStar(agent Human, goal *Hexagone) map[*Hexagone]*Hexagone {
+func AStar(agent Agent, goal *Hexagone) map[*Hexagone]*Hexagone {
 	l := make(PriorityQueue, 0)
 	heap.Init(&l)
 	l.Push(Item{agent, distance(*agent.Position, *goal)})

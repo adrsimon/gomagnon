@@ -15,7 +15,7 @@ var Needs = map[string]map[ResourceType]int{
 type Hut struct {
 	Position  *Hexagone
 	Inventory []ResourceType
-	Owner     *Human
+	Owner     *Agent
 	Ballot    Ballot
 }
 
@@ -34,8 +34,8 @@ func (hu *Hut) removeVoter(agID string) {
 		}
 	}
 }
-func (hu *Hut) StartNewVote(agent *Human, reason string) bool {
-	if hu.Ballot.VoteInProgress == false && agent == agent.Clan.chief {
+func (hu *Hut) StartNewVote(agent *Agent, reason string) bool {
+	if !hu.Ballot.VoteInProgress && agent == agent.Clan.chief {
 		switch reason {
 		case "VoteNewPerson":
 			hu.Ballot.VoteInProgress = true
@@ -50,7 +50,7 @@ func (hu *Hut) StartNewVote(agent *Human, reason string) bool {
 	return false
 }
 
-func (hu *Hut) Vote(agent *Human, choice string) bool {
+func (hu *Hut) Vote(agent *Agent, choice string) bool {
 	if !hu.Ballot.EndTimeVote.Before(time.Now()) {
 		if slices.Contains(hu.Ballot.VotersID, agent.ID) {
 			hu.removeVoter(agent.ID)
@@ -78,7 +78,7 @@ func (hu *Hut) CountVotes() bool {
 	return yesCount >= noCount
 }
 
-func (hu *Hut) GetResult(agent *Human) bool {
+func (hu *Hut) GetResult(agent *Agent) bool {
 	if hu.Ballot.EndTimeVote.Before(time.Now()) && agent == agent.Clan.chief {
 		hu.Ballot.reason = ""
 		hu.Ballot.VotersID = make([]string, 0)
