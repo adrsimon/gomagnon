@@ -361,11 +361,18 @@ func (hb *HumanBehavior) Act() {
 		}
 	case FINDMATE:
 		var bestH *Agent
+		bestH = nil
 		if len(hb.H.Neighbours) > 1 {
 			for _, v := range hb.H.Neighbours {
-				if hb.H.Clan == v.Clan {
+				if hb.H.Clan == v.Clan && v.Body.Age > 10 {
 					bestH = v
+					break
 				}
+
+			}
+			if bestH == nil {
+				hb.H.StackAction = append(hb.H.StackAction, MOVE)
+				break
 			}
 		} else if len(hb.H.Neighbours) == 1 && hb.H.Clan == hb.H.Neighbours[0].Clan {
 			bestH = hb.H.Neighbours[0]
