@@ -182,7 +182,7 @@ func (hb *HumanBehavior) Act() {
 		hb.H.Body.Tiredness -= 1
 	case MOVE:
 		if !hb.H.MovingToTarget {
-			var targetHexagon *Hexagone
+			targetHexagon := hb.H.Target
 
 			if hb.H.Hut != nil {
 				if hb.H.Body.Tiredness > 80 || hb.H.Procreate.Partner != nil {
@@ -396,6 +396,10 @@ func (hb *HumanBehavior) Act() {
 			case <-time.After(20 * time.Millisecond):
 			}
 		}
+	case STARTHUNT:
+		hb.H.Target = hb.H.LastMammothSeen
+		hb.H.StackAction = append(hb.H.StackAction, MOVE)
+		hb.H.CurrentPath = nil
 	default:
 		fmt.Println("Should not be here")
 	}
