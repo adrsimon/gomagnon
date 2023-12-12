@@ -17,8 +17,8 @@ func (s *Simulation) Update() error {
 	}
 
 	s.Agents = &sync.Map{}
-	for id, agent := range s.Board.AgentManager.Agents {
-		s.Agents.Store(id, agent)
+	for _, agent := range s.Board.AgentManager.Agents {
+		s.Agents.Store(agent.ID, agent)
 	}
 
 	m := makeAgentList(s)

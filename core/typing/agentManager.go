@@ -21,12 +21,12 @@ type managerToAgent struct {
 type AgentManager struct {
 	Map             *[][]*Hexagone
 	messIn          chan agentToManager
-	Agents          map[string]*Agent
+	Agents          []*Agent
 	ResourceManager *ResourceManager
 	Count           int
 }
 
-func NewAgentManager(Map [][]*Hexagone, messIn chan agentToManager, agents map[string]*Agent, ressourceManager *ResourceManager) *AgentManager {
+func NewAgentManager(Map [][]*Hexagone, messIn chan agentToManager, agents []*Agent, ressourceManager *ResourceManager) *AgentManager {
 	return &AgentManager{Map: &Map, messIn: messIn, Agents: agents, ResourceManager: ressourceManager, Count: 0}
 }
 
@@ -78,6 +78,15 @@ func MakeChild(parent1 *Agent, parent2 *Agent, count int) *Agent {
 	return newHuman
 }
 
+func (agMan *AgentManager) GetAgent(id string) (int, *Agent) {
+	for i, v := range agMan.Agents {
+		if v.ID == id {
+			return i, v
+		}
+	}
+	return -1, nil
+}
+
 func (agMan *AgentManager) executeResources(request agentToManager) {
 	switch request.Action {
 	case "get":
@@ -92,16 +101,17 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 			request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: res}
 		}
 	case "build":
-		(*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Hut = &Hut{Position: request.Pos, Inventory: make([]ResourceType, 0), Owner: agMan.Agents[request.AgentID]}
+		_, ag := agMan.GetAgent(request.AgentID)
+		(*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Hut = &Hut{Position: request.Pos, Inventory: make([]ResourceType, 0), Owner: ag}
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 		fmt.Println("\033[33mNew hut built at\033[0m", request.Pos.Position.X, request.Pos.Position.Y, "\033[33mby\033[0m", request.AgentID)
 	case "leave-house":
-		ag := agMan.Agents[request.AgentID]
+		_, ag := agMan.GetAgent(request.AgentID)
 		(*agMan.Map)[ag.Hut.Position.Position.X][ag.Hut.Position.Position.Y].Hut.Owner = nil
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 		fmt.Println("\033[33mAgent\033[0m", request.AgentID, "\033[33mleft his house and joined clan\033[0m", ag.Clan.ID)
 	case "isHome":
-		ag := agMan.Agents[request.AgentID]
+		_, ag := agMan.GetAgent(request.AgentID)
 		if ag != nil {
 			if ag.Procreate.Partner != nil && ag.Procreate.Partner.Position.Position == ag.Hut.Position.Position {
 				request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
@@ -112,7 +122,7 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 			request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
 		}
 	case "procreate":
-		ag := agMan.Agents[request.AgentID]
+		_, ag := agMan.GetAgent(request.AgentID)
 		if len(ag.Clan.members) > 15 {
 			fmt.Println("\033[35mAgent\033[0m", request.AgentID, "\033[35mtried to procreate but his clan\033[0m", ag.Clan.ID, "\033[35mwas too big\033[0m")
 			if ag.Procreate.Partner != nil {
@@ -130,7 +140,7 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 				newHuman := MakeChild(ag, ag.Procreate.Partner, agMan.Count)
 				if newHuman != nil {
 					agMan.Count++
-					agMan.Agents[newHuman.ID] = newHuman
+					agMan.Agents = append(agMan.Agents, newHuman)
 					ag.Clan.members = append(ag.Clan.members, newHuman)
 					fmt.Println("\033[32mNew human\033[0m", newHuman.ID, "\033[32mborn with race\033[0m", ag.Race, "\033[32mfrom:\033[0m", ag.ID, ag.Procreate.Partner.ID, "\033[32m- There are now\033[0m", len(agMan.Agents), "\033[32magents,\033[0m", len(ag.Clan.members), "\033[32mmembers in the clan\033[0m", ag.Clan.ID)
 				}
@@ -146,8 +156,8 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
 		return
 	case "die":
-		agent, ok := agMan.Agents[request.AgentID]
-		if !ok {
+		i, agent := agMan.GetAgent(request.AgentID)
+		if agent == nil {
 			fmt.Println("\033[31mAgent\033[0m", request.AgentID, "\033[31mis supposed to die but he was already dead\033[0m")
 			return
 		}
@@ -184,10 +194,10 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 			}
 		}
 
-		delete(agMan.Agents, request.AgentID)
+		agMan.Agents = append(agMan.Agents[:i], agMan.Agents[i+1:]...)
 		fmt.Println("\033[31mAgent\033[0m", agent.ID, "\033[31mdied, there are\033[0m", len(agMan.Agents), "\033[31magents left\033[0m.")
 	case "store-at-home":
-		ag := agMan.Agents[request.AgentID]
+		_, ag := agMan.GetAgent(request.AgentID)
 		if ag.Inventory.Weight <= 0 {
 			request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
 			return
@@ -200,7 +210,7 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		}
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 	case "eat-from-home":
-		ag := agMan.Agents[request.AgentID]
+		_, ag := agMan.GetAgent(request.AgentID)
 		if !slices.Contains(ag.Hut.Inventory, ANIMAL) && !slices.Contains(ag.Hut.Inventory, FRUIT) {
 			request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
 			return
@@ -223,22 +233,26 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 			request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: FRUIT}
 		}
 	case "VoteNewPerson":
-		valid := agMan.Agents[request.AgentID].Hut.StartNewVote(agMan.Agents[request.AgentID], "VoteNewPerson") //(*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Hut.StartNewVote(agMan.Agents[request.AgentID], "VoteNewPerson")
+		_, ag := agMan.GetAgent(request.AgentID)
+		valid := ag.Hut.StartNewVote(ag, "VoteNewPerson") //(*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Hut.StartNewVote(agMan.Agents[request.AgentID], "VoteNewPerson")
 		request.commOut <- managerToAgent{Valid: valid, Map: *agMan.Map, Resource: NONE}
-		fmt.Println("\033[33mNew vote started by\033[0m", request.AgentID, "\033[33min clan\033[0m", agMan.Agents[request.AgentID].Clan.ID)
+		fmt.Println("\033[33mNew vote started by\033[0m", request.AgentID, "\033[33min clan\033[0m", ag.Clan.ID)
 	case "VoteYes":
-		valid := agMan.Agents[request.AgentID].Hut.Vote(agMan.Agents[request.AgentID], "VoteYes")
+		_, ag := agMan.GetAgent(request.AgentID)
+		valid := ag.Hut.Vote(ag, "VoteYes")
 		request.commOut <- managerToAgent{Valid: valid, Map: *agMan.Map, Resource: NONE}
 	case "VoteNo":
-		valid := agMan.Agents[request.AgentID].Hut.Vote(agMan.Agents[request.AgentID], "VoteNo")
+		_, ag := agMan.GetAgent(request.AgentID)
+		valid := ag.Hut.Vote(ag, "VoteNo")
 		request.commOut <- managerToAgent{Valid: valid, Map: *agMan.Map, Resource: NONE}
 	case "GetResult":
-		result := agMan.Agents[request.AgentID].Hut.GetResult(agMan.Agents[request.AgentID])
+		_, ag := agMan.GetAgent(request.AgentID)
+		result := ag.Hut.GetResult(ag)
 		request.commOut <- managerToAgent{Valid: result, Map: *agMan.Map, Resource: NONE}
 		if result {
-			fmt.Println("\033[33mNew agent admitted in clan\033[0m", agMan.Agents[request.AgentID].Clan.ID, "\033[33m. Looking for an agent to include in the clan\033[0m")
+			fmt.Println("\033[33mNew agent admitted in clan\033[0m", ag.Clan.ID, "\033[33m. Looking for an agent to include in the clan\033[0m")
 		} else {
-			fmt.Println("\033[35mVote rejected in clan\033[0m", agMan.Agents[request.AgentID].Clan.ID)
+			fmt.Println("\033[35mVote rejected in clan\033[0m", ag.Clan.ID)
 		}
 	}
 }

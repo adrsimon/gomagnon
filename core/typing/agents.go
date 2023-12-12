@@ -422,7 +422,7 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 }
 
 func (h *Agent) IsDead() bool {
-	return h.Body.Hungriness >= 100 || h.Body.Thirstiness >= 100 || h.Body.Tiredness >= 100
+	return h.Body.Hungriness >= 100 || h.Body.Thirstiness >= 100 || h.Body.Tiredness >= 100 || h.Body.Age >= 100
 }
 
 func (h *Agent) CloseUpdate() {
