@@ -240,10 +240,9 @@ func (hb *HumanBehavior) Act() {
 	case SLEEP:
 		if hb.H.Body.Tiredness > 0 {
 			hb.H.Body.Tiredness -= 3
-			// hb.H.Body.Hungriness += 0.5
-			// hb.H.Body.Thirstiness += 0.5
 			hb.H.StackAction = append(hb.H.StackAction, SLEEP)
 		}
+
 	case STOREATHOME:
 		hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "store-at-home", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
 		hb.H.Board.AgentManager.messIn <- hb.H.ComOut
