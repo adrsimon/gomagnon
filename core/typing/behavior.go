@@ -91,11 +91,11 @@ func (hb *HumanBehavior) DeliberateAtHut() {
 		hb.H.Action = GETRESULT
 		return
 	}
-	if hb.H.LastMammothSeen != nil && hb.H.Clan.chief == hb.H && hb.H.nbPart < 2 {
+	if hb.H.LastMammothSeen != nil && hb.H.Clan != nil && hb.H.Clan.chief == hb.H && hb.H.nbPart < 2 {
 		hb.H.Action = FINDMATE
 		return
 	}
-	if hb.H.LastMammothSeen != nil && hb.H.Clan.chief == hb.H && hb.H.nbPart == 2 {
+	if hb.H.LastMammothSeen != nil && hb.H.Clan != nil && hb.H.Clan.chief == hb.H && hb.H.nbPart == 2 {
 		hb.H.Action = STARTHUNT
 		return
 	}
