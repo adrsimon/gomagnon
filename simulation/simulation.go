@@ -38,10 +38,11 @@ type Simulation struct {
 func NewSimulation() Simulation {
 	simu := Simulation{}
 	ressourcesMap := map[typing.ResourceType]int{
-		typing.FRUIT:  30,
-		typing.ANIMAL: 30,
-		typing.ROCK:   30,
-		typing.WOOD:   30,
+		typing.FRUIT:   30,
+		typing.ANIMAL:  30,
+		typing.ROCK:    30,
+		typing.WOOD:    30,
+		typing.MAMMOTH: 4,
 	}
 
 	simu.Board = typing.NewBoard(46, 41, 40, ressourcesMap)

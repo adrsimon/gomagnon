@@ -123,6 +123,8 @@ func (b *Board) GenerateResources() {
 				continue
 			} else if res == ROCK && hex.Biome != CAVE {
 				continue
+			} else if res == MAMMOTH && hex.Biome != PLAINS {
+				continue
 			}
 			hex.Resource = res
 			b.ResourceManager.CurrentQuantities[res]++

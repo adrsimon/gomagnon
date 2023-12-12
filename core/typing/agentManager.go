@@ -91,7 +91,7 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 	switch request.Action {
 	case "get":
 		switch (*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Resource {
-		case NONE:
+		case NONE, MAMMOTH:
 			request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
 		default:
 			res := (*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Resource

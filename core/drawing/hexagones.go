@@ -12,7 +12,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
-var imgPlains, imgForest, imgWater, imgCaves, imgCow, imgMushroom, imgRock, imgWood *ebiten.Image
+var imgPlains, imgForest, imgWater, imgCaves, imgCow, imgMushroom, imgRock, imgWood, imgMammoth *ebiten.Image
 
 func init() {
 	plains, _, err := ebitenutil.NewImageFromFile("assets/images/plains.png")
@@ -62,6 +62,12 @@ func init() {
 		log.Fatal(err)
 	}
 	imgWood = wood
+
+	mammoth, _, err := ebitenutil.NewImageFromFile("assets/images/mammoth.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	imgMammoth = mammoth
 }
 
 func DrawHex(background *ebiten.Image, xCenter float32, yCenter float32, biome typing.BiomeType, hexSize float32, resource typing.ResourceType, hut *typing.Hut) {
@@ -91,6 +97,8 @@ func DrawHex(background *ebiten.Image, xCenter float32, yCenter float32, biome t
 		drawImage(background, xCenter, yCenter, hexSize/1.5, imgRock)
 	case typing.WOOD:
 		drawImage(background, xCenter, yCenter, hexSize/1.5, imgWood)
+	case typing.MAMMOTH:
+		drawImage(background, xCenter, yCenter, hexSize, imgMammoth)
 	case typing.NONE:
 	}
 
