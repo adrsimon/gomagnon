@@ -42,6 +42,8 @@ const (
 	GETRESULT
 	LOOK4SOMEONE
 	PROCREATE
+	FINDMATE
+	STARTHUNT
 )
 
 func (h *Agent) actionToStr() (action string) {
@@ -72,6 +74,10 @@ func (h *Agent) actionToStr() (action string) {
 		action = "LOOK4SOMEONE"
 	case PROCREATE:
 		action = "PROCREATE"
+	case FINDMATE:
+		action = "FINDMATE"
+	case STARTHUNT:
+		action = "STARTHUNT"
 	}
 	return
 }
@@ -126,6 +132,9 @@ type Agent struct {
 	Action          Action
 	StackAction     StackAction
 	Looking4Someone bool
+
+	LastMammothSeen *Hexagone
+	nbPart          int
 
 	Neighbours    []*Agent
 	AgentRelation map[string]string
@@ -220,6 +229,9 @@ func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
 		} else {
 			score -= 1
 		}
+	case MAMMOTH:
+		score -= 5
+		h.LastMammothSeen = hex
 	}
 
 	for _, nb := range h.Board.GetNeighbours(hex) {
@@ -417,6 +429,13 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 				}
 			}
 			h.Hut = res.Agent.Hut
+		}
+	case "INVITEHUNT":
+		if h.nbPart == 0 {
+			res.commOut <- AgentComm{Agent: h, Action: "ACCEPTHUNT", commOut: h.AgentCommIn}
+			h.nbPart++
+		} else {
+			res.commOut <- AgentComm{Agent: h, Action: "REFUSEHUNT", commOut: h.AgentCommIn}
 		}
 	}
 }

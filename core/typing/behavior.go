@@ -69,6 +69,7 @@ func (hb *HumanBehavior) DeliberateAtHut() {
 			return
 		} else {
 			hb.H.Action = MOVE
+			return
 		}
 	}
 
@@ -88,6 +89,14 @@ func (hb *HumanBehavior) DeliberateAtHut() {
 	}
 	if hb.H.Clan != nil && hb.H.Clan.chief == hb.H && hb.H.Hut.Ballot.VoteInProgress && hb.H.Hut.Ballot.EndTimeVote.Before(time.Now()) {
 		hb.H.Action = GETRESULT
+		return
+	}
+	if hb.H.LastMammothSeen != nil && hb.H.Clan.chief == hb.H && hb.H.nbPart < 2 {
+		hb.H.Action = FINDMATE
+		return
+	}
+	if hb.H.LastMammothSeen != nil && hb.H.Clan.chief == hb.H && hb.H.nbPart == 2 {
+		hb.H.Action = STARTHUNT
 		return
 	}
 
@@ -349,6 +358,36 @@ func (hb *HumanBehavior) Act() {
 			hb.H.ComIn = <-hb.H.ComOut.commOut
 			if !hb.H.ComIn.Valid {
 				hb.H.StackAction = append(hb.H.StackAction, MOVE)
+			}
+		}
+	case FINDMATE:
+		var bestH *Agent
+		if len(hb.H.Neighbours) > 1 {
+			for _, v := range hb.H.Neighbours {
+				if hb.H.Clan == v.Clan {
+					bestH = v
+				}
+			}
+		} else if len(hb.H.Neighbours) == 1 && hb.H.Clan == hb.H.Neighbours[0].Clan {
+			bestH = hb.H.Neighbours[0]
+		} else {
+			hb.H.StackAction = append(hb.H.StackAction, MOVE)
+			break
+		}
+		if !bestH.Terminated {
+			select {
+			case bestH.AgentCommIn <- AgentComm{Agent: hb.H, Action: "INVITEHUNT", commOut: hb.H.AgentCommIn}:
+				select {
+				case res := <-hb.H.AgentCommIn:
+					if res.Action == "ACCEPTHUNT" {
+						hb.H.AgentRelation[bestH.ID] = "MATEHUNT"
+						hb.H.nbPart++
+					} else {
+						hb.H.StackAction = append(hb.H.StackAction, MOVE)
+					}
+				case <-time.After(20 * time.Millisecond):
+				}
+			case <-time.After(20 * time.Millisecond):
 			}
 		}
 	default:
