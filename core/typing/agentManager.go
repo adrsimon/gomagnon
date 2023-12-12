@@ -73,7 +73,7 @@ func MakeChild(parent1 *Agent, parent2 *Agent, count int) *Agent {
 			Clan:           parent1.Clan,
 			Procreate:      Procreate{Partner: nil, Timer: 200},
 		}
-		newHuman.Behavior = &HumanBehavior{H: newHuman}
+		newHuman.Behavior = &ChildBehavior{C: newHuman}
 	}
 	return newHuman
 }
@@ -121,6 +121,7 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 			}
 			ag.Procreate.Partner = nil
 			ag.Procreate.Timer = 100
+			request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
 			return
 		}
 		if ag.Procreate.Partner != nil {
@@ -138,7 +139,12 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 			ag.Procreate.Partner.Procreate.Timer = 100
 			ag.Procreate.Partner = nil
 			ag.Procreate.Timer = 100
+			request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
+			return
 		}
+		ag.Procreate.Timer = 100
+		request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
+		return
 	case "die":
 		agent, ok := agMan.Agents[request.AgentID]
 		if !ok {

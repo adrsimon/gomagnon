@@ -3,7 +3,9 @@ package typing
 // check if everyone make childs, add age + childs behaviour,
 
 import (
+	"fmt"
 	"math"
+	"strconv"
 )
 
 type HumanStats struct {
@@ -41,6 +43,38 @@ const (
 	LOOK4SOMEONE
 	PROCREATE
 )
+
+func (h *Agent) actionToStr() (action string) {
+	switch h.Action {
+	case NOOP:
+		action = "NOOP"
+	case MOVE:
+		action = "MOVE"
+	case GET:
+		action = "GET"
+	case BUILD:
+		action = "BUILD"
+	case SLEEP:
+		action = "SLEEP"
+	case STOREATHOME:
+		action = "STOREATHOME"
+	case EATFROMHOME:
+		action = "EATFROMHOME"
+	case CREATECLAN:
+		action = "CREATECLAN"
+	case CREATEVOTENEWMEMBER:
+		action = "CREATEVOTENEWMEMBER"
+	case VOTE:
+		action = "VOTE"
+	case GETRESULT:
+		action = "GETRESULT"
+	case LOOK4SOMEONE:
+		action = "LOOK4SOMEONE"
+	case PROCREATE:
+		action = "PROCREATE"
+	}
+	return
+}
 
 type Race int
 
@@ -194,24 +228,6 @@ func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
 	}
 
 	return score
-}
-
-func (h *Agent) GetNeighboursWithinAcuity() []*Hexagone {
-	neighbours := h.Board.GetNeighbours(h.Position)
-	visited := make(map[*Hexagone]bool)
-	for i := 1; i < h.Stats.Acuity; i++ {
-		for _, neighbour := range neighbours {
-			if neighbour == nil {
-				continue
-			}
-			if _, ok := visited[neighbour]; !ok {
-				visited[neighbour] = true
-				neighbours = append(neighbours, h.Board.GetNeighbours(neighbour)...)
-			}
-		}
-	}
-
-	return neighbours
 }
 
 func (h *Agent) BestMatchHuman() *Agent {
@@ -419,4 +435,57 @@ func (h *Agent) CloseUpdate() {
 		h.Body.Thirstiness += 0.4
 		h.Body.Tiredness += 0.4
 	}
+	if h.Body.Age > 10 {
+		h.Behavior = &HumanBehavior{H: h}
+	}
+}
+
+func (h *Agent) UpdateAgent() {
+	h.Terminated = false
+	h.Perceive()
+	h.Behavior.Deliberate()
+	h.Behavior.Act()
+	select {
+	case res := <-h.AgentCommIn:
+		h.Terminated = true
+		h.AnswerAgents(res)
+	default:
+		h.Terminated = true
+	}
+	h.CloseUpdate()
+}
+
+func (h *Agent) String() string {
+	race := "Neanderthal"
+	if h.Race == SAPIENS {
+		race = "Sapiens"
+	}
+
+	str := h.ID + " - " + race + "\n\n"
+	str += "--- Body ---" + "\n"
+	str += "Age : " + fmt.Sprintf("%d", int(h.Body.Age)) + "\n"
+	str += "Hungriness : " + fmt.Sprintf("%d", int(h.Body.Hungriness)) + "\n"
+	str += "Thirstiness : " + fmt.Sprintf("%d", int(h.Body.Thirstiness)) + "\n"
+	str += "Tiredness : " + fmt.Sprintf("%d", int(h.Body.Tiredness)) + "\n\n"
+	str += "--- Hut and Clan ---\n"
+	if h.Hut != nil {
+		str += "Hut pos : " + strconv.Itoa(h.Hut.Position.Position.X) + " " + strconv.Itoa(h.Hut.Position.Position.Y) + "\n"
+	} else {
+		str += "No hut" + "\n"
+	}
+	if h.Clan != nil {
+		str += "Clan ID : " + h.Clan.ID + "\n"
+		str += "Chief : " + h.Clan.chief.ID + "\n"
+		str += "Members : " + strconv.Itoa(len(h.Clan.members)) + "\n\n"
+	} else {
+		str += "No clan" + "\n\n"
+	}
+	str += "--- Inventory ---" + "\n"
+	str += "Fruits : " + strconv.Itoa(h.Inventory.Object[FRUIT]) + "\n"
+	str += "Animals : " + strconv.Itoa(h.Inventory.Object[ANIMAL]) + "\n"
+	str += "Woods : " + strconv.Itoa(h.Inventory.Object[WOOD]) + "\n"
+	str += "Rocks : " + strconv.Itoa(h.Inventory.Object[ROCK]) + "\n\n"
+
+	str += "Doing : " + h.actionToStr()
+	return str
 }
