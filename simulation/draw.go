@@ -2,7 +2,6 @@ package simulation
 
 import (
 	"github.com/adrsimon/gomagnon/core/drawing"
-	"github.com/adrsimon/gomagnon/core/typing"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -37,13 +36,11 @@ func (s *Simulation) Draw(screen *ebiten.Image) {
 	}
 
 	if s.SelectedAgent != "" {
-		agent, ok := s.Agents.Load(s.SelectedAgent)
-		if !ok {
+		_, ag := s.Board.AgentManager.GetAgent(s.SelectedAgent)
+		if ag == nil {
 			s.SelectedAgent = ""
 			s.AgentDesc.SetText("Select an agent to see it's statistics")
 		} else {
-			ag := agent.(*typing.Agent)
-
 			camX, camY := drawing.GetHexGraphicalCenter(ag.Position.Position.X, ag.Position.Position.Y, s.Board.HexSize)
 			s.cameraX = camX - float32(s.ScreenHeight/2)
 			s.cameraY = camY - float32(s.ScreenWidth/4)
@@ -54,7 +51,7 @@ func (s *Simulation) Draw(screen *ebiten.Image) {
 
 	screen.Fill(s.backgroundColor)
 	drawing.DrawBoard(screen, s.Board, s.cameraX, s.cameraY, s.zoomFactor)
-	drawing.DrawAgents(screen, s.Agents, s.cameraX, s.cameraY, s.zoomFactor, s.Board.HexSize, s.Debug)
+	drawing.DrawAgents(screen, s.Board.AgentManager.Agents, s.cameraX, s.cameraY, s.zoomFactor, s.Board.HexSize, s.Debug)
 
 	if !ebiten.IsKeyPressed(ebiten.KeySpace) {
 		s.UI.Draw(screen)
