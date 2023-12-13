@@ -42,6 +42,7 @@ const (
 	GETRESULT
 	LOOK4SOMEONE
 	PROCREATE
+	FIGHT
 )
 
 func (h *Agent) actionToStr() (action string) {
@@ -72,6 +73,8 @@ func (h *Agent) actionToStr() (action string) {
 		action = "LOOK4SOMEONE"
 	case PROCREATE:
 		action = "PROCREATE"
+	case FIGHT:
+		action = "FIGHT"
 	}
 	return
 }
@@ -135,6 +138,10 @@ type Agent struct {
 	Terminated    bool
 
 	String string
+
+	Opponent      *Agent
+	Fightcooldown int
+	IsInFight     bool
 
 	Behavior HumanActions
 }
@@ -350,11 +357,34 @@ func (h *Agent) Perceive() {
 				_, ok := h.AgentRelation[p.ID]
 				listHumans = append(listHumans, p)
 				if !ok {
-					if Randomizer.Intn(2) >= 1 {
-						h.AgentRelation[p.ID] = "Friend"
+					//Choix ami ou ennemi + reinitialisation opponent
+					var relation string
+					h.Opponent = nil
+					if h.Clan != nil && p.Clan == h.Clan {
+						// Même clan
+						if Randomizer.Intn(100) < 5 {
+							relation = "Enemy"
+							//fmt.Println("New enemy from same clan for agent: ", h.ID)
+							if h.Opponent == nil {
+								h.Opponent = p
+							}
+						} else {
+							relation = "Friend"
+						}
 					} else {
-						h.AgentRelation[p.ID] = "Enemy"
+						// autre clan
+						if Randomizer.Intn(100) < 40 {
+							relation = "Enemy"
+							//fmt.Println("New enemy from different clan for agent: ", h.ID)
+							if h.Opponent == nil {
+								h.Opponent = p
+							}
+						} else {
+							relation = "Friend"
+						}
 					}
+
+					h.AgentRelation[p.ID] = relation
 				}
 			}
 		}
@@ -418,6 +448,23 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 			}
 			h.Hut = res.Agent.Hut
 		}
+	case "FIGHTING":
+		fmt.Println("ok i noop")
+		res.commOut <- AgentComm{Agent: h, Action: "OKFIGHT", commOut: h.AgentCommIn}
+		h.StackAction = append(h.StackAction, NOOP)
+		h.Opponent = res.Agent
+		h.IsInFight = false
+	case "YOULOSE":
+		fmt.Println("message received : YOULOSE")
+		fmt.Println("Agent", h.ID, "Lost and died")
+		res.commOut <- AgentComm{Agent: h, Action: "OKDIE", commOut: h.AgentCommIn}
+		h.ComOut = agentToManager{AgentID: h.ID, Action: "die", Pos: h.Position, commOut: make(chan managerToAgent)}
+		h.Board.AgentManager.messIn <- h.ComOut
+	case "YOUWIN":
+		fmt.Println("message received : YOUWIN")
+		fmt.Println("Agent", h.ID, "Won")
+		res.commOut <- AgentComm{Agent: h, Action: "OKWIN", commOut: h.AgentCommIn}
+		h.Opponent = nil
 	}
 }
 

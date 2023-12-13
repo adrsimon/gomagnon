@@ -161,6 +161,15 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 			fmt.Println("\033[31mAgent\033[0m", request.AgentID, "\033[31mis supposed to die but he was already dead\033[0m")
 			return
 		}
+		pro := Procreate{}
+		if agent.Procreate != pro && agent.Procreate.Partner != nil {
+			agent.Procreate.Partner.Procreate.Partner = nil
+			agent.Procreate.Partner.Procreate.Timer = 100
+		}
+		if agent.Opponent != nil {
+			agent.Opponent.Opponent = nil
+			agent.Opponent.IsInFight = false
+		}
 		if agent.Clan != nil {
 			if len(agent.Clan.members) <= 0 {
 				fmt.Println("\033[31mClan\033[0m", agent.Clan.ID, "\033[31m has no more members.\033[0m")
