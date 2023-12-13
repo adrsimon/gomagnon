@@ -150,6 +150,14 @@ func (hb *HumanBehavior) Deliberate() {
 		}
 	}
 
+	//Fight Actions --> Suite : faire le act et la mort, ajouter un bagarre cooldown
+	if hb.H.Opponent != nil {
+		hb.H.Action = FIGHT
+		hb.H.Fightcooldown = 100
+		fmt.Printf("\033[94mAgent\033[0m %s \033[94m decide to fight agent\033[0m %s\n", hb.H.ID, hb.H.Opponent.ID)
+		return
+	}
+
 	if hb.H.Procreate.Partner != nil && hb.H.Position != hb.H.Hut.Position {
 		hb.H.Action = MOVE
 		return
@@ -348,6 +356,41 @@ func (hb *HumanBehavior) Act() {
 			hb.H.ComIn = <-hb.H.ComOut.commOut
 			if !hb.H.ComIn.Valid {
 				hb.H.StackAction = append(hb.H.StackAction, MOVE)
+			}
+		}
+
+	case FIGHT:
+		// declenchement bagare : comparer leur force
+		SociabilityOpp := hb.H.Opponent.Stats.Sociability
+		SociabilityAg := hb.H.Stats.Sociability
+		if float64(SociabilityOpp) > 1.25*float64(SociabilityAg) {
+			//l'opposant gagne et l'agent h fuit
+			hb.H.Action = MOVE
+			fmt.Printf("\033[94mAgent\033[0m %s \033[94m smartly avoided the fight with agent\033[0m %s\n", hb.H.Opponent.ID, hb.H.ID)
+			hb.H.Opponent = nil
+		} else {
+			fmt.Printf("\033[94mAgent\033[0m %s \033[94m is in an epic fight with agent \033[0m %s\n", hb.H.ID, hb.H.Opponent.ID)
+			StrengthOpp := hb.H.Opponent.Stats.Strength
+			StrengthAg := hb.H.Stats.Strength
+			DifForce := float64(StrengthAg) - float64(StrengthOpp) + 100.0
+			ProbaVictoireAgt1 := DifForce / 200
+			if Randomizer.Float64() < ProbaVictoireAgt1 {
+				fmt.Printf("\033[94mAgent\033[0m %s \033[94m won the fight with great bravery against \033[0m %s\n", hb.H.ID, hb.H.Opponent.ID)
+				h2 := hb.H.Opponent
+				//take inventory from opponent using "transfer-inventory" case in agentManager.go
+				hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "transfer-inventory", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
+				hb.H.Board.AgentManager.messIn <- hb.H.ComOut
+				hb.H.ComIn = <-hb.H.ComOut.commOut
+				//mort de l'agent ennemi
+				hb.H.ComOut = agentToManager{AgentID: h2.ID, Action: "die", Pos: h2.Position, commOut: make(chan managerToAgent)}
+				hb.H.Board.AgentManager.messIn <- hb.H.ComOut
+				hb.H.Opponent = nil
+
+			} else {
+				fmt.Printf("\033[94mAgent\033[0m %s \033[94m won the fight with great bravery against \033[0m %s\n", hb.H.Opponent.ID, hb.H.ID)
+				hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "die", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
+				hb.H.Board.AgentManager.messIn <- hb.H.ComOut
+				hb.H.Opponent = nil
 			}
 		}
 	default:

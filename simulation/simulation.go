@@ -2,10 +2,11 @@ package simulation
 
 import (
 	"fmt"
+	"image/color"
+
 	"github.com/adrsimon/gomagnon/core/typing"
 	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/widget"
-	"image/color"
 )
 
 const (

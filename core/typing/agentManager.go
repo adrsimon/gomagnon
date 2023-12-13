@@ -254,6 +254,20 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		} else {
 			fmt.Println("\033[35mVote rejected in clan\033[0m", ag.Clan.ID)
 		}
+	case "transfer-inventory":
+		//transfer inventory from h.Opponent to h
+		_, ag := agMan.GetAgent(request.AgentID)
+		opp := ag.Opponent
+		for res, val := range opp.Inventory.Object {
+			for i := 0; i < val; i++ {
+				ag.Inventory.Object[res]++
+			}
+			opp.Inventory.Object[res] = 0
+		}
+		ag.Inventory.Weight += opp.Inventory.Weight
+		opp.Inventory.Weight = 0
+		fmt.Println("\033[94mAgent\033[0m", request.AgentID, "\033[94mtook inventory from agent\033[0m", opp.ID)
+		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 	}
 }
 

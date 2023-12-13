@@ -42,6 +42,7 @@ const (
 	GETRESULT
 	LOOK4SOMEONE
 	PROCREATE
+	FIGHT
 )
 
 func (h *Agent) actionToStr() (action string) {
@@ -126,6 +127,9 @@ type Agent struct {
 	Action          Action
 	StackAction     StackAction
 	Looking4Someone bool
+
+	Opponent      *Agent
+	Fightcooldown int
 
 	Neighbours    []*Agent
 	AgentRelation map[string]string
@@ -356,11 +360,34 @@ func (h *Agent) Perceive() {
 				_, ok := h.AgentRelation[p.ID]
 				listHumans = append(listHumans, p)
 				if !ok {
-					if Randomizer.Intn(2) >= 1 {
-						h.AgentRelation[p.ID] = "Friend"
+					//Choix ami ou ennemi + reinitialisation opponent
+					var relation string
+					h.Opponent = nil
+					if h.Clan != nil && p.Clan == h.Clan {
+						// Même clan
+						if Randomizer.Intn(100) < 5 {
+							relation = "Enemy"
+							//fmt.Println("New enemy from same clan for agent: ", h.ID)
+							if h.Opponent == nil && h.Body.Thirstiness < 80 && h.Body.Hungriness < 80 && h.Body.Tiredness < 80 && h.Inventory.Weight == 0 && h.Fightcooldown == 0 {
+								h.Opponent = p
+							}
+						} else {
+							relation = "Friend"
+						}
 					} else {
-						h.AgentRelation[p.ID] = "Enemy"
+						// autre clan
+						if Randomizer.Intn(100) < 40 {
+							relation = "Enemy"
+							//fmt.Println("New enemy from different clan for agent: ", h.ID)
+							if h.Opponent == nil && h.Body.Thirstiness < 80 && h.Body.Hungriness < 80 && h.Body.Tiredness < 80 && h.Inventory.Weight == 0 && h.Fightcooldown == 0 {
+								h.Opponent = p
+							}
+						} else {
+							relation = "Friend"
+						}
 					}
+
+					h.AgentRelation[p.ID] = relation
 				}
 			}
 		}
@@ -442,6 +469,9 @@ func (h *Agent) CloseUpdate() {
 		h.Body.Hungriness += 0.2
 		h.Body.Thirstiness += 0.4
 		h.Body.Tiredness += 0.4
+		if h.Fightcooldown > 0 {
+			h.Fightcooldown -= 1
+		}
 	}
 	if h.Body.Age > 10 {
 		h.Behavior = &HumanBehavior{H: h}
