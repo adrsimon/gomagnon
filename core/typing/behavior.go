@@ -91,12 +91,19 @@ func (hb *HumanBehavior) DeliberateAtHut() {
 		hb.H.Action = GETRESULT
 		return
 	}
-	if hb.H.LastMammothSeen != nil && hb.H.Clan != nil && hb.H.Clan.chief == hb.H && hb.H.nbPart < 2 {
+	if hb.H.LastMammothSeen != nil && hb.H.Clan != nil && hb.H.Clan.chief == hb.H && (hb.H.NbPart == nil || *hb.H.NbPart < 2) {
 		hb.H.Action = FINDMATE
 		return
 	}
-	if hb.H.LastMammothSeen != nil && hb.H.Clan != nil && hb.H.Clan.chief == hb.H && hb.H.nbPart == 2 {
+	if hb.H.LastMammothSeen != nil && hb.H.Clan != nil && hb.H.Clan.chief == hb.H && *hb.H.NbPart == 2 {
+		fmt.Println("chef va chasser")
 		hb.H.Action = STARTHUNT
+		return
+	}
+	if hb.H.Clan != nil && hb.H.NbPart != nil && hb.H.NbPart == hb.H.Clan.chief.NbPart && *hb.H.NbPart == 2 {
+		fmt.Println("membre va chasser")
+		hb.H.Action = STARTHUNT
+		hb.H.LastMammothSeen = hb.H.Clan.chief.LastMammothSeen
 		return
 	}
 
@@ -387,7 +394,11 @@ func (hb *HumanBehavior) Act() {
 				case res := <-hb.H.AgentCommIn:
 					if res.Action == "ACCEPTHUNT" {
 						hb.H.AgentRelation[bestH.ID] = "MATEHUNT"
-						hb.H.nbPart++
+						if hb.H.NbPart == nil {
+							hb.H.NbPart = new(int)
+						}
+						*hb.H.NbPart++
+						fmt.Println("il a accepte", hb.H.ID, *hb.H.NbPart)
 					} else {
 						hb.H.StackAction = append(hb.H.StackAction, MOVE)
 					}

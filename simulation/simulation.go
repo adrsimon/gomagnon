@@ -95,6 +95,7 @@ func NewSimulation() Simulation {
 			AgentCommIn:    make(chan typing.AgentComm),
 			Clan:           nil,
 			Procreate:      typing.Procreate{Partner: nil, Timer: 100},
+			NbPart:         nil,
 		}
 		simu.Board.AgentManager.Agents = append(simu.Board.AgentManager.Agents, ag)
 		ag.Behavior = &typing.HumanBehavior{H: ag}

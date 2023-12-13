@@ -134,7 +134,7 @@ type Agent struct {
 	Looking4Someone bool
 
 	LastMammothSeen *Hexagone
-	nbPart          int
+	NbPart          *int
 
 	Neighbours    []*Agent
 	AgentRelation map[string]string
@@ -231,7 +231,9 @@ func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
 		}
 	case MAMMOTH:
 		score -= 5
-		h.LastMammothSeen = hex
+		if h.Clan != nil && h.Clan.chief == h {
+			h.LastMammothSeen = hex
+		}
 	}
 
 	for _, nb := range h.Board.GetNeighbours(hex) {
@@ -437,12 +439,9 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 			h.Hut = res.Agent.Hut
 		}
 	case "INVITEHUNT":
-		if h.nbPart == 0 {
-			res.commOut <- AgentComm{Agent: h, Action: "ACCEPTHUNT", commOut: h.AgentCommIn}
-			h.nbPart++
-		} else {
-			res.commOut <- AgentComm{Agent: h, Action: "REFUSEHUNT", commOut: h.AgentCommIn}
-		}
+		res.commOut <- AgentComm{Agent: h, Action: "ACCEPTHUNT", commOut: h.AgentCommIn}
+		h.NbPart = res.Agent.NbPart
+		fmt.Println("j'ai accepte")
 	}
 }
 
