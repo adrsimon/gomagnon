@@ -1,6 +1,6 @@
 {
   "agents": {
-    "initialNumber": 15
+    "initialNumber": 45
   },
   "world": {
     "seed": 2021,

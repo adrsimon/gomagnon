@@ -1,10 +1,11 @@
 package drawing
 
 import (
+	"image/color"
+
 	"github.com/adrsimon/gomagnon/core/typing"
 	"github.com/hajimehoshi/ebiten/v2"
 	"golang.org/x/image/colornames"
-	"image/color"
 )
 
 func DrawBoard(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFactor float32) {
@@ -30,9 +31,9 @@ func DrawBoard(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFact
 func DrawAgents(screen *ebiten.Image, agents []*typing.Agent, cameraX, cameraY, zoomFactor, hexSize float32, debug bool) {
 	for _, agent := range agents {
 		var col color.Color
-		if agent.Body.Age < 5 {
+		if agent.Body.Age < 10 && agent.Race == typing.SAPIENS {
 			col = colornames.Pink
-		} else if agent.Body.Age < 10 {
+		} else if agent.Body.Age < 10 && agent.Race == typing.NEANDERTHAL {
 			col = colornames.Green
 		} else if agent.Race == typing.SAPIENS {
 			col = colornames.Blue

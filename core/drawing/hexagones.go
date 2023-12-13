@@ -1,10 +1,11 @@
 package drawing
 
 import (
-	"github.com/hajimehoshi/ebiten/v2/vector"
-	"golang.org/x/image/colornames"
 	_ "image/png"
 	"log"
+
+	"github.com/hajimehoshi/ebiten/v2/vector"
+	"golang.org/x/image/colornames"
 
 	"github.com/adrsimon/gomagnon/core/typing"
 
