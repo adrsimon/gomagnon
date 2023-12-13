@@ -379,8 +379,9 @@ func (h *Agent) Perceive() {
 			}
 		}
 	}
+
 	h.Neighbours = listHumans
-	if h.Hut != nil && h.Procreate.Partner == nil && h.Procreate.Timer <= 0 && h.Clan != nil && h.PerformAction() {
+	if h.Hut != nil && h.Procreate.Partner == nil && h.Procreate.Timer <= 0 && h.Clan != nil && len(h.Clan.members) < 16 && h.PerformAction() {
 		for _, neighbour := range h.Neighbours {
 			if neighbour.Clan == h.Clan && neighbour.Procreate.Partner == nil && neighbour.Hut == h.Hut && neighbour.Body.Age > 10 && h.Type != neighbour.Type && h.PerformAction() {
 				h.Procreate.Partner = neighbour
@@ -388,12 +389,14 @@ func (h *Agent) Perceive() {
 				break
 			}
 		}
-
 	} else if h.Hut != nil && h.Procreate.Partner != nil && h.Position.Position == h.Hut.Position.Position {
 		h.ComOut = agentToManager{AgentID: h.ID, Action: "isHome", Pos: h.Position, commOut: make(chan managerToAgent)}
 		h.Board.AgentManager.messIn <- h.ComOut
 		h.ComIn = <-h.ComOut.commOut
 		h.Procreate.isHome = h.ComIn.Valid
+	} else if h.Hut != nil && h.Procreate.Partner != nil && len(h.Clan.members) >= 16 {
+		h.Procreate.Partner = nil
+		h.Procreate.Timer = 100
 	}
 
 	if h.Hut != nil && h.Position.Position == h.Hut.Position.Position {
@@ -505,7 +508,12 @@ func (h *Agent) ToString() string {
 		str += "Chief : " + h.Clan.chief.ID + "\n"
 		str += "Members : " + strconv.Itoa(len(h.Clan.members)) + "\n\n"
 	} else {
-		str += "No clan" + "\n\n"
+		str += "No clan" + "\n"
+	}
+	if h.Procreate.Partner != nil {
+		str += "Partner : " + h.Procreate.Partner.ID + "\n\n"
+	} else {
+		str += "No partner" + "\n\n"
 	}
 	str += "--- Inventory ---" + "\n"
 	str += "Fruits : " + strconv.Itoa(h.Inventory.Object[FRUIT]) + "\n"

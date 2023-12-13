@@ -57,7 +57,7 @@ func (hb *HumanBehavior) DeliberateAtHut() {
 	}
 
 	/** If he is home with partner he should procreate **/
-	if hb.H.Procreate.Partner != nil && hb.H.Procreate.isHome {
+	if hb.H.Procreate.Partner != nil && hb.H.Procreate.isHome && hb.H.Clan != nil && len(hb.H.Clan.members) < 16 {
 		hb.H.Action = PROCREATE
 		return
 	}
