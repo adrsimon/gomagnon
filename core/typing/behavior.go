@@ -128,7 +128,7 @@ func (hb *HumanBehavior) Deliberate() {
 		}
 	}
 
-	if hb.H.Opponent != nil && hb.H.Body.Thirstiness < 80 && hb.H.Body.Hungriness < 80 && hb.H.Body.Tiredness < 80 && hb.H.Inventory.Weight == 0 && hb.H.Fightcooldown == 0 {
+	if hb.H.Opponent != nil && hb.H.Body.Thirstiness < 80 && hb.H.Body.Hungriness < 80 && hb.H.Body.Tiredness < 80 && hb.H.Fightcooldown == 0 {
 		hb.H.Action = FIGHT
 		hb.H.Fightcooldown = 100
 		fmt.Println("Agent", hb.H.ID, "decide de se taper avec Agent", hb.H.Opponent.ID)
@@ -364,87 +364,60 @@ func (hb *HumanBehavior) Act() {
 			}
 		}
 	case FIGHT:
-		hb.H.IsInFight = true
-		if hb.H.Opponent == nil {
-			hb.H.IsInFight = false
-		}
-		if hb.H.Opponent != nil && hb.H.Position != hb.H.Opponent.Position {
+		if hb.H.Opponent != nil {
+			fmt.Println(hb.H.Opponent.Terminated)
 			if !hb.H.Opponent.Terminated {
-				fmt.Println("please noop")
+				fmt.Println("sending msg soon...")
 				select {
-				case hb.H.Opponent.AgentCommIn <- AgentComm{Agent: hb.H, Action: "FIGHTING", commOut: hb.H.AgentCommIn}:
+				case hb.H.Opponent.AgentCommIn <- AgentComm{Agent: hb.H, Action: "FIGHT", commOut: hb.H.AgentCommIn}:
+					fmt.Println("sent msg...")
 					select {
 					case res := <-hb.H.AgentCommIn:
 						if res.Action == "OKFIGHT" {
-							hb.H.StackAction = append(hb.H.StackAction, MOVE)
+							fmt.Println("Agent", hb.H.ID, "se bat contre Agent", hb.H.Opponent.ID)
+							fmt.Println("Position agent1", hb.H.Position.Position, "Position agent2", hb.H.Opponent.Position.Position)
+							StrengthOpp := hb.H.Opponent.Stats.Strength
+							StrengthAg := hb.H.Stats.Strength
+							ThrowRandom := Randomizer.Float64()
+							DifForce := math.Abs(float64(StrengthAg) - float64(StrengthOpp))
+							ProbaVictoireAgt1 := 1 / (1 + math.Pow(2, DifForce/10))
+
+							if ThrowRandom < ProbaVictoireAgt1 {
+								fmt.Println("message youlose sent to agent", hb.H.Opponent.ID)
+								hb.H.Opponent.AgentCommIn <- AgentComm{Agent: hb.H, Action: "YOULOSE", commOut: hb.H.AgentCommIn}
+
+							} else {
+								fmt.Println("message youwin sent to agent", hb.H.Opponent.ID)
+								hb.H.Opponent.AgentCommIn <- AgentComm{Agent: hb.H, Action: "YOUWIN", commOut: hb.H.AgentCommIn}
+								hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "die", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
+								hb.H.Board.AgentManager.messIn <- hb.H.ComOut
+							}
+						} else {
+							fmt.Println("l'agent fuit le combat")
+							hb.H.Opponent = nil
+							hb.H.Fightcooldown = 100
 						}
-					case <-time.After(20 * time.Millisecond):
+					case <-time.After(100 * time.Millisecond):
 					}
-				case <-time.After(20 * time.Millisecond):
+				case <-time.After(100 * time.Millisecond):
 
 				}
 			}
-			fmt.Println("not on same hexagon for fight")
-			fmt.Println("Position agent1", hb.H.Position.Position, "Position agent2", hb.H.Opponent.Position.Position)
-			fmt.Println("ill ask noop")
-			fmt.Println(hb.H.Opponent.Terminated)
-			hb.H.StackAction = append(hb.H.StackAction, MOVE)
-			break
-		} else if hb.H.Opponent != nil && hb.H.Position == hb.H.Opponent.Position {
-			// 2 declenchement bagare : comparer leur force
-			SociabilityOpp := hb.H.Opponent.Stats.Sociability
-			SociabilityAg := hb.H.Stats.Sociability
-			if float64(SociabilityOpp) > 1.25*float64(SociabilityAg) {
-				//l'opposant gagne et l'agent h fuit
-				hb.H.StackAction = append(hb.H.StackAction, MOVE)
-				fmt.Println("Agent", hb.H.Opponent.ID, " fuit de", hb.H.ID)
-				fmt.Println("Position agent1", hb.H.Position.Position, "Position agent2", hb.H.Opponent.Position.Position)
-				hb.H.IsInFight = false
-			} else {
-				fmt.Println("Agent", hb.H.ID, "se bat contre Agent", hb.H.Opponent.ID)
-				fmt.Println("Position agent1", hb.H.Position.Position, "Position agent2", hb.H.Opponent.Position.Position)
-				StrengthOpp := hb.H.Opponent.Stats.Strength
-				StrengthAg := hb.H.Stats.Strength
-				ThrowRandom := Randomizer.Float64()
-				DifForce := math.Abs(float64(StrengthAg) - float64(StrengthOpp))
-				ProbaVictoireAgt1 := 1 / (1 + math.Pow(2, DifForce/10))
-				if ThrowRandom < ProbaVictoireAgt1 {
-					if !hb.H.Opponent.Terminated {
-						fmt.Println("message youlose sent to agent", hb.H.Opponent.ID)
-						select {
-						case hb.H.Opponent.AgentCommIn <- AgentComm{Agent: hb.H, Action: "YOULOSE", commOut: hb.H.AgentCommIn}:
-							select {
-							case res := <-hb.H.AgentCommIn:
-								if res.Action == "OKDIE" {
-									hb.H.Opponent = nil
-									hb.H.IsInFight = false
-									hb.H.Fightcooldown = 100
-								}
-							case <-time.After(20 * time.Millisecond):
-							}
-						case <-time.After(20 * time.Millisecond):
-						}
-					}
-				} else {
-					if !hb.H.Opponent.Terminated {
-						fmt.Println("message youwin sent to agent", hb.H.Opponent.ID)
-						select {
-						case hb.H.Opponent.AgentCommIn <- AgentComm{Agent: hb.H, Action: "YOUWIN", commOut: hb.H.AgentCommIn}:
-							select {
-							case res := <-hb.H.AgentCommIn:
-								if res.Action == "OKWIN" {
-								}
-							case <-time.After(20 * time.Millisecond):
-							}
-						case <-time.After(20 * time.Millisecond):
-						}
-					}
-					hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "die", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
-					hb.H.Board.AgentManager.messIn <- hb.H.ComOut
-				}
-			}
-			//4 looting
 		}
+		// // declenchement bagare : comparer leur force
+		// SociabilityOpp := hb.H.Opponent.Stats.Sociability
+		// SociabilityAg := hb.H.Stats.Sociability
+		// if float64(SociabilityOpp) > 1.25*float64(SociabilityAg) {
+		// 	//l'opposant gagne et l'agent h fuit
+		// 	hb.H.StackAction = append(hb.H.StackAction, MOVE)
+		// 	fmt.Println("Agent", hb.H.Opponent.ID, " fuit de", hb.H.ID)
+		// 	fmt.Println("Position agent1", hb.H.Position.Position, "Position agent2", hb.H.Opponent.Position.Position)
+		// 	hb.H.IsInFight = false
+		// } else {
+
+		// }
+		//4 looting
+
 	default:
 		fmt.Println("Should not be here")
 	}

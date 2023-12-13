@@ -362,7 +362,7 @@ func (h *Agent) Perceive() {
 					h.Opponent = nil
 					if h.Clan != nil && p.Clan == h.Clan {
 						// Même clan
-						if Randomizer.Intn(100) < 5 {
+						if Randomizer.Intn(100) < 50 {
 							relation = "Enemy"
 							//fmt.Println("New enemy from same clan for agent: ", h.ID)
 							if h.Opponent == nil {
@@ -373,7 +373,7 @@ func (h *Agent) Perceive() {
 						}
 					} else {
 						// autre clan
-						if Randomizer.Intn(100) < 40 {
+						if Randomizer.Intn(100) < 50 {
 							relation = "Enemy"
 							//fmt.Println("New enemy from different clan for agent: ", h.ID)
 							if h.Opponent == nil {
@@ -448,24 +448,22 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 			}
 			h.Hut = res.Agent.Hut
 		}
-	case "FIGHTING":
-		fmt.Println("ok i noop")
-		res.commOut <- AgentComm{Agent: h, Action: "OKFIGHT", commOut: h.AgentCommIn}
-		h.StackAction = append(h.StackAction, NOOP)
-		h.Opponent = res.Agent
-		h.IsInFight = false
-	case "YOULOSE":
-		fmt.Println("message received : YOULOSE")
-		fmt.Println("Agent", h.ID, "Lost and died")
-		res.commOut <- AgentComm{Agent: h, Action: "OKDIE", commOut: h.AgentCommIn}
-		h.ComOut = agentToManager{AgentID: h.ID, Action: "die", Pos: h.Position, commOut: make(chan managerToAgent)}
-		h.Board.AgentManager.messIn <- h.ComOut
-	case "YOUWIN":
-		fmt.Println("message received : YOUWIN")
-		fmt.Println("Agent", h.ID, "Won")
-		res.commOut <- AgentComm{Agent: h, Action: "OKWIN", commOut: h.AgentCommIn}
-		h.Opponent = nil
+	case "FIGHT":
+		fmt.Println("Received request to fight")
+		if Randomizer.Intn(100) < 50 {
+			res.commOut <- AgentComm{Agent: h, Action: "OKFIGHT", commOut: h.AgentCommIn}
+			res2 := <-h.AgentCommIn
+			if res2.Action == "YOUWIN" {
+				fmt.Println("I won hehe")
+			} else {
+				fmt.Println("I lost :(")
+			}
+		} else {
+			res.commOut <- AgentComm{Agent: h, Action: "NOFIGHT", commOut: h.AgentCommIn}
+		}
+
 	}
+
 }
 
 func (h *Agent) IsDead() bool {
@@ -496,8 +494,8 @@ func (h *Agent) UpdateAgent() {
 	h.Behavior.Act()
 	select {
 	case res := <-h.AgentCommIn:
-		h.Terminated = true
 		h.AnswerAgents(res)
+		h.Terminated = true
 	default:
 		h.Terminated = true
 	}
