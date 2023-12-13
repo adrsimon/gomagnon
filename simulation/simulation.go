@@ -6,6 +6,7 @@ import (
 	"math/rand"
 
 	"github.com/adrsimon/gomagnon/core/typing"
+	"github.com/adrsimon/gomagnon/settings"
 	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/widget"
 )
@@ -39,29 +40,36 @@ type Simulation struct {
 
 func NewSimulation() Simulation {
 	simu := Simulation{}
-	ressourcesMap := map[typing.ResourceType]int{
-		typing.FRUIT:  30,
-		typing.ANIMAL: 30,
-		typing.ROCK:   30,
-		typing.WOOD:   30,
+
+	simu.ScreenWidth = ScreenWidth
+	simu.ScreenHeight = ScreenHeight
+
+	resourcesMap := map[typing.ResourceType]int{
+		typing.FRUIT:  settings.Setting.World.Resources.MaxFruits,
+		typing.ANIMAL: settings.Setting.World.Resources.MaxAnimals,
+		typing.ROCK:   settings.Setting.World.Resources.MaxRocks,
+		typing.WOOD:   settings.Setting.World.Resources.MaxWoods,
 	}
 
-	simu.Board = typing.NewBoard(46, 41, 40, ressourcesMap)
+	hexSize := float32(simu.ScreenWidth) / float32(settings.Setting.World.Size.X-1)
+	simu.Board = typing.NewBoard(
+		settings.Setting.World.Size.X,
+		settings.Setting.World.Size.Y,
+		float32(hexSize),
+		resourcesMap,
+	)
 
 	simu.cameraX = 0
 	simu.cameraY = 0
-	simu.zoomFactor = 0.6
+	simu.zoomFactor = 1
 
 	simu.Board.Generate()
 	simu.Board.GenerateBiomes()
 	simu.Board.GenerateResources()
 
-	simu.ScreenWidth = ScreenWidth
-	simu.ScreenHeight = ScreenHeight
-
 	simu.Board.AgentManager.Start()
 
-	for i := 0; i < 40; i++ {
+	for i := 0; i < settings.Setting.Agents.InitialNumber; i++ {
 		x, y := -1, -1
 		for x == -1 && y == -1 {
 			x = typing.Randomizer.Intn(simu.Board.XMax)
