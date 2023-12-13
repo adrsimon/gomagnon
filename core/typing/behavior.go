@@ -100,13 +100,6 @@ func (hb *HumanBehavior) DeliberateAtHut() {
 		hb.H.Action = STARTHUNT
 		return
 	}
-	if hb.H.Clan != nil && hb.H.NbPart != nil && hb.H.NbPart == hb.H.Clan.chief.NbPart && *hb.H.NbPart == 2 {
-		fmt.Println("membre va chasser")
-		hb.H.Action = STARTHUNT
-		hb.H.LastMammothSeen = hb.H.Clan.chief.LastMammothSeen
-		return
-	}
-
 }
 
 func (hb *HumanBehavior) Deliberate() {
@@ -176,6 +169,13 @@ func (hb *HumanBehavior) Deliberate() {
 		return
 	}
 
+	if hb.H.Clan != nil && hb.H.NbPart != nil && hb.H.NbPart == hb.H.Clan.chief.NbPart && *hb.H.NbPart == 2 {
+		fmt.Println("membre va chasser")
+		hb.H.Action = STARTHUNT
+		hb.H.LastMammothSeen = hb.H.Clan.chief.LastMammothSeen
+		return
+	}
+
 	if !hb.H.MovingToTarget {
 		hb.H.Action = MOVE
 		return
@@ -227,11 +227,17 @@ func (hb *HumanBehavior) Act() {
 		}
 
 		if hb.H.Position.Position == hb.H.Target.Position {
-			if hb.H.Target.Resource != NONE {
+			if hb.H.Target.Resource != NONE && hb.H.Target.Resource != MAMMOTH {
 				hb.H.StackAction = append(hb.H.StackAction, GET)
 			}
-			hb.H.Target = nil
-			hb.H.MovingToTarget = false
+			if hb.H.Target.Resource == MAMMOTH && hb.H.NbPart != nil && *hb.H.NbPart == 2 && hb.H.PartnerWithMe() {
+				hb.H.StackAction = append(hb.H.StackAction, HUNT)
+			} else if hb.H.Target.Resource == MAMMOTH && hb.H.NbPart != nil && *hb.H.NbPart == 2 && !hb.H.PartnerWithMe() {
+				hb.H.StackAction = append(hb.H.StackAction, MOVE)
+			} else {
+				hb.H.Target = nil
+				hb.H.MovingToTarget = false
+			}
 		}
 	case GET:
 		if hb.H.Position.Resource != NONE {
@@ -411,6 +417,59 @@ func (hb *HumanBehavior) Act() {
 		hb.H.Target = hb.H.LastMammothSeen
 		hb.H.StackAction = append(hb.H.StackAction, MOVE)
 		hb.H.CurrentPath = nil
+	case HUNT:
+		if hb.H.Clan.chief != nil && hb.H.Clan.chief == hb.H {
+			fmt.Println(hb.H.ID, "chef sur case pret a chassé")
+			forceTogether := hb.H.Stats.Strength
+			var agHunts []*Agent
+			for _, ag := range hb.H.Neighbours {
+				val, ok := hb.H.AgentRelation[ag.ID]
+				if ok && val == "MATEHUNT" {
+					agHunts = append(agHunts, ag)
+				}
+			}
+			for _, ag := range agHunts {
+				ag.AgentCommIn <- AgentComm{Agent: hb.H, Action: "READY?", commOut: hb.H.AgentCommIn}
+				res := <-hb.H.AgentCommIn
+				if res.Action == "YESREADY" {
+					forceTogether += res.Agent.Stats.Strength
+				}
+			}
+			//win
+			if Randomizer.Intn(175) < forceTogether {
+				fmt.Println(hb.H.ID, " win a hunt")
+				hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "huntMamooth", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
+				hb.H.Board.AgentManager.messIn <- hb.H.ComOut
+				hb.H.ComIn = <-hb.H.ComOut.commOut
+				if hb.H.ComIn.Valid {
+					hb.H.UpdateState(hb.H.ComIn.Resource)
+				}
+				for _, ag := range agHunts {
+					ag.AgentCommIn <- AgentComm{Agent: hb.H, Action: "GIVE", commOut: hb.H.AgentCommIn}
+				}
+
+			} else { //loose
+				for _, ag := range agHunts {
+					fmt.Println(hb.H.ID, " loose a hunt")
+					ag.AgentCommIn <- AgentComm{Agent: hb.H, Action: "LOOSE", commOut: hb.H.AgentCommIn}
+					hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "die", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
+					hb.H.Board.AgentManager.messIn <- hb.H.ComOut
+				}
+			}
+
+		} else {
+			if hb.H.Clan.chief != nil && (hb.H.Clan.chief.Action == HUNT && !hb.H.Clan.chief.Terminated) {
+				fmt.Println(hb.H.ID, "membre sur case pret a chassé")
+				res := <-hb.H.AgentCommIn
+				hb.H.AnswerAgents(res)
+				res = <-hb.H.AgentCommIn
+				hb.H.AnswerAgents(res)
+				res = <-hb.H.AgentCommIn
+				hb.H.AnswerAgents(res)
+			} else {
+				hb.H.StackAction = append(hb.H.StackAction, HUNT)
+			}
+		}
 	default:
 		fmt.Println("Should not be here")
 	}

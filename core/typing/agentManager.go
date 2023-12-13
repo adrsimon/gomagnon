@@ -100,6 +100,12 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 			agMan.ResourceManager.RespawnCDs = append(agMan.ResourceManager.RespawnCDs, CoolDown{Current: respawnCD, Resource: res})
 			request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: res}
 		}
+	case "huntMamooth":
+		res := (*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Resource
+		(*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Resource = NONE
+		respawnCD := Randomizer.Intn(20) + 100
+		agMan.ResourceManager.RespawnCDs = append(agMan.ResourceManager.RespawnCDs, CoolDown{Current: respawnCD, Resource: res})
+		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: res}
 	case "build":
 		_, ag := agMan.GetAgent(request.AgentID)
 		(*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Hut = &Hut{Position: request.Pos, Inventory: make([]ResourceType, 0), Owner: ag}

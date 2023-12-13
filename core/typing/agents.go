@@ -44,6 +44,7 @@ const (
 	PROCREATE
 	FINDMATE
 	STARTHUNT
+	HUNT
 )
 
 func (h *Agent) actionToStr() (action string) {
@@ -78,7 +79,10 @@ func (h *Agent) actionToStr() (action string) {
 		action = "FINDMATE"
 	case STARTHUNT:
 		action = "STARTHUNT"
+	case HUNT:
+		action = "HUNT"
 	}
+
 	return
 }
 
@@ -346,6 +350,9 @@ func (h *Agent) UpdateState(resource ResourceType) {
 	case WOOD:
 		h.Inventory.Object[resource] += 1
 		h.Inventory.Weight += WeightWood
+	case MAMMOTH:
+		h.Inventory.Object[resource] += 9
+		h.Inventory.Weight += 9 * WeightAnimal
 	}
 
 	neighbours := h.Board.GetNeighbours(h.Position)
@@ -444,8 +451,23 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 	case "INVITEHUNT":
 		res.commOut <- AgentComm{Agent: h, Action: "ACCEPTHUNT", commOut: h.AgentCommIn}
 		h.NbPart = res.Agent.NbPart
+		h.AgentRelation[res.Agent.ID] = "MATEHUNT"
 		fmt.Println("j'ai accepte")
+	case "READY?":
+		// devrais implementer un moyen de refuser basé sur peut etre si il des apprehension si il est jeune et peureux
+		res.commOut <- AgentComm{Agent: h, Action: "YESREADY", commOut: h.AgentCommIn}
+		fmt.Println(h.ID, " ready to fight")
+	case "GIVE":
+		res.commOut <- AgentComm{Agent: h, Action: "ACCEPT", commOut: h.AgentCommIn}
+		h.UpdateState(ANIMAL)
+		h.UpdateState(ANIMAL)
+		h.UpdateState(ANIMAL)
+
+	case "LOOSE":
+		h.ComOut = agentToManager{AgentID: h.ID, Action: "die", Pos: h.Position, commOut: make(chan managerToAgent)}
+		h.Board.AgentManager.messIn <- h.ComOut
 	}
+
 }
 
 func (h *Agent) IsDead() bool {
@@ -523,4 +545,22 @@ func (h *Agent) ToString() string {
 
 	str += "Doing : " + h.actionToStr()
 	return str
+}
+
+func (h *Agent) PartnerWithMe() bool {
+	if *h.NbPart == 2 {
+		cmp := 0
+		for _, ag := range h.Neighbours {
+			val, ok := h.AgentRelation[ag.ID]
+			if ok && val == "MATEHUNT" {
+				cmp++
+			}
+		}
+		if cmp == 2 {
+			return true
+		} else {
+			return false
+		}
+	}
+	return false
 }
