@@ -191,7 +191,7 @@ func (hb *HumanBehavior) Act() {
 		if !hb.H.MovingToTarget {
 			targetHexagon := hb.H.Target
 
-			if hb.H.Hut != nil {
+			if hb.H.Hut != nil && targetHexagon == nil {
 				if hb.H.Body.Tiredness > 80 || hb.H.Procreate.Partner != nil {
 					targetHexagon = hb.H.Hut.Position
 				} else if hb.H.Body.Hungriness > 80 && (slices.Contains(hb.H.HutInventoryVision, ANIMAL) || slices.Contains(hb.H.HutInventoryVision, FRUIT)) {
@@ -392,6 +392,10 @@ func (hb *HumanBehavior) Act() {
 			hb.H.StackAction = append(hb.H.StackAction, MOVE)
 			break
 		}
+		if bestH.Body.Age <= 10 {
+			hb.H.StackAction = append(hb.H.StackAction, MOVE)
+			break
+		}
 		if !bestH.Terminated {
 			select {
 			case bestH.AgentCommIn <- AgentComm{Agent: hb.H, Action: "INVITEHUNT", commOut: hb.H.AgentCommIn}:
@@ -445,14 +449,15 @@ func (hb *HumanBehavior) Act() {
 				}
 				for _, ag := range agHunts {
 					ag.AgentCommIn <- AgentComm{Agent: hb.H, Action: "GIVE", commOut: hb.H.AgentCommIn}
+					_ = <-hb.H.AgentCommIn
 				}
 			} else { //loose
 				for _, ag := range agHunts {
 					fmt.Println(hb.H.ID, " loose a hunt")
 					ag.AgentCommIn <- AgentComm{Agent: hb.H, Action: "LOOSE", commOut: hb.H.AgentCommIn}
-					hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "die", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
-					hb.H.Board.AgentManager.messIn <- hb.H.ComOut
 				}
+				hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "die", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
+				hb.H.Board.AgentManager.messIn <- hb.H.ComOut
 			}
 		} else {
 			if hb.H.Clan.chief != nil && (hb.H.Clan.chief.Action == HUNT && !hb.H.Clan.chief.Terminated) {

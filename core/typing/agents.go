@@ -463,7 +463,6 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 		h.UpdateState(ANIMAL)
 		h.UpdateState(ANIMAL)
 		h.UpdateState(ANIMAL)
-
 	case "LOOSE":
 		h.ComOut = agentToManager{AgentID: h.ID, Action: "die", Pos: h.Position, commOut: make(chan managerToAgent)}
 		h.Board.AgentManager.messIn <- h.ComOut
@@ -472,6 +471,7 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 }
 
 func (h *Agent) IsDead() bool {
+	return false
 	return h.Body.Hungriness >= 100 || h.Body.Thirstiness >= 100 || h.Body.Tiredness >= 100 || h.Body.Age >= 100
 }
 
