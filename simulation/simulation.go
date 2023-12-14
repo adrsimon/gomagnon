@@ -96,7 +96,7 @@ func NewSimulation() Simulation {
 			Clan:           nil,
 			Procreate:      typing.Procreate{Partner: nil, Timer: 100},
 			Opponent:       nil,
-			Fightcooldown:  200 + typing.Randomizer.Intn(200),
+			Fightcooldown:  50 + typing.Randomizer.Intn(200),
 		}
 		simu.Board.AgentManager.Agents = append(simu.Board.AgentManager.Agents, ag)
 		ag.Behavior = &typing.HumanBehavior{H: ag}

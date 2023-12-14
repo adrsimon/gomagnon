@@ -131,7 +131,6 @@ func (hb *HumanBehavior) Deliberate() {
 	if hb.H.Opponent != nil && hb.H.Body.Thirstiness < 80 && hb.H.Body.Hungriness < 80 && hb.H.Body.Tiredness < 80 && hb.H.Fightcooldown == 0 {
 		hb.H.Action = FIGHT
 		hb.H.Fightcooldown = 100
-		fmt.Println("Agent", hb.H.ID, "decide de se taper avec Agent", hb.H.Opponent.ID)
 		return
 	}
 
@@ -379,18 +378,19 @@ func (hb *HumanBehavior) Act() {
 							ProbaVictoireAgt1 := 1 / (1 + math.Pow(2, DifForce/10))
 
 							if ThrowRandom < ProbaVictoireAgt1 {
-								hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "transfer-inventory", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
 								hb.H.Opponent.AgentCommIn <- AgentComm{Agent: hb.H, Action: "YOULOSE", commOut: hb.H.AgentCommIn}
+								hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "transfer-inventory", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
 								hb.H.Board.AgentManager.messIn <- hb.H.ComOut
-								hb.H.Opponent = nil
-								hb.H.Fightcooldown = 300
+								hb.H.Opponent.AgentCommIn <- AgentComm{Agent: hb.H, Action: "LOOTED", commOut: hb.H.AgentCommIn}
 							} else {
 								hb.H.Opponent.AgentCommIn <- AgentComm{Agent: hb.H, Action: "YOUWIN", commOut: hb.H.AgentCommIn}
-								hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "die", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
-								hb.H.Board.AgentManager.messIn <- hb.H.ComOut
+								res2 := <-hb.H.AgentCommIn
+								if res2.Action == "LOOTED" {
+									hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "die", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
+									hb.H.Board.AgentManager.messIn <- hb.H.ComOut
+								}
 							}
 						} else {
-							fmt.Println("assailled fled fight")
 							hb.H.Opponent = nil
 							hb.H.Fightcooldown = 300
 						}
