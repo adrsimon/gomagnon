@@ -551,7 +551,7 @@ func (h *Agent) ToString() string {
 func (h *Agent) PartnerWithMe() bool {
 	if *h.NbPart == 2 {
 		cmp := 0
-		for _, ag := range h.Neighbours {
+		for _, ag := range h.Position.Agents {
 			val, ok := h.AgentRelation[ag.ID]
 			if ok && val == "MATEHUNT" {
 				cmp++
