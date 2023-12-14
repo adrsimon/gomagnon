@@ -9,10 +9,11 @@ import (
 var Setting Settings
 
 type Resources struct {
-	MaxAnimals int `json:"maxAnimals"`
-	MaxFruits  int `json:"maxFruits"`
-	MaxWoods   int `json:"maxWoods"`
-	MaxRocks   int `json:"maxRocks"`
+	MaxAnimals  int `json:"maxAnimals"`
+	MaxFruits   int `json:"maxFruits"`
+	MaxWoods    int `json:"maxWoods"`
+	MaxRocks    int `json:"maxRocks"`
+	MaxMammoths int `json:"maxMammoths"`
 }
 
 type Size struct {

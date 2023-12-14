@@ -42,6 +42,10 @@ const (
 	GETRESULT
 	LOOK4SOMEONE
 	PROCREATE
+	FINDMATE
+	STARTHUNT
+	HUNT
+	WAITINGFORFRIENDS
 )
 
 func (h *Agent) actionToStr() (action string) {
@@ -72,7 +76,14 @@ func (h *Agent) actionToStr() (action string) {
 		action = "LOOK4SOMEONE"
 	case PROCREATE:
 		action = "PROCREATE"
+	case FINDMATE:
+		action = "FINDMATE"
+	case STARTHUNT:
+		action = "STARTHUNT"
+	case HUNT:
+		action = "HUNT"
 	}
+
 	return
 }
 
@@ -126,6 +137,9 @@ type Agent struct {
 	Action          Action
 	StackAction     StackAction
 	Looking4Someone bool
+
+	LastMammothSeen *Hexagone
+	NbPart          *int
 
 	Neighbours    []*Agent
 	AgentRelation map[string]string
@@ -219,6 +233,11 @@ func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
 			score += 0.5
 		} else {
 			score -= 1
+		}
+	case MAMMOTH:
+		score -= 5
+		if h.Clan != nil && h.Clan.chief == h {
+			h.LastMammothSeen = hex
 		}
 	}
 
@@ -332,6 +351,9 @@ func (h *Agent) UpdateState(resource ResourceType) {
 	case WOOD:
 		h.Inventory.Object[resource] += 1
 		h.Inventory.Weight += WeightWood
+	case MAMMOTH:
+		h.Inventory.Object[resource] += 9
+		h.Inventory.Weight += 9 * WeightAnimal
 	}
 
 	neighbours := h.Board.GetNeighbours(h.Position)
@@ -365,8 +387,9 @@ func (h *Agent) Perceive() {
 			}
 		}
 	}
+
 	h.Neighbours = listHumans
-	if h.Hut != nil && h.Procreate.Partner == nil && h.Procreate.Timer <= 0 && h.Clan != nil && h.PerformAction() {
+	if h.Hut != nil && h.Procreate.Partner == nil && h.Procreate.Timer <= 0 && h.Clan != nil && len(h.Clan.members) < 16 && h.PerformAction() {
 		for _, neighbour := range h.Neighbours {
 			if neighbour.Clan == h.Clan && neighbour.Procreate.Partner == nil && neighbour.Hut == h.Hut && neighbour.Body.Age > 10 && h.Type != neighbour.Type && h.PerformAction() {
 				h.Procreate.Partner = neighbour
@@ -374,12 +397,14 @@ func (h *Agent) Perceive() {
 				break
 			}
 		}
-
 	} else if h.Hut != nil && h.Procreate.Partner != nil && h.Position.Position == h.Hut.Position.Position {
 		h.ComOut = agentToManager{AgentID: h.ID, Action: "isHome", Pos: h.Position, commOut: make(chan managerToAgent)}
 		h.Board.AgentManager.messIn <- h.ComOut
 		h.ComIn = <-h.ComOut.commOut
 		h.Procreate.isHome = h.ComIn.Valid
+	} else if h.Hut != nil && h.Procreate.Partner != nil && len(h.Clan.members) >= 16 {
+		h.Procreate.Partner = nil
+		h.Procreate.Timer = 100
 	}
 
 	if h.Hut != nil && h.Position.Position == h.Hut.Position.Position {
@@ -424,10 +449,29 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 			}
 			h.Hut = res.Agent.Hut
 		}
+	case "INVITEHUNT":
+		res.commOut <- AgentComm{Agent: h, Action: "ACCEPTHUNT", commOut: h.AgentCommIn}
+		h.NbPart = res.Agent.NbPart
+		h.AgentRelation[res.Agent.ID] = "MATEHUNT"
+		fmt.Println(h.ID, "j'ai accepte")
+	case "READY?":
+		// devrais implementer un moyen de refuser basé sur peut etre si il des apprehension si il est jeune et peureux
+		res.commOut <- AgentComm{Agent: h, Action: "YESREADY", commOut: h.AgentCommIn}
+		fmt.Println(h.ID, " ready to fight")
+	case "GIVE":
+		res.commOut <- AgentComm{Agent: h, Action: "ACCEPT", commOut: h.AgentCommIn}
+		h.UpdateState(ANIMAL)
+		h.UpdateState(ANIMAL)
+		h.UpdateState(ANIMAL)
+	case "LOOSE":
+		h.ComOut = agentToManager{AgentID: h.ID, Action: "die", Pos: h.Position, commOut: make(chan managerToAgent)}
+		h.Board.AgentManager.messIn <- h.ComOut
 	}
+
 }
 
 func (h *Agent) IsDead() bool {
+	return false
 	return h.Body.Hungriness >= 100 || h.Body.Thirstiness >= 100 || h.Body.Tiredness >= 100 || h.Body.Age >= 100
 }
 
@@ -487,7 +531,12 @@ func (h *Agent) ToString() string {
 		str += "Chief : " + h.Clan.chief.ID + "\n"
 		str += "Members : " + strconv.Itoa(len(h.Clan.members)) + "\n\n"
 	} else {
-		str += "No clan" + "\n\n"
+		str += "No clan" + "\n"
+	}
+	if h.Procreate.Partner != nil {
+		str += "Partner : " + h.Procreate.Partner.ID + "\n\n"
+	} else {
+		str += "No partner" + "\n\n"
 	}
 	str += "--- Inventory ---" + "\n"
 	str += "Fruits : " + strconv.Itoa(h.Inventory.Object[FRUIT]) + "\n"
@@ -497,4 +546,22 @@ func (h *Agent) ToString() string {
 
 	str += "Doing : " + h.actionToStr()
 	return str
+}
+
+func (h *Agent) PartnerWithMe() bool {
+	if *h.NbPart == 2 {
+		cmp := 0
+		for _, ag := range h.Neighbours {
+			val, ok := h.AgentRelation[ag.ID]
+			if ok && val == "MATEHUNT" {
+				cmp++
+			}
+		}
+		if cmp == 2 {
+			return true
+		} else {
+			return false
+		}
+	}
+	return false
 }

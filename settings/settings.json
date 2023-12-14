@@ -1,14 +1,15 @@
 {
   "agents": {
-    "initialNumber": 45
+    "initialNumber": 30
   },
   "world": {
-    "seed": 2021,
+    "seed": 10111,
     "resources": {
-      "maxAnimals": 30,
-      "maxFruits": 30,
-      "maxWoods": 30,
-      "maxRocks": 30
+      "maxAnimals": 50,
+      "maxFruits": 40,
+      "maxWoods": 40,
+      "maxRocks": 40,
+      "maxMammoths": 4
     },
     "size": {
       "x": 46,

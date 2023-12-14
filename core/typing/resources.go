@@ -6,6 +6,7 @@ const (
 	NONE ResourceType = iota
 	FRUIT
 	ANIMAL
+	MAMMOTH
 	ROCK
 	WOOD
 	NUM_RESOURCE_TYPES

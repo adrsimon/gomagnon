@@ -37,6 +37,8 @@ func DrawHex(background *ebiten.Image, xCenter float32, yCenter float32, biome t
 		drawImage(background, xCenter, yCenter, hexSize/1.5, imgRock)
 	case typing.WOOD:
 		drawImage(background, xCenter, yCenter, hexSize/1.5, imgWood)
+	case typing.MAMMOTH:
+		drawImage(background, xCenter, yCenter, hexSize, imgMammoth)
 	case typing.NONE:
 	}
 

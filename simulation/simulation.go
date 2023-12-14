@@ -43,10 +43,11 @@ func NewSimulation() Simulation {
 	simu.ScreenHeight = ScreenHeight
 
 	resourcesMap := map[typing.ResourceType]int{
-		typing.FRUIT:  settings.Setting.World.Resources.MaxFruits,
-		typing.ANIMAL: settings.Setting.World.Resources.MaxAnimals,
-		typing.ROCK:   settings.Setting.World.Resources.MaxRocks,
-		typing.WOOD:   settings.Setting.World.Resources.MaxWoods,
+		typing.FRUIT:   settings.Setting.World.Resources.MaxFruits,
+		typing.ANIMAL:  settings.Setting.World.Resources.MaxAnimals,
+		typing.ROCK:    settings.Setting.World.Resources.MaxRocks,
+		typing.WOOD:    settings.Setting.World.Resources.MaxWoods,
+		typing.MAMMOTH: settings.Setting.World.Resources.MaxMammoths,
 	}
 
 	hexSize := float32(simu.ScreenWidth) / float32(settings.Setting.World.Size.X-1)
@@ -102,6 +103,7 @@ func NewSimulation() Simulation {
 			AgentCommIn:    make(chan typing.AgentComm),
 			Clan:           nil,
 			Procreate:      typing.Procreate{Partner: nil, Timer: 100},
+			NbPart:         nil,
 		}
 		simu.Board.AgentManager.Agents = append(simu.Board.AgentManager.Agents, ag)
 		ag.Behavior = &typing.HumanBehavior{H: ag}
