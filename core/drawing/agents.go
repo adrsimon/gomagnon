@@ -1,13 +1,26 @@
 package drawing
 
 import (
+	"github.com/adrsimon/gomagnon/core/typing"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"image/color"
 )
 
-func DrawAgent(screen *ebiten.Image, x, y, size float32, color color.Color) {
-	vector.DrawFilledCircle(screen, x, y, size/4, color, false)
+func DrawAgent(screen *ebiten.Image, x, y, size float32, ag *typing.Agent) {
+	if ag.Race == typing.SAPIENS {
+		if ag.Body.Age < 10 {
+			drawImage(screen, x, y, size, imgBabySapiens)
+		} else {
+			drawImage(screen, x, y, size/1.25, imgSapiens)
+		}
+	} else {
+		if ag.Body.Age < 10 {
+			drawImage(screen, x, y, size, imgBabyNeanderthal)
+		} else {
+			drawImage(screen, x, y, size/1.25, imgNeanderthal)
+		}
+	}
 }
 
 func DrawAgentNeighbor(background *ebiten.Image, xCenter float32, yCenter float32, hexSize float32, color color.Color) {
