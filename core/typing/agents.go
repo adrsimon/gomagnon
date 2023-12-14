@@ -454,13 +454,15 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 			res.commOut <- AgentComm{Agent: h, Action: "OKFIGHT", commOut: h.AgentCommIn}
 			res2 := <-h.AgentCommIn
 			if res2.Action == "YOUWIN" {
-				fmt.Println("Assaily won hehe :D")
 				h.ComOut = agentToManager{AgentID: h.ID, Action: "transfer-inventory", Pos: h.Position, commOut: make(chan managerToAgent)}
 				h.Board.AgentManager.messIn <- h.ComOut
+				h.Opponent.AgentCommIn <- AgentComm{Agent: h, Action: "LOOTED", commOut: h.AgentCommIn}
 			} else {
-				h.ComOut = agentToManager{AgentID: h.ID, Action: "die", Pos: h.Position, commOut: make(chan managerToAgent)}
-				h.Board.AgentManager.messIn <- h.ComOut
-				fmt.Println("Assailly lost :(")
+				res3 := <-h.AgentCommIn
+				if res3.Action == "LOOTED" {
+					h.ComOut = agentToManager{AgentID: h.ID, Action: "die", Pos: h.Position, commOut: make(chan managerToAgent)}
+					h.Board.AgentManager.messIn <- h.ComOut
+				}
 			}
 		} else {
 			res.commOut <- AgentComm{Agent: h, Action: "NOFIGHT", commOut: h.AgentCommIn}
