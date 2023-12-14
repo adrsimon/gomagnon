@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"time"
 )
 
 type HumanStats struct {
@@ -42,6 +43,7 @@ const (
 	GETRESULT
 	LOOK4SOMEONE
 	PROCREATE
+	FIGHT
 )
 
 func (h *Agent) actionToStr() (action string) {
@@ -72,6 +74,8 @@ func (h *Agent) actionToStr() (action string) {
 		action = "LOOK4SOMEONE"
 	case PROCREATE:
 		action = "PROCREATE"
+	case FIGHT:
+		action = "FIGHT"
 	}
 	return
 }
@@ -81,14 +85,6 @@ type Race int
 const (
 	NEANDERTHAL Race = iota
 	SAPIENS
-)
-
-const (
-	MaxWeightInv = 10.0
-	WeightRock   = 2.0
-	WeightWood   = 1.0
-	WeightAnimal = 0.5
-	WeightFruit  = 0.1
 )
 
 type Inventory struct {
@@ -135,6 +131,9 @@ type Agent struct {
 	Terminated    bool
 
 	String string
+
+	Opponent      *Agent
+	Fightcooldown int
 
 	Behavior HumanActions
 }
@@ -356,11 +355,34 @@ func (h *Agent) Perceive() {
 				_, ok := h.AgentRelation[p.ID]
 				listHumans = append(listHumans, p)
 				if !ok {
-					if Randomizer.Intn(2) >= 1 {
-						h.AgentRelation[p.ID] = "Friend"
+					//Choix ami ou ennemi + reinitialisation opponent
+					var relation string
+					h.Opponent = nil
+					if h.Clan != nil && p.Clan == h.Clan {
+						// Même clan
+						if Randomizer.Intn(100) < 50 {
+							relation = "Enemy"
+							//fmt.Println("New enemy from same clan for agent: ", h.ID)
+							if h.Opponent == nil {
+								h.Opponent = p
+							}
+						} else {
+							relation = "Friend"
+						}
 					} else {
-						h.AgentRelation[p.ID] = "Enemy"
+						// autre clan
+						if Randomizer.Intn(100) < 50 {
+							relation = "Enemy"
+							//fmt.Println("New enemy from different clan for agent: ", h.ID)
+							if h.Opponent == nil {
+								h.Opponent = p
+							}
+						} else {
+							relation = "Friend"
+						}
 					}
+
+					h.AgentRelation[p.ID] = relation
 				}
 			}
 		}
@@ -424,6 +446,28 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 			}
 			h.Hut = res.Agent.Hut
 		}
+	case "FIGHT":
+		h.Opponent = res.Agent
+		SociabilityOpp := h.Opponent.Stats.Sociability
+		SociabilityAg := h.Stats.Sociability
+		if 1.25*float64(SociabilityOpp) > float64(SociabilityAg) {
+			res.commOut <- AgentComm{Agent: h, Action: "OKFIGHT", commOut: h.AgentCommIn}
+			res2 := <-h.AgentCommIn
+			if res2.Action == "YOUWIN" {
+				h.ComOut = agentToManager{AgentID: h.ID, Action: "transfer-inventory", Pos: h.Position, commOut: make(chan managerToAgent)}
+				h.Board.AgentManager.messIn <- h.ComOut
+				h.Opponent.AgentCommIn <- AgentComm{Agent: h, Action: "LOOTED", commOut: h.AgentCommIn}
+			} else {
+				res3 := <-h.AgentCommIn
+				if res3.Action == "LOOTED" {
+					h.ComOut = agentToManager{AgentID: h.ID, Action: "die", Pos: h.Position, commOut: make(chan managerToAgent)}
+					h.Board.AgentManager.messIn <- h.ComOut
+				}
+			}
+		} else {
+			res.commOut <- AgentComm{Agent: h, Action: "NOFIGHT", commOut: h.AgentCommIn}
+			h.Opponent = nil
+		}
 	}
 }
 
@@ -442,6 +486,7 @@ func (h *Agent) CloseUpdate() {
 		h.Body.Hungriness += 0.2
 		h.Body.Thirstiness += 0.4
 		h.Body.Tiredness += 0.4
+		h.Fightcooldown -= 1
 	}
 	if h.Body.Age > 10 {
 		h.Behavior = &HumanBehavior{H: h}
@@ -455,9 +500,9 @@ func (h *Agent) UpdateAgent() {
 	h.Behavior.Act()
 	select {
 	case res := <-h.AgentCommIn:
-		h.Terminated = true
 		h.AnswerAgents(res)
-	default:
+		h.Terminated = true
+	case <-time.After(2 * time.Millisecond):
 		h.Terminated = true
 	}
 	h.CloseUpdate()

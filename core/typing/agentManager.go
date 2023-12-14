@@ -161,6 +161,14 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 			fmt.Println("\033[31mAgent\033[0m", request.AgentID, "\033[31mis supposed to die but he was already dead\033[0m")
 			return
 		}
+		pro := Procreate{}
+		if agent.Procreate != pro && agent.Procreate.Partner != nil {
+			agent.Procreate.Partner.Procreate.Partner = nil
+			agent.Procreate.Partner.Procreate.Timer = 100
+		}
+		if agent.Opponent != nil {
+			agent.Opponent.Opponent = nil
+		}
 		if agent.Clan != nil {
 			if len(agent.Clan.members) <= 0 {
 				fmt.Println("\033[31mClan\033[0m", agent.Clan.ID, "\033[31m has no more members.\033[0m")
@@ -252,8 +260,23 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		if result {
 			fmt.Println("\033[33mNew agent admitted in clan\033[0m", ag.Clan.ID, "\033[33m. Looking for an agent to include in the clan\033[0m")
 		} else {
-			fmt.Println("\033[35mVote rejected in clan\033[0m", ag.Clan.ID)
+			fmt.Println("Vote rejected in clan", ag.Clan.ID)
 		}
+	case "transfer-inventory":
+		_, ag := agMan.GetAgent(request.AgentID)
+		opp := ag.Opponent
+		for res, val := range opp.Inventory.Object {
+			for i := 0; i < val; i++ {
+				if ag.Inventory.Weight+Weights[res] < MaxWeightInv {
+					ag.Inventory.Object[res]++
+					ag.Inventory.Weight += Weights[res]
+					ag.Opponent.Inventory.Object[res]--
+				}
+			}
+			opp.Inventory.Weight = 0
+		}
+		ag.Opponent = nil
+		ag.Fightcooldown = 300
 	}
 }
 

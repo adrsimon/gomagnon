@@ -2,6 +2,7 @@ package typing
 
 import (
 	"fmt"
+	"math"
 	"slices"
 	"strings"
 	"time"
@@ -127,6 +128,12 @@ func (hb *HumanBehavior) Deliberate() {
 		}
 	}
 
+	if hb.H.Opponent != nil && hb.H.Body.Thirstiness < 80 && hb.H.Body.Hungriness < 80 && hb.H.Body.Tiredness < 80 && hb.H.Fightcooldown == 0 {
+		hb.H.Action = FIGHT
+		hb.H.Fightcooldown = 100
+		return
+	}
+
 	/** In Hut actions **/
 	if hb.H.Hut != nil && hb.H.Position.Position == hb.H.Hut.Position.Position {
 		hb.DeliberateAtHut()
@@ -181,6 +188,10 @@ func (hb *HumanBehavior) Act() {
 				} else if hb.H.Body.Hungriness > 80 && (slices.Contains(hb.H.HutInventoryVision, ANIMAL) || slices.Contains(hb.H.HutInventoryVision, FRUIT)) {
 					targetHexagon = hb.H.Hut.Position
 				}
+			}
+
+			if hb.H.Opponent != nil {
+				targetHexagon = hb.H.Opponent.Position
 			}
 
 			if targetHexagon == nil {
@@ -350,6 +361,47 @@ func (hb *HumanBehavior) Act() {
 				hb.H.StackAction = append(hb.H.StackAction, MOVE)
 			}
 		}
+	case FIGHT:
+		if hb.H.Opponent != nil {
+			if !hb.H.Opponent.Terminated {
+				select {
+				case hb.H.Opponent.AgentCommIn <- AgentComm{Agent: hb.H, Action: "FIGHT", commOut: hb.H.AgentCommIn}:
+					select {
+					case res := <-hb.H.AgentCommIn:
+						if res.Action == "OKFIGHT" {
+							StrengthOpp := hb.H.Opponent.Stats.Strength
+							StrengthAg := hb.H.Stats.Strength
+							ThrowRandom := Randomizer.Float64()
+							DifForce := math.Abs(float64(StrengthAg) - float64(StrengthOpp))
+							ProbaVictoireAgt1 := 1 / (1 + math.Pow(2, DifForce/10))
+
+							if ThrowRandom < ProbaVictoireAgt1 {
+								fmt.Println("\033[96mAgent\033[0m", hb.H.ID, "\033[96mfought and wins against\033[0m", hb.H.Opponent.ID)
+								hb.H.Opponent.AgentCommIn <- AgentComm{Agent: hb.H, Action: "YOULOSE", commOut: hb.H.AgentCommIn}
+								hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "transfer-inventory", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
+								hb.H.Board.AgentManager.messIn <- hb.H.ComOut
+								hb.H.Opponent.AgentCommIn <- AgentComm{Agent: hb.H, Action: "LOOTED", commOut: hb.H.AgentCommIn}
+							} else {
+								fmt.Println("\033[96mAgent\033[0m", hb.H.Opponent.ID, "\033[96mfought and wins against\033[0m", hb.H.ID)
+								hb.H.Opponent.AgentCommIn <- AgentComm{Agent: hb.H, Action: "YOUWIN", commOut: hb.H.AgentCommIn}
+								res2 := <-hb.H.AgentCommIn
+								if res2.Action == "LOOTED" {
+									hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "die", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
+									hb.H.Board.AgentManager.messIn <- hb.H.ComOut
+								}
+							}
+						} else {
+							hb.H.Opponent = nil
+							hb.H.Fightcooldown = 300
+						}
+					case <-time.After(100 * time.Millisecond):
+					}
+				case <-time.After(100 * time.Millisecond):
+
+				}
+			}
+		}
+
 	default:
 		fmt.Println("Should not be here")
 	}
