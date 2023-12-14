@@ -45,6 +45,7 @@ const (
 	FINDMATE
 	STARTHUNT
 	HUNT
+	WAITINGFORFRIENDS
 )
 
 func (h *Agent) actionToStr() (action string) {
@@ -452,7 +453,7 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 		res.commOut <- AgentComm{Agent: h, Action: "ACCEPTHUNT", commOut: h.AgentCommIn}
 		h.NbPart = res.Agent.NbPart
 		h.AgentRelation[res.Agent.ID] = "MATEHUNT"
-		fmt.Println("j'ai accepte")
+		fmt.Println(h.ID, "j'ai accepte")
 	case "READY?":
 		// devrais implementer un moyen de refuser basé sur peut etre si il des apprehension si il est jeune et peureux
 		res.commOut <- AgentComm{Agent: h, Action: "YESREADY", commOut: h.AgentCommIn}

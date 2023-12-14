@@ -233,7 +233,7 @@ func (hb *HumanBehavior) Act() {
 			if hb.H.Target.Resource == MAMMOTH && hb.H.NbPart != nil && *hb.H.NbPart == 2 && hb.H.PartnerWithMe() {
 				hb.H.StackAction = append(hb.H.StackAction, HUNT)
 			} else if hb.H.Target.Resource == MAMMOTH && hb.H.NbPart != nil && *hb.H.NbPart == 2 && !hb.H.PartnerWithMe() {
-				hb.H.StackAction = append(hb.H.StackAction, MOVE)
+				hb.H.StackAction = append(hb.H.StackAction, WAITINGFORFRIENDS)
 			} else {
 				hb.H.Target = nil
 				hb.H.MovingToTarget = false
@@ -377,11 +377,10 @@ func (hb *HumanBehavior) Act() {
 		bestH = nil
 		if len(hb.H.Neighbours) > 1 {
 			for _, v := range hb.H.Neighbours {
-				if hb.H.Clan == v.Clan && v.Body.Age > 10 {
+				if hb.H.Clan == v.Clan && v.Body.Age > 10 && hb.H.AgentRelation[v.ID] != "MATEHUNT" {
 					bestH = v
 					break
 				}
-
 			}
 			if bestH == nil {
 				hb.H.StackAction = append(hb.H.StackAction, MOVE)
@@ -447,7 +446,6 @@ func (hb *HumanBehavior) Act() {
 				for _, ag := range agHunts {
 					ag.AgentCommIn <- AgentComm{Agent: hb.H, Action: "GIVE", commOut: hb.H.AgentCommIn}
 				}
-
 			} else { //loose
 				for _, ag := range agHunts {
 					fmt.Println(hb.H.ID, " loose a hunt")
@@ -456,7 +454,6 @@ func (hb *HumanBehavior) Act() {
 					hb.H.Board.AgentManager.messIn <- hb.H.ComOut
 				}
 			}
-
 		} else {
 			if hb.H.Clan.chief != nil && (hb.H.Clan.chief.Action == HUNT && !hb.H.Clan.chief.Terminated) {
 				fmt.Println(hb.H.ID, "membre sur case pret a chassé")
@@ -464,11 +461,18 @@ func (hb *HumanBehavior) Act() {
 				hb.H.AnswerAgents(res)
 				res = <-hb.H.AgentCommIn
 				hb.H.AnswerAgents(res)
-				res = <-hb.H.AgentCommIn
-				hb.H.AnswerAgents(res)
 			} else {
 				hb.H.StackAction = append(hb.H.StackAction, HUNT)
 			}
+		}
+	case WAITINGFORFRIENDS:
+		hb.H.Body.Tiredness -= 1
+		if hb.H.Target.Resource == MAMMOTH && hb.H.NbPart != nil && *hb.H.NbPart == 2 && !hb.H.PartnerWithMe() {
+			hb.H.StackAction = append(hb.H.StackAction, WAITINGFORFRIENDS)
+		} else {
+			hb.H.StackAction = append(hb.H.StackAction, HUNT)
+			hb.H.Target = nil
+			hb.H.MovingToTarget = false
 		}
 	default:
 		fmt.Println("Should not be here")
