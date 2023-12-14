@@ -63,7 +63,11 @@ func NewSimulation() Simulation {
 	simu.zoomFactor = 1
 
 	simu.Board.Generate()
-	simu.Board.GenerateBiomes()
+	if settings.Setting.World.Type == "island" {
+		simu.Board.GenerateIslandBiomes()
+	} else if settings.Setting.World.Type == "continent" {
+		simu.Board.GenerateContinentBiomes()
+	}
 	simu.Board.GenerateResources()
 
 	simu.Board.AgentManager.Start()

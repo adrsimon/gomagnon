@@ -71,7 +71,46 @@ func (b *Board) GetNeighbours(hex *Hexagone) []*Hexagone {
 	return neighbours
 }
 
-func (b *Board) GenerateBiomes() {
+func (b *Board) GenerateContinentBiomes() {
+	elevation := perlin.NewPerlin(1, 2.7, 3, Seed)
+	moisture := perlin.NewPerlin(0.8, 2, 5, Seed)
+
+	for i, line := range b.Cases {
+		for j := range line {
+			hex := b.Cases[i][j]
+			if hex == nil {
+				continue
+			}
+
+			var biomeType BiomeType
+
+			x := float64(i) / float64(b.XMax)
+			y := float64(j) / float64(b.YMax)
+
+			elevationValue := elevation.Noise2D(x, y)
+			moistureValue := moisture.Noise2D(x, y)
+
+			switch {
+			case elevationValue > 0.3:
+				biomeType = CAVE
+			case elevationValue < -0.7:
+				biomeType = DEEP_WATER
+			case elevationValue < -0.4:
+				biomeType = WATER
+			default:
+				if moistureValue > 0 {
+					biomeType = FOREST
+				} else {
+					biomeType = PLAINS
+				}
+			}
+
+			hex.Biome = biomeType
+		}
+	}
+}
+
+func (b *Board) GenerateIslandBiomes() {
 	elevation := perlin.NewPerlin(1, 2.7, 3, Seed)
 	moisture := perlin.NewPerlin(0.8, 2, 5, Seed)
 

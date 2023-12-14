@@ -4,6 +4,7 @@
   },
   "world": {
     "seed": 2021,
+    "type": "continent",
     "resources": {
       "maxAnimals": 30,
       "maxFruits": 30,
