@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"time"
 )
 
 type HumanStats struct {
@@ -501,7 +502,7 @@ func (h *Agent) UpdateAgent() {
 	case res := <-h.AgentCommIn:
 		h.Terminated = true
 		h.AnswerAgents(res)
-	default:
+	case <-time.After(20 * time.Millisecond):
 		h.Terminated = true
 	}
 	h.CloseUpdate()
@@ -557,7 +558,7 @@ func (h *Agent) PartnerWithMe() bool {
 				cmp++
 			}
 		}
-		if cmp == 2 {
+		if (cmp == 2 && h.Clan.chief == h) || (cmp == 1 && h.Clan.chief != h) {
 			return true
 		} else {
 			return false

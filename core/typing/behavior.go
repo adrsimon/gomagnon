@@ -170,7 +170,7 @@ func (hb *HumanBehavior) Deliberate() {
 	}
 
 	if hb.H.Clan != nil && hb.H.NbPart != nil && hb.H.NbPart == hb.H.Clan.chief.NbPart && *hb.H.NbPart == 2 {
-		fmt.Println("membre va chasser")
+		// fmt.Println("membre va chasser")
 		hb.H.Action = STARTHUNT
 		hb.H.LastMammothSeen = hb.H.Clan.chief.LastMammothSeen
 		return
@@ -180,7 +180,6 @@ func (hb *HumanBehavior) Deliberate() {
 		hb.H.Action = MOVE
 		return
 	}
-
 }
 
 func (hb *HumanBehavior) Act() {
@@ -460,7 +459,7 @@ func (hb *HumanBehavior) Act() {
 				hb.H.Board.AgentManager.messIn <- hb.H.ComOut
 			}
 		} else {
-			if hb.H.Clan.chief != nil && (hb.H.Clan.chief.Action == HUNT && !hb.H.Clan.chief.Terminated) {
+			if hb.H.Clan.chief != nil && (hb.H.Clan.chief.Action == WAITINGFORFRIENDS && !hb.H.Clan.chief.Terminated) {
 				fmt.Println(hb.H.ID, "membre sur case pret a chassé")
 				res := <-hb.H.AgentCommIn
 				hb.H.AnswerAgents(res)
@@ -472,10 +471,10 @@ func (hb *HumanBehavior) Act() {
 		}
 	case WAITINGFORFRIENDS:
 		hb.H.Body.Tiredness -= 1
-		if hb.H.Target.Resource == MAMMOTH && hb.H.NbPart != nil && *hb.H.NbPart == 2 && !hb.H.PartnerWithMe() {
-			hb.H.StackAction = append(hb.H.StackAction, WAITINGFORFRIENDS)
-		} else {
+		if hb.H.Target != nil && hb.H.Target.Resource == MAMMOTH && hb.H.NbPart != nil && *hb.H.NbPart == 2 && !hb.H.PartnerWithMe() {
 			hb.H.StackAction = append(hb.H.StackAction, HUNT)
+		} else {
+			hb.H.StackAction = append(hb.H.StackAction, WAITINGFORFRIENDS)
 			hb.H.Target = nil
 			hb.H.MovingToTarget = false
 		}
