@@ -370,7 +370,6 @@ func (hb *HumanBehavior) Act() {
 					select {
 					case res := <-hb.H.AgentCommIn:
 						if res.Action == "OKFIGHT" {
-							fmt.Println("Agent", hb.H.ID, "fighting against", hb.H.Opponent.ID)
 							StrengthOpp := hb.H.Opponent.Stats.Strength
 							StrengthAg := hb.H.Stats.Strength
 							ThrowRandom := Randomizer.Float64()
@@ -378,11 +377,13 @@ func (hb *HumanBehavior) Act() {
 							ProbaVictoireAgt1 := 1 / (1 + math.Pow(2, DifForce/10))
 
 							if ThrowRandom < ProbaVictoireAgt1 {
+								fmt.Println("\033[96mAgent\033[0m", hb.H.ID, "\033[96mfought and wins against\033[0m", hb.H.Opponent.ID)
 								hb.H.Opponent.AgentCommIn <- AgentComm{Agent: hb.H, Action: "YOULOSE", commOut: hb.H.AgentCommIn}
 								hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "transfer-inventory", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
 								hb.H.Board.AgentManager.messIn <- hb.H.ComOut
 								hb.H.Opponent.AgentCommIn <- AgentComm{Agent: hb.H, Action: "LOOTED", commOut: hb.H.AgentCommIn}
 							} else {
+								fmt.Println("\033[96mAgent\033[0m", hb.H.Opponent.ID, "\033[96mfought and wins against\033[0m", hb.H.ID)
 								hb.H.Opponent.AgentCommIn <- AgentComm{Agent: hb.H, Action: "YOUWIN", commOut: hb.H.AgentCommIn}
 								res2 := <-hb.H.AgentCommIn
 								if res2.Action == "LOOTED" {

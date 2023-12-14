@@ -281,7 +281,6 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 			}
 			opp.Inventory.Weight = 0
 		}
-		fmt.Println("Agent", request.AgentID, "took inventory from agent", ag.Opponent.ID)
 		ag.Opponent = nil
 		ag.Fightcooldown = 300
 	}
