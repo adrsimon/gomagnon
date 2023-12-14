@@ -422,7 +422,7 @@ func (hb *HumanBehavior) Act() {
 			fmt.Println(hb.H.ID, "chef sur case pret a chassé")
 			forceTogether := hb.H.Stats.Strength
 			var agHunts []*Agent
-			for _, ag := range hb.H.Neighbours {
+			for _, ag := range hb.H.Position.Agents {
 				val, ok := hb.H.AgentRelation[ag.ID]
 				if ok && val == "MATEHUNT" {
 					agHunts = append(agHunts, ag)
