@@ -31,11 +31,7 @@ func DrawBoard(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFact
 func DrawAgents(screen *ebiten.Image, agents []*typing.Agent, cameraX, cameraY, zoomFactor, hexSize float32, debug bool) {
 	for _, agent := range agents {
 		var col color.Color
-		if agent.Body.Age < 10 && agent.Race == typing.SAPIENS {
-			col = colornames.Pink
-		} else if agent.Body.Age < 10 && agent.Race == typing.NEANDERTHAL {
-			col = colornames.Green
-		} else if agent.Race == typing.SAPIENS {
+		if agent.Race == typing.SAPIENS {
 			col = colornames.Blue
 		} else {
 			col = colornames.Red
@@ -47,7 +43,7 @@ func DrawAgents(screen *ebiten.Image, agents []*typing.Agent, cameraX, cameraY, 
 		xA, yA := GetHexGraphicalCenter(x, y, hexSize)
 		xA, yA = xA-cameraX, yA-cameraY
 		xA, yA = xA*zoomFactor, yA*zoomFactor
-		DrawAgent(screen, xA, yA, hexSize*zoomFactor, col)
+		DrawAgent(screen, xA, yA, hexSize*zoomFactor, agent)
 
 		if !debug {
 			continue

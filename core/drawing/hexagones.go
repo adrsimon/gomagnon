@@ -1,69 +1,14 @@
 package drawing
 
 import (
-	_ "image/png"
-	"log"
-
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"golang.org/x/image/colornames"
+	_ "image/png"
 
 	"github.com/adrsimon/gomagnon/core/typing"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
-
-var imgPlains, imgForest, imgWater, imgCaves, imgCow, imgMushroom, imgRock, imgWood *ebiten.Image
-
-func init() {
-	plains, _, err := ebitenutil.NewImageFromFile("assets/images/plains.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	imgPlains = plains
-
-	forest, _, err := ebitenutil.NewImageFromFile("assets/images/forest.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	imgForest = forest
-
-	water, _, err := ebitenutil.NewImageFromFile("assets/images/water.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	imgWater = water
-
-	caves, _, err := ebitenutil.NewImageFromFile("assets/images/caves.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	imgCaves = caves
-
-	cow, _, err := ebitenutil.NewImageFromFile("assets/images/cow.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	imgCow = cow
-
-	mushroom, _, err := ebitenutil.NewImageFromFile("assets/images/mushroom.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	imgMushroom = mushroom
-
-	rock, _, err := ebitenutil.NewImageFromFile("assets/images/rock.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	imgRock = rock
-
-	wood, _, err := ebitenutil.NewImageFromFile("assets/images/wood.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	imgWood = wood
-}
 
 func DrawHex(background *ebiten.Image, xCenter float32, yCenter float32, biome typing.BiomeType, hexSize float32, resource typing.ResourceType, hut *typing.Hut) {
 	var hexImage *ebiten.Image

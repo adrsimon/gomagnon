@@ -1,54 +1,26 @@
 package drawing
 
 import (
-	"image/color"
-	"log"
-
+	"github.com/adrsimon/gomagnon/core/typing"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
-	"golang.org/x/image/colornames"
+	"image/color"
 )
 
-var imgSapiens, imgNeanderthal, imgBabySapiens, imgBabyNeanderthal *ebiten.Image
-
-func init() {
-	sapiens, _, err := ebitenutil.NewImageFromFile("assets/images/homosapiens.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	imgSapiens = sapiens
-
-	neanderthal, _, err := ebitenutil.NewImageFromFile("assets/images/neanderthal.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	imgNeanderthal = neanderthal
-
-	babyNean, _, err := ebitenutil.NewImageFromFile("assets/images/baby-neanderthal.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	imgBabyNeanderthal = babyNean
-
-	babySapiens, _, err := ebitenutil.NewImageFromFile("assets/images/baby-sapiens.png")
-	if err != nil {
-		log.Fatal(err)
-	}
-	imgBabySapiens = babySapiens
-}
-
-func DrawAgent(screen *ebiten.Image, x, y, size float32, color color.Color) {
-	if color == colornames.Blue {
-		drawImage(screen, x, y, size/1.25, imgSapiens)
-	} else if color == colornames.Pink {
-		drawImage(screen, x, y, size, imgBabySapiens)
-	} else if color == colornames.Green {
-		drawImage(screen, x, y, size, imgBabyNeanderthal)
+func DrawAgent(screen *ebiten.Image, x, y, size float32, ag *typing.Agent) {
+	if ag.Race == typing.SAPIENS {
+		if ag.Body.Age < 10 {
+			drawImage(screen, x, y, size, imgBabySapiens)
+		} else {
+			drawImage(screen, x, y, size/1.25, imgSapiens)
+		}
 	} else {
-		drawImage(screen, x, y, size/1.25, imgNeanderthal)
+		if ag.Body.Age < 10 {
+			drawImage(screen, x, y, size, imgBabyNeanderthal)
+		} else {
+			drawImage(screen, x, y, size/1.25, imgNeanderthal)
+		}
 	}
-
 }
 
 func DrawAgentNeighbor(background *ebiten.Image, xCenter float32, yCenter float32, hexSize float32, color color.Color) {
