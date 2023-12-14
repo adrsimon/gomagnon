@@ -7,16 +7,16 @@ import (
 
 func (s *Simulation) Draw(screen *ebiten.Image) {
 	if ebiten.IsKeyPressed(ebiten.KeyD) {
-		s.cameraX += 20
+		s.cameraX += 10
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyA) {
-		s.cameraX -= 20
+		s.cameraX -= 10
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyS) {
-		s.cameraY += 20
+		s.cameraY += 10
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyW) {
-		s.cameraY -= 20
+		s.cameraY -= 10
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyComma) {

@@ -306,6 +306,9 @@ func (h *Agent) UpdateState(resource ResourceType) {
 	case ANIMAL:
 		if h.Body.Hungriness > 85 || h.Hut == nil || h.Inventory.Weight >= MaxWeightInv-3*WeightAnimal {
 			h.Body.Hungriness -= 10 * AnimalFoodValueMultiplier
+			if h.Body.Hungriness < 0 {
+				h.Body.Hungriness = 0
+			}
 			break
 		} else {
 			h.Inventory.Object[resource] += 3
@@ -314,6 +317,9 @@ func (h *Agent) UpdateState(resource ResourceType) {
 	case FRUIT:
 		if h.Body.Hungriness > 85 || h.Hut == nil || h.Inventory.Weight >= MaxWeightInv-WeightFruit {
 			h.Body.Hungriness -= 10 * FruitFoodValueMultiplier
+			if h.Body.Hungriness < 0 {
+				h.Body.Hungriness = 0
+			}
 			break
 		} else {
 			h.Inventory.Object[resource] += 1

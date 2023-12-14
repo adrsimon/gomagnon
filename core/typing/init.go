@@ -1,10 +1,11 @@
 package typing
 
 import (
+	"github.com/adrsimon/gomagnon/settings"
 	"math/rand"
 )
 
-var Seed int64 = 010101
+var Seed int64 = settings.Setting.World.Seed
 var Randomizer *rand.Rand
 
 func init() {
