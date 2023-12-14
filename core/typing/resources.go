@@ -11,6 +11,21 @@ const (
 	NUM_RESOURCE_TYPES
 )
 
+const (
+	MaxWeightInv = 10.0
+	WeightFruit  = 0.1
+	WeightAnimal = 0.5
+	WeightRock   = 2.0
+	WeightWood   = 1.0
+)
+
+var Weights = map[ResourceType]float64{
+	FRUIT:  WeightFruit,
+	ANIMAL: WeightAnimal,
+	ROCK:   WeightRock,
+	WOOD:   WeightWood,
+}
+
 type CoolDown struct {
 	Current  int
 	Resource ResourceType

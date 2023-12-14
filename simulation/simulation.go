@@ -2,10 +2,12 @@ package simulation
 
 import (
 	"fmt"
+	"image/color"
+
 	"github.com/adrsimon/gomagnon/core/typing"
+	"github.com/adrsimon/gomagnon/settings"
 	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/widget"
-	"image/color"
 )
 
 const (
@@ -37,29 +39,36 @@ type Simulation struct {
 
 func NewSimulation() Simulation {
 	simu := Simulation{}
-	ressourcesMap := map[typing.ResourceType]int{
-		typing.FRUIT:  90,
-		typing.ANIMAL: 90,
-		typing.ROCK:   90,
-		typing.WOOD:   90,
+
+	simu.ScreenWidth = ScreenWidth
+	simu.ScreenHeight = ScreenHeight
+
+	resourcesMap := map[typing.ResourceType]int{
+		typing.FRUIT:  settings.Setting.World.Resources.MaxFruits,
+		typing.ANIMAL: settings.Setting.World.Resources.MaxAnimals,
+		typing.ROCK:   settings.Setting.World.Resources.MaxRocks,
+		typing.WOOD:   settings.Setting.World.Resources.MaxWoods,
 	}
 
-	simu.Board = typing.NewBoard(68, 61, 40, ressourcesMap)
+	hexSize := float32(simu.ScreenWidth) / float32(settings.Setting.World.Size.X-1)
+	simu.Board = typing.NewBoard(
+		settings.Setting.World.Size.X,
+		settings.Setting.World.Size.Y,
+		float32(hexSize),
+		resourcesMap,
+	)
 
 	simu.cameraX = 0
 	simu.cameraY = 0
-	simu.zoomFactor = 0.4
+	simu.zoomFactor = 1
 
 	simu.Board.Generate()
 	simu.Board.GenerateBiomes()
 	simu.Board.GenerateResources()
 
-	simu.ScreenWidth = ScreenWidth
-	simu.ScreenHeight = ScreenHeight
-
 	simu.Board.AgentManager.Start()
 
-	for i := 0; i < 30; i++ {
+	for i := 0; i < settings.Setting.Agents.InitialNumber; i++ {
 		x, y := -1, -1
 		for x == -1 && y == -1 {
 			x = typing.Randomizer.Intn(simu.Board.XMax)
@@ -94,6 +103,8 @@ func NewSimulation() Simulation {
 			AgentCommIn:    make(chan typing.AgentComm),
 			Clan:           nil,
 			Procreate:      typing.Procreate{Partner: nil, Timer: 100},
+			Opponent:       nil,
+			Fightcooldown:  50 + typing.Randomizer.Intn(200),
 		}
 		simu.Board.AgentManager.Agents = append(simu.Board.AgentManager.Agents, ag)
 		ag.Behavior = &typing.HumanBehavior{H: ag}
