@@ -281,10 +281,9 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 			}
 			opp.Inventory.Weight = 0
 		}
+		fmt.Println("Agent", request.AgentID, "took inventory from agent", ag.Opponent.ID)
 		ag.Opponent = nil
 		ag.Fightcooldown = 300
-		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
-		fmt.Println("Agent\033[0m", request.AgentID, "\033[94mtook inventory from agent", opp.ID)
 	}
 }
 
