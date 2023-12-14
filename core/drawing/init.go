@@ -81,7 +81,7 @@ func init() {
 	}
 	imgWood = wood
 
-	mammoth, _, err := ebitenutil.NewImageFromFile("assets/images/mammoth.png")
+	mammoth, _, err := ebitenutil.NewImageFromFile("assets/textures/mammoth.png")
 	if err != nil {
 		log.Fatal(err)
 	}
