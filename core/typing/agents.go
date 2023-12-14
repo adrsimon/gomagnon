@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"strconv"
+	"time"
 )
 
 type HumanStats struct {
@@ -88,10 +89,10 @@ const (
 
 const (
 	MaxWeightInv = 10.0
+	WeightFruit  = 0.1
+	WeightAnimal = 0.5
 	WeightRock   = 2.0
 	WeightWood   = 1.0
-	WeightAnimal = 0.5
-	WeightFruit  = 0.1
 )
 
 type Inventory struct {
@@ -141,7 +142,6 @@ type Agent struct {
 
 	Opponent      *Agent
 	Fightcooldown int
-	IsInFight     bool
 
 	Behavior HumanActions
 }
@@ -449,21 +449,24 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 			h.Hut = res.Agent.Hut
 		}
 	case "FIGHT":
-		fmt.Println("Received request to fight")
 		if Randomizer.Intn(100) < 50 {
+			h.Opponent = res.Agent
 			res.commOut <- AgentComm{Agent: h, Action: "OKFIGHT", commOut: h.AgentCommIn}
 			res2 := <-h.AgentCommIn
 			if res2.Action == "YOUWIN" {
-				fmt.Println("I won hehe")
+				fmt.Println("Assaily won hehe :D")
+				h.Opponent = nil
+				h.Fightcooldown = 300
+				h.ComOut = agentToManager{AgentID: h.ID, Action: "transfer-inventory", Pos: h.Position, commOut: make(chan managerToAgent)}
 			} else {
-				fmt.Println("I lost :(")
+				h.ComOut = agentToManager{AgentID: h.ID, Action: "die", Pos: h.Position, commOut: make(chan managerToAgent)}
+				h.Board.AgentManager.messIn <- h.ComOut
+				fmt.Println("Assailed lost :(")
 			}
 		} else {
 			res.commOut <- AgentComm{Agent: h, Action: "NOFIGHT", commOut: h.AgentCommIn}
 		}
-
 	}
-
 }
 
 func (h *Agent) IsDead() bool {
@@ -481,6 +484,7 @@ func (h *Agent) CloseUpdate() {
 		h.Body.Hungriness += 0.2
 		h.Body.Thirstiness += 0.4
 		h.Body.Tiredness += 0.4
+		h.Fightcooldown -= 1
 	}
 	if h.Body.Age > 10 {
 		h.Behavior = &HumanBehavior{H: h}
@@ -496,7 +500,7 @@ func (h *Agent) UpdateAgent() {
 	case res := <-h.AgentCommIn:
 		h.AnswerAgents(res)
 		h.Terminated = true
-	default:
+	case <-time.After(2 * time.Millisecond):
 		h.Terminated = true
 	}
 	h.CloseUpdate()

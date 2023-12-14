@@ -2,10 +2,11 @@ package simulation
 
 import (
 	"fmt"
+	"image/color"
+
 	"github.com/adrsimon/gomagnon/core/typing"
 	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/widget"
-	"image/color"
 )
 
 const (
@@ -59,7 +60,7 @@ func NewSimulation() Simulation {
 
 	simu.Board.AgentManager.Start()
 
-	for i := 0; i < 15; i++ {
+	for i := 0; i < 20; i++ {
 		x, y := -1, -1
 		for x == -1 && y == -1 {
 			x = typing.Randomizer.Intn(simu.Board.XMax)
@@ -94,6 +95,8 @@ func NewSimulation() Simulation {
 			AgentCommIn:    make(chan typing.AgentComm),
 			Clan:           nil,
 			Procreate:      typing.Procreate{Partner: nil, Timer: 100},
+			Opponent:       nil,
+			Fightcooldown:  200 + typing.Randomizer.Intn(200),
 		}
 		simu.Board.AgentManager.Agents = append(simu.Board.AgentManager.Agents, ag)
 		ag.Behavior = &typing.HumanBehavior{H: ag}

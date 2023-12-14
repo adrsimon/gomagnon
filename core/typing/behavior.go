@@ -374,8 +374,7 @@ func (hb *HumanBehavior) Act() {
 					select {
 					case res := <-hb.H.AgentCommIn:
 						if res.Action == "OKFIGHT" {
-							fmt.Println("Agent", hb.H.ID, "se bat contre Agent", hb.H.Opponent.ID)
-							fmt.Println("Position agent1", hb.H.Position.Position, "Position agent2", hb.H.Opponent.Position.Position)
+							fmt.Println("Agent", hb.H.ID, "fighting against", hb.H.Opponent.ID)
 							StrengthOpp := hb.H.Opponent.Stats.Strength
 							StrengthAg := hb.H.Stats.Strength
 							ThrowRandom := Randomizer.Float64()
@@ -385,7 +384,9 @@ func (hb *HumanBehavior) Act() {
 							if ThrowRandom < ProbaVictoireAgt1 {
 								fmt.Println("message youlose sent to agent", hb.H.Opponent.ID)
 								hb.H.Opponent.AgentCommIn <- AgentComm{Agent: hb.H, Action: "YOULOSE", commOut: hb.H.AgentCommIn}
-
+								hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "transfer-inventory", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
+								hb.H.Opponent = nil
+								hb.H.Fightcooldown = 300
 							} else {
 								fmt.Println("message youwin sent to agent", hb.H.Opponent.ID)
 								hb.H.Opponent.AgentCommIn <- AgentComm{Agent: hb.H, Action: "YOUWIN", commOut: hb.H.AgentCommIn}
@@ -393,9 +394,9 @@ func (hb *HumanBehavior) Act() {
 								hb.H.Board.AgentManager.messIn <- hb.H.ComOut
 							}
 						} else {
-							fmt.Println("l'agent fuit le combat")
+							fmt.Println("assailled fled fight")
 							hb.H.Opponent = nil
-							hb.H.Fightcooldown = 100
+							hb.H.Fightcooldown = 300
 						}
 					case <-time.After(100 * time.Millisecond):
 					}

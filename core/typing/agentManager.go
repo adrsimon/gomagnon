@@ -168,7 +168,6 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		}
 		if agent.Opponent != nil {
 			agent.Opponent.Opponent = nil
-			agent.Opponent.IsInFight = false
 		}
 		if agent.Clan != nil {
 			if len(agent.Clan.members) <= 0 {
@@ -263,6 +262,27 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		} else {
 			fmt.Println("\033[35mVote rejected in clan\033[0m", ag.Clan.ID)
 		}
+	case "transfer-inventory":
+		weights := map[ResourceType]float64{
+			FRUIT:  WeightFruit,
+			ANIMAL: WeightAnimal,
+			ROCK:   WeightRock,
+			WOOD:   WeightWood,
+		}
+		_, ag := agMan.GetAgent(request.AgentID)
+		opp := ag.Opponent
+		for res, val := range opp.Inventory.Object {
+			for i := 0; i < val; i++ {
+				if ag.Inventory.Weight+weights[res] < MaxWeightInv {
+					ag.Inventory.Object[res]++
+					ag.Inventory.Weight += weights[res]
+					ag.Opponent.Inventory.Object[res]--
+				}
+			}
+			opp.Inventory.Weight = 0
+		}
+		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
+		fmt.Println("\033[94mAgent\033[0m", request.AgentID, "\033[94mtook inventory from agent\033[0m", opp.ID)
 	}
 }
 
