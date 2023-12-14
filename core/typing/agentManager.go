@@ -260,7 +260,7 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		if result {
 			fmt.Println("\033[33mNew agent admitted in clan\033[0m", ag.Clan.ID, "\033[33m. Looking for an agent to include in the clan\033[0m")
 		} else {
-			fmt.Println("\033[35mVote rejected in clan\033[0m", ag.Clan.ID)
+			fmt.Println("Vote rejected in clan", ag.Clan.ID)
 		}
 	case "transfer-inventory":
 		weights := map[ResourceType]float64{
@@ -281,8 +281,10 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 			}
 			opp.Inventory.Weight = 0
 		}
+		ag.Opponent = nil
+		ag.Fightcooldown = 300
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
-		fmt.Println("\033[94mAgent\033[0m", request.AgentID, "\033[94mtook inventory from agent\033[0m", opp.ID)
+		fmt.Println("Agent\033[0m", request.AgentID, "\033[94mtook inventory from agent", opp.ID)
 	}
 }
 

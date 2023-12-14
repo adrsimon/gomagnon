@@ -365,12 +365,9 @@ func (hb *HumanBehavior) Act() {
 		}
 	case FIGHT:
 		if hb.H.Opponent != nil {
-			fmt.Println(hb.H.Opponent.Terminated)
 			if !hb.H.Opponent.Terminated {
-				fmt.Println("sending msg soon...")
 				select {
 				case hb.H.Opponent.AgentCommIn <- AgentComm{Agent: hb.H, Action: "FIGHT", commOut: hb.H.AgentCommIn}:
-					fmt.Println("sent msg...")
 					select {
 					case res := <-hb.H.AgentCommIn:
 						if res.Action == "OKFIGHT" {
@@ -382,13 +379,12 @@ func (hb *HumanBehavior) Act() {
 							ProbaVictoireAgt1 := 1 / (1 + math.Pow(2, DifForce/10))
 
 							if ThrowRandom < ProbaVictoireAgt1 {
-								fmt.Println("message youlose sent to agent", hb.H.Opponent.ID)
-								hb.H.Opponent.AgentCommIn <- AgentComm{Agent: hb.H, Action: "YOULOSE", commOut: hb.H.AgentCommIn}
 								hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "transfer-inventory", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
+								hb.H.Opponent.AgentCommIn <- AgentComm{Agent: hb.H, Action: "YOULOSE", commOut: hb.H.AgentCommIn}
+								hb.H.Board.AgentManager.messIn <- hb.H.ComOut
 								hb.H.Opponent = nil
 								hb.H.Fightcooldown = 300
 							} else {
-								fmt.Println("message youwin sent to agent", hb.H.Opponent.ID)
 								hb.H.Opponent.AgentCommIn <- AgentComm{Agent: hb.H, Action: "YOUWIN", commOut: hb.H.AgentCommIn}
 								hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "die", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
 								hb.H.Board.AgentManager.messIn <- hb.H.ComOut
