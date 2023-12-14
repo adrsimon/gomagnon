@@ -402,19 +402,6 @@ func (hb *HumanBehavior) Act() {
 				}
 			}
 		}
-		// // declenchement bagare : comparer leur force
-		// SociabilityOpp := hb.H.Opponent.Stats.Sociability
-		// SociabilityAg := hb.H.Stats.Sociability
-		// if float64(SociabilityOpp) > 1.25*float64(SociabilityAg) {
-		// 	//l'opposant gagne et l'agent h fuit
-		// 	hb.H.StackAction = append(hb.H.StackAction, MOVE)
-		// 	fmt.Println("Agent", hb.H.Opponent.ID, " fuit de", hb.H.ID)
-		// 	fmt.Println("Position agent1", hb.H.Position.Position, "Position agent2", hb.H.Opponent.Position.Position)
-		// 	hb.H.IsInFight = false
-		// } else {
-
-		// }
-		//4 looting
 
 	default:
 		fmt.Println("Should not be here")

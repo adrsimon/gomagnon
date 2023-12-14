@@ -263,19 +263,13 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 			fmt.Println("Vote rejected in clan", ag.Clan.ID)
 		}
 	case "transfer-inventory":
-		weights := map[ResourceType]float64{
-			FRUIT:  WeightFruit,
-			ANIMAL: WeightAnimal,
-			ROCK:   WeightRock,
-			WOOD:   WeightWood,
-		}
 		_, ag := agMan.GetAgent(request.AgentID)
 		opp := ag.Opponent
 		for res, val := range opp.Inventory.Object {
 			for i := 0; i < val; i++ {
-				if ag.Inventory.Weight+weights[res] < MaxWeightInv {
+				if ag.Inventory.Weight+Weights[res] < MaxWeightInv {
 					ag.Inventory.Object[res]++
-					ag.Inventory.Weight += weights[res]
+					ag.Inventory.Weight += Weights[res]
 					ag.Opponent.Inventory.Object[res]--
 				}
 			}

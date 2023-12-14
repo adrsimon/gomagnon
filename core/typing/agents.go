@@ -87,14 +87,6 @@ const (
 	SAPIENS
 )
 
-const (
-	MaxWeightInv = 10.0
-	WeightFruit  = 0.1
-	WeightAnimal = 0.5
-	WeightRock   = 2.0
-	WeightWood   = 1.0
-)
-
 type Inventory struct {
 	Object map[ResourceType]int
 	Weight float64
@@ -449,8 +441,10 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 			h.Hut = res.Agent.Hut
 		}
 	case "FIGHT":
-		if Randomizer.Intn(100) < 50 {
-			h.Opponent = res.Agent
+		h.Opponent = res.Agent
+		SociabilityOpp := h.Opponent.Stats.Sociability
+		SociabilityAg := h.Stats.Sociability
+		if 1.25*float64(SociabilityOpp) > float64(SociabilityAg) {
 			res.commOut <- AgentComm{Agent: h, Action: "OKFIGHT", commOut: h.AgentCommIn}
 			res2 := <-h.AgentCommIn
 			if res2.Action == "YOUWIN" {
@@ -466,6 +460,7 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 			}
 		} else {
 			res.commOut <- AgentComm{Agent: h, Action: "NOFIGHT", commOut: h.AgentCommIn}
+			h.Opponent = nil
 		}
 	}
 }
