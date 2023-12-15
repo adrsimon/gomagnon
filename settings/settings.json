@@ -4,11 +4,12 @@
   },
   "world": {
     "seed": 2021,
+    "type": "continent",
     "resources": {
       "maxAnimals": 30,
       "maxFruits": 30,
-      "maxWoods": 30,
-      "maxRocks": 30
+      "maxWoods": 20,
+      "maxRocks": 20
     },
     "size": {
       "x": 46,

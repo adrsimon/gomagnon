@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-var imgSapiens, imgNeanderthal, imgBabySapiens, imgBabyNeanderthal, imgPlains, imgForest, imgWater, imgCaves, imgCow, imgMushroom, imgRock, imgWood *ebiten.Image
+var imgSapiens, imgNeanderthal, imgBabySapiens, imgBabyNeanderthal, imgPlains, imgForest, imgWater, imgDeepWater, imgCaves, imgCow, imgMushroom, imgRock, imgWood *ebiten.Image
 
 func init() {
 	sapiens, _, err := ebitenutil.NewImageFromFile("assets/textures/sapiens.png")
@@ -50,6 +50,12 @@ func init() {
 		log.Fatal(err)
 	}
 	imgWater = water
+
+	deepwater, _, err := ebitenutil.NewImageFromFile("assets/textures/deepwater.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	imgDeepWater = deepwater
 
 	caves, _, err := ebitenutil.NewImageFromFile("assets/textures/caves.png")
 	if err != nil {

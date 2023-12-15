@@ -21,6 +21,8 @@ func DrawHex(background *ebiten.Image, xCenter float32, yCenter float32, biome t
 		hexImage = imgWater
 	case typing.CAVE:
 		hexImage = imgCaves
+	case typing.DEEP_WATER:
+		hexImage = imgDeepWater
 	}
 
 	op := &ebiten.DrawImageOptions{}

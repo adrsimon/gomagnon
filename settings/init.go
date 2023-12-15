@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
 )
 
 var Setting Settings
@@ -22,6 +23,7 @@ type Size struct {
 
 type World struct {
 	Seed      int64     `json:"seed"`
+	Type      string    `json:"type"`
 	Resources Resources `json:"resources"`
 	Size      Size      `json:"size"`
 }
@@ -47,5 +49,9 @@ func init() {
 		fmt.Println("Error unmarshalling settings.json:", err)
 		os.Exit(1)
 	}
-	fmt.Println(Setting)
+
+	if !slices.Contains([]string{"island", "continent"}, Setting.World.Type) {
+		fmt.Println("Error: unknown world type, should be one of island|continent")
+		os.Exit(1)
+	}
 }

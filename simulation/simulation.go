@@ -63,7 +63,11 @@ func NewSimulation() Simulation {
 	simu.zoomFactor = 1
 
 	simu.Board.Generate()
-	simu.Board.GenerateBiomes()
+	if settings.Setting.World.Type == "island" {
+		simu.Board.GenerateIslandBiomes()
+	} else if settings.Setting.World.Type == "continent" {
+		simu.Board.GenerateContinentBiomes()
+	}
 	simu.Board.GenerateResources()
 
 	simu.Board.AgentManager.Start()
@@ -73,7 +77,7 @@ func NewSimulation() Simulation {
 		for x == -1 && y == -1 {
 			x = typing.Randomizer.Intn(simu.Board.XMax)
 			y = typing.Randomizer.Intn(simu.Board.YMax)
-			if simu.Board.Cases[x][y].Biome == typing.WATER {
+			if simu.Board.Cases[x][y].Biome == typing.DEEP_WATER {
 				x, y = -1, -1
 			}
 		}

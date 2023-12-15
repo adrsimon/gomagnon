@@ -2,6 +2,7 @@ package typing
 
 import (
 	"github.com/aquilax/go-perlin"
+	"math"
 )
 
 type Board struct {
@@ -70,7 +71,7 @@ func (b *Board) GetNeighbours(hex *Hexagone) []*Hexagone {
 	return neighbours
 }
 
-func (b *Board) GenerateBiomes() {
+func (b *Board) GenerateContinentBiomes() {
 	elevation := perlin.NewPerlin(1, 2.7, 3, Seed)
 	moisture := perlin.NewPerlin(0.8, 2, 5, Seed)
 
@@ -92,8 +93,59 @@ func (b *Board) GenerateBiomes() {
 			switch {
 			case elevationValue > 0.3:
 				biomeType = CAVE
+			case elevationValue < -0.7:
+				biomeType = DEEP_WATER
 			case elevationValue < -0.4:
 				biomeType = WATER
+			default:
+				if moistureValue > 0 {
+					biomeType = FOREST
+				} else {
+					biomeType = PLAINS
+				}
+			}
+
+			hex.Biome = biomeType
+		}
+	}
+}
+
+func (b *Board) GenerateIslandBiomes() {
+	elevation := perlin.NewPerlin(1, 2.7, 3, Seed)
+	moisture := perlin.NewPerlin(0.8, 2, 5, Seed)
+
+	for i, line := range b.Cases {
+		for j := range line {
+			hex := b.Cases[i][j]
+			if hex == nil {
+				continue
+			}
+
+			var biomeType BiomeType
+
+			x := float64(i) / float64(b.XMax)
+			y := float64(j) / float64(b.YMax)
+
+			elevationValue := elevation.Noise2D(x, y)
+			moistureValue := moisture.Noise2D(x, y)
+
+			lerp := func(a, b, t float64) float64 {
+				return a + t*(b-a)
+			}
+
+			d := func(x, y float64) float64 {
+				return math.Sqrt(math.Pow(x-0.5, 2) + math.Pow(y-0.5, 2))
+			}
+
+			elevationValue = math.Abs(lerp(elevationValue, d(x, y), 0.75))
+
+			switch {
+			case elevationValue > 0.4:
+				biomeType = DEEP_WATER
+			case elevationValue > 0.3:
+				biomeType = WATER
+			case elevationValue < 0.05:
+				biomeType = CAVE
 			default:
 				if moistureValue > 0 {
 					biomeType = FOREST

@@ -7,4 +7,5 @@ const (
 	FOREST
 	WATER
 	CAVE
+	DEEP_WATER
 )
