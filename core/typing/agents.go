@@ -42,6 +42,7 @@ const (
 	VOTE
 	GETRESULT
 	LOOK4SOMEONE
+	ASK4PROCREATE
 	PROCREATE
 	FIGHT
 )
@@ -74,6 +75,8 @@ func (h *Agent) actionToStr() (action string) {
 		action = "LOOK4SOMEONE"
 	case PROCREATE:
 		action = "PROCREATE"
+	case ASK4PROCREATE:
+		action = "ASK4PROCREATE"
 	case FIGHT:
 		action = "FIGHT"
 	}
@@ -94,8 +97,9 @@ type Inventory struct {
 
 type Procreate struct {
 	Partner *Agent
+	Valide  bool
 	Timer   int
-	isHome  bool
+	IsHome  bool
 }
 
 type Agent struct {
@@ -388,11 +392,10 @@ func (h *Agent) Perceive() {
 		}
 	}
 	h.Neighbours = listHumans
-	if h.Hut != nil && h.Procreate.Partner == nil && h.Procreate.Timer <= 0 && h.Clan != nil && h.PerformAction() {
+	if h.Hut != nil && h.Procreate.Partner == nil && !h.Procreate.Valide && h.Procreate.Timer <= 0 && h.Clan != nil && h.PerformAction() {
 		for _, neighbour := range h.Neighbours {
 			if neighbour.Clan == h.Clan && neighbour.Procreate.Partner == nil && neighbour.Hut == h.Hut && neighbour.Body.Age > 10 && h.Type != neighbour.Type && h.PerformAction() {
 				h.Procreate.Partner = neighbour
-				neighbour.Procreate.Partner = h
 				break
 			}
 		}
@@ -401,7 +404,7 @@ func (h *Agent) Perceive() {
 		h.ComOut = agentToManager{AgentID: h.ID, Action: "isHome", Pos: h.Position, commOut: make(chan managerToAgent)}
 		h.Board.AgentManager.messIn <- h.ComOut
 		h.ComIn = <-h.ComOut.commOut
-		h.Procreate.isHome = h.ComIn.Valid
+		h.Procreate.IsHome = h.ComIn.Valid
 	}
 
 	if h.Hut != nil && h.Position.Position == h.Hut.Position.Position {
@@ -445,6 +448,16 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 				}
 			}
 			h.Hut = res.Agent.Hut
+		}
+	case "PROCREATE":
+		fmt.Println("received request to procreate from ", res.Agent.ID, " for agent ", h.ID)
+		if Randomizer.Intn(2) > -1 {
+			fmt.Println("accepted request to procreate from ", res.Agent.ID, " for agent ", h.ID)
+			res.commOut <- AgentComm{Agent: h, Action: "ACCEPTPROCREATE", commOut: h.AgentCommIn}
+			h.Procreate.Valide = true
+			h.Procreate.Partner = res.Agent
+		} else {
+			res.commOut <- AgentComm{Agent: h, Action: "REFUSEPROCREATE", commOut: h.AgentCommIn}
 		}
 	case "FIGHT":
 		h.Opponent = res.Agent

@@ -106,7 +106,7 @@ func NewSimulation() Simulation {
 			AgentRelation:  make(map[string]string),
 			AgentCommIn:    make(chan typing.AgentComm),
 			Clan:           nil,
-			Procreate:      typing.Procreate{Partner: nil, Timer: 100},
+			Procreate:      typing.Procreate{Partner: nil, Timer: 100, IsHome: false, Valide: false},
 			Opponent:       nil,
 			Fightcooldown:  50 + typing.Randomizer.Intn(200),
 		}
