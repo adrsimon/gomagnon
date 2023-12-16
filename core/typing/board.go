@@ -21,6 +21,7 @@ func NewBoard(xmax, ymax int, hexSize float32, maxResources map[ResourceType]int
 	}
 	agents := make([]*Agent, 0)
 	resMan := NewResourceManager(maxResources)
+
 	return &Board{
 		Cases:           cases,
 		XMax:            xmax,
@@ -106,6 +107,7 @@ func (b *Board) GenerateContinentBiomes() {
 			}
 
 			hex.Biome = biomeType
+			b.ResourceManager.FreeSpots[biomeType] = append(b.ResourceManager.FreeSpots[biomeType], Point2D{X: i, Y: j})
 		}
 	}
 }
@@ -163,47 +165,18 @@ func (b *Board) GenerateResources() {
 	for i := 0; i < int(NUM_RESOURCE_TYPES); i++ {
 		res := ResourceType(i)
 		for b.ResourceManager.CurrentQuantities[res] < b.ResourceManager.maxQuantities[res] {
-			hex := b.Cases[Randomizer.Intn(b.XMax)][Randomizer.Intn(b.YMax)]
-			if hex.Resource != NONE {
-				continue
+			biome := ResourceToBiome[res][Randomizer.Intn(len(ResourceToBiome[res]))]
+			if len(b.ResourceManager.FreeSpots[biome]) == 0 {
+				break
 			}
-			if (res == ANIMAL && hex.Biome != PLAINS) || b.CountResourcesAround(hex, ANIMAL, FRUIT, 5) > 2 {
-				continue
-			} else if res == FRUIT && hex.Biome != FOREST || b.CountResourcesAround(hex, ANIMAL, FRUIT, 5) > 2 {
-				continue
-			} else if res == WOOD && hex.Biome != FOREST {
-				continue
-			} else if res == ROCK && hex.Biome != CAVE {
-				continue
-			}
+			spot := Randomizer.Intn(len(b.ResourceManager.FreeSpots[biome]))
+			hexPos := b.ResourceManager.FreeSpots[biome][spot]
+			hex := b.Cases[hexPos.X][hexPos.Y]
 			hex.Resource = res
 			b.ResourceManager.CurrentQuantities[res]++
+			b.ResourceManager.FreeSpots[biome] = append(b.ResourceManager.FreeSpots[biome][:spot], b.ResourceManager.FreeSpots[biome][spot+1:]...)
 		}
 	}
-}
-
-func (b *Board) CountResourcesAround(hex *Hexagone, resType1, resType2 ResourceType, acuity int) int {
-	neighbours := b.GetNeighbours(hex)
-	visited := make(map[*Hexagone]bool)
-	count := 0
-
-	for i := 0; i < acuity; i++ {
-		newNeighbours := []*Hexagone{}
-		for _, neighbour := range neighbours {
-			if neighbour == nil || visited[neighbour] {
-				continue
-			}
-			visited[neighbour] = true
-
-			if neighbour.Resource == resType1 || neighbour.Resource == resType2 {
-				count++
-			}
-
-			newNeighbours = append(newNeighbours, b.GetNeighbours(neighbour)...)
-		}
-		neighbours = newNeighbours
-	}
-	return count
 }
 
 func (b *Board) isValidHex(hex *Hexagone) bool {

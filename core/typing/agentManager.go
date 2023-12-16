@@ -95,7 +95,9 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 			request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
 		default:
 			res := (*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Resource
+			biome := (*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Biome
 			(*agMan.Map)[request.Pos.Position.X][request.Pos.Position.Y].Resource = NONE
+			(*agMan.ResourceManager).FreeSpots[biome] = append((*agMan.ResourceManager).FreeSpots[biome], Point2D{request.Pos.Position.X, request.Pos.Position.Y})
 			respawnCD := Randomizer.Intn(20) + 10
 			agMan.ResourceManager.RespawnCDs = append(agMan.ResourceManager.RespawnCDs, CoolDown{Current: respawnCD, Resource: res})
 			request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: res}
