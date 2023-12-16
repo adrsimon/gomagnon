@@ -450,9 +450,7 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 			h.Hut = res.Agent.Hut
 		}
 	case "PROCREATE":
-		fmt.Println("received request to procreate from ", res.Agent.ID, " for agent ", h.ID)
 		if Randomizer.Intn(2) > -1 {
-			fmt.Println("accepted request to procreate from ", res.Agent.ID, " for agent ", h.ID)
 			res.commOut <- AgentComm{Agent: h, Action: "ACCEPTPROCREATE", commOut: h.AgentCommIn}
 			h.Procreate.Valide = true
 			h.Procreate.Partner = res.Agent

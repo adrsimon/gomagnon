@@ -59,7 +59,6 @@ func (hb *HumanBehavior) DeliberateAtHut() {
 
 	/** If he is home with partner he should procreate **/
 	if hb.H.Procreate.Partner != nil && hb.H.Procreate.Valide && hb.H.Procreate.IsHome {
-		fmt.Println("chosing to procreate", hb.H.ID)
 		hb.H.Action = PROCREATE
 		return
 	}
@@ -360,7 +359,6 @@ func (hb *HumanBehavior) Act() {
 		}
 	case ASK4PROCREATE:
 		if !hb.H.Procreate.Partner.Terminated {
-			fmt.Println("send ask4procreate to", hb.H.Procreate.Partner.ID, "from", hb.H.ID)
 			select {
 			case hb.H.Procreate.Partner.AgentCommIn <- AgentComm{Agent: hb.H, Action: "PROCREATE", commOut: hb.H.AgentCommIn}:
 				select {
@@ -372,13 +370,13 @@ func (hb *HumanBehavior) Act() {
 						hb.H.Procreate.Timer = 100
 					}
 				case <-time.After(20 * time.Millisecond):
+					hb.H.Procreate.Partner = nil
 				}
 			case <-time.After(20 * time.Millisecond):
-
+				hb.H.Procreate.Partner = nil
 			}
 		}
 	case PROCREATE:
-		fmt.Println("procreate", hb.H.ID, "with", hb.H.Procreate.Partner.ID, "from", hb.H.ID, "in", hb.H.Hut.Position.Position, hb.H.Position.Position)
 		if hb.H.Type == 'F' {
 			hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "procreate", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
 			hb.H.Board.AgentManager.messIn <- hb.H.ComOut
@@ -389,7 +387,7 @@ func (hb *HumanBehavior) Act() {
 		}
 		hb.H.Procreate.Valide = false
 		hb.H.Procreate.Partner = nil
-		hb.H.Procreate.Timer = 100
+		hb.H.Procreate.Timer = 300
 	case FIGHT:
 		if hb.H.Opponent != nil {
 			if !hb.H.Opponent.Terminated {
