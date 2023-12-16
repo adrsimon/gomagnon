@@ -42,7 +42,7 @@ func MakeChild(parent1 *Agent, parent2 *Agent, count int) *Agent {
 	var newHuman *Agent
 	newHuman = nil
 	if parent1.Race == NEANDERTHAL {
-		failChance = Randomizer.Intn(2)
+		failChance = Randomizer.Intn(1)
 	} else {
 		failChance = Randomizer.Intn(1)
 	}
@@ -123,7 +123,7 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		}
 	case "isAlive":
 		_, ag := agMan.GetAgent(request.AgentID)
-		if ag != nil {
+		if ag != nil && ag.Procreate.Partner != nil {
 			_, part := agMan.GetAgent(ag.Procreate.Partner.ID)
 			if part != nil {
 				request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}

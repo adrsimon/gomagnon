@@ -48,7 +48,8 @@ func (hb *HumanBehavior) DeliberateAtHut() {
 		return
 	}
 	/** If he is home and not partner he should wait **/
-	if hb.H.Procreate.Partner != nil && !hb.H.Procreate.IsHome {
+	if hb.H.Procreate.Partner != nil && hb.H.Procreate.Valide && !hb.H.Procreate.IsHome {
+		fmt.Println(hb.H.ID, "waiting partner")
 		hb.H.Action = SLEEP
 		return
 	}
@@ -150,6 +151,11 @@ func (hb *HumanBehavior) Deliberate() {
 		}
 	}
 
+	if hb.H.Procreate.Partner != nil && hb.H.Procreate.Valide && hb.H.Position != hb.H.Hut.Position {
+		hb.H.Action = MOVE
+		return
+	}
+
 	if hb.H.Hut != nil {
 		if len(hb.H.Neighbours) > 0 && hb.H.Clan == nil {
 			hb.H.Action = CREATECLAN
@@ -158,12 +164,8 @@ func (hb *HumanBehavior) Deliberate() {
 	}
 
 	if hb.H.Procreate.Partner != nil && !hb.H.Procreate.Valide {
+		fmt.Println("Agent", hb.H.ID, "is asking", hb.H.Procreate.Partner.ID, "to procreate")
 		hb.H.Action = ASK4PROCREATE
-		return
-	}
-
-	if hb.H.Procreate.Partner != nil && hb.H.Procreate.Valide && hb.H.Position != hb.H.Hut.Position {
-		hb.H.Action = MOVE
 		return
 	}
 
@@ -188,10 +190,13 @@ func (hb *HumanBehavior) Act() {
 			var targetHexagon *Hexagone
 
 			if hb.H.Hut != nil {
-				if hb.H.Body.Tiredness > 80 || (hb.H.Procreate.Partner != nil && hb.H.Procreate.Valide) {
+				if hb.H.Body.Tiredness > 80 {
 					targetHexagon = hb.H.Hut.Position
 				} else if hb.H.Body.Hungriness > 80 && (slices.Contains(hb.H.HutInventoryVision, ANIMAL) || slices.Contains(hb.H.HutInventoryVision, FRUIT)) {
 					targetHexagon = hb.H.Hut.Position
+				} else if hb.H.Procreate.Partner != nil && hb.H.Procreate.Valide {
+					targetHexagon = hb.H.Hut.Position
+					fmt.Println("Going hut to procreate", hb.H.ID, hb.H.Position.Position, hb.H.Hut.Position.Position)
 				}
 			}
 
@@ -359,6 +364,7 @@ func (hb *HumanBehavior) Act() {
 		}
 	case ASK4PROCREATE:
 		if !hb.H.Procreate.Partner.Terminated {
+			fmt.Println("Agent", hb.H.ID, "is asking", hb.H.Procreate.Partner.ID, "to procreate at", hb.H.Position.Position, hb.H.Hut.Position.Position, "Timer:", hb.H.Procreate.Timer)
 			select {
 			case hb.H.Procreate.Partner.AgentCommIn <- AgentComm{Agent: hb.H, Action: "PROCREATE", commOut: hb.H.AgentCommIn}:
 				select {
@@ -377,7 +383,8 @@ func (hb *HumanBehavior) Act() {
 			}
 		}
 	case PROCREATE:
-		if hb.H.Type == 'F' {
+		fmt.Println("Agent", hb.H.ID, "is procreating with", hb.H.Procreate.Partner.ID, "at", hb.H.Position.Position, hb.H.Procreate.Partner.Position.Position, hb.H.Hut.Position.Position, "Timer:", hb.H.Procreate.Timer)
+		if hb.H.Type == 'F' || hb.H.Type == 'M' {
 			hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "procreate", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
 			hb.H.Board.AgentManager.messIn <- hb.H.ComOut
 			hb.H.ComIn = <-hb.H.ComOut.commOut
@@ -523,7 +530,7 @@ func (hb *ChildBehavior) Act() {
 			var targetHexagon *Hexagone
 
 			if hb.C.Hut != nil {
-				if hb.C.Body.Tiredness > 80 || hb.C.Procreate.Partner != nil {
+				if hb.C.Body.Tiredness > 80 {
 					targetHexagon = hb.C.Hut.Position
 				} else if hb.C.Body.Hungriness > 80 && (slices.Contains(hb.C.HutInventoryVision, ANIMAL) || slices.Contains(hb.C.HutInventoryVision, FRUIT)) {
 					targetHexagon = hb.C.Hut.Position
