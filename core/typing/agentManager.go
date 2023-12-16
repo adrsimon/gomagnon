@@ -121,6 +121,18 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		} else {
 			request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
 		}
+	case "isAlive":
+		_, ag := agMan.GetAgent(request.AgentID)
+		if ag != nil {
+			_, part := agMan.GetAgent(ag.Procreate.Partner.ID)
+			if part != nil {
+				request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
+			} else {
+				request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
+			}
+		} else {
+			request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
+		}
 	case "procreate":
 		_, ag := agMan.GetAgent(request.AgentID)
 		if len(ag.Clan.members) > 15 {

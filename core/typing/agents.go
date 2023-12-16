@@ -391,6 +391,17 @@ func (h *Agent) Perceive() {
 			}
 		}
 	}
+	if h.Procreate.Partner != nil {
+		h.ComOut = agentToManager{AgentID: h.ID, Action: "isAlive", Pos: h.Position, commOut: make(chan managerToAgent)}
+		h.Board.AgentManager.messIn <- h.ComOut
+		h.ComIn = <-h.ComOut.commOut
+		if !h.ComIn.Valid {
+			h.Procreate.Partner = nil
+			h.Procreate.Valide = false
+			h.Procreate.Timer = 75
+		}
+	}
+
 	h.Neighbours = listHumans
 	if h.Hut != nil && h.Procreate.Partner == nil && !h.Procreate.Valide && h.Procreate.Timer <= 0 && h.Clan != nil && h.PerformAction() {
 		for _, neighbour := range h.Neighbours {
