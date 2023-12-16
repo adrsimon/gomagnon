@@ -100,6 +100,12 @@ func (hb *HumanBehavior) DeliberateAtHut() {
 		hb.H.Action = STARTHUNT
 		return
 	}
+	if hb.H.Clan != nil && hb.H.NbPart != nil && hb.H.NbPart == hb.H.Clan.chief.NbPart && *hb.H.NbPart == 2 {
+		// fmt.Println("membre va chasser")
+		hb.H.Action = STARTHUNT
+		hb.H.LastMammothSeen = hb.H.Clan.chief.LastMammothSeen
+		return
+	}
 }
 
 func (hb *HumanBehavior) Deliberate() {
@@ -166,13 +172,6 @@ func (hb *HumanBehavior) Deliberate() {
 
 	if hb.H.Clan != nil && hb.H.Clan.chief == hb.H && hb.H.Looking4Someone {
 		hb.H.Action = LOOK4SOMEONE
-		return
-	}
-
-	if hb.H.Clan != nil && hb.H.NbPart != nil && hb.H.NbPart == hb.H.Clan.chief.NbPart && *hb.H.NbPart == 2 {
-		// fmt.Println("membre va chasser")
-		hb.H.Action = STARTHUNT
-		hb.H.LastMammothSeen = hb.H.Clan.chief.LastMammothSeen
 		return
 	}
 
@@ -385,7 +384,7 @@ func (hb *HumanBehavior) Act() {
 				hb.H.StackAction = append(hb.H.StackAction, MOVE)
 				break
 			}
-		} else if len(hb.H.Neighbours) == 1 && hb.H.Clan == hb.H.Neighbours[0].Clan {
+		} else if len(hb.H.Neighbours) == 1 && hb.H.Clan == hb.H.Neighbours[0].Clan && hb.H.Neighbours[0].Body.Age > 10 && hb.H.AgentRelation[hb.H.Neighbours[0].ID] != "MATEHUNT" {
 			bestH = hb.H.Neighbours[0]
 		} else {
 			hb.H.StackAction = append(hb.H.StackAction, MOVE)
@@ -459,7 +458,7 @@ func (hb *HumanBehavior) Act() {
 				hb.H.Board.AgentManager.messIn <- hb.H.ComOut
 			}
 		} else {
-			if hb.H.Clan.chief != nil && (hb.H.Clan.chief.Action == WAITINGFORFRIENDS && !hb.H.Clan.chief.Terminated) {
+			if hb.H.Clan.chief != nil && (hb.H.Clan.chief.Action == HUNT && !hb.H.Clan.chief.Terminated) {
 				fmt.Println(hb.H.ID, "membre sur case pret a chassé")
 				res := <-hb.H.AgentCommIn
 				hb.H.AnswerAgents(res)
@@ -471,7 +470,7 @@ func (hb *HumanBehavior) Act() {
 		}
 	case WAITINGFORFRIENDS:
 		hb.H.Body.Tiredness -= 1
-		if hb.H.Target != nil && hb.H.Target.Resource == MAMMOTH && hb.H.NbPart != nil && *hb.H.NbPart == 2 && !hb.H.PartnerWithMe() {
+		if hb.H.Target != nil && hb.H.Target.Resource == MAMMOTH && hb.H.NbPart != nil && *hb.H.NbPart == 2 && hb.H.PartnerWithMe() {
 			hb.H.StackAction = append(hb.H.StackAction, HUNT)
 		} else {
 			hb.H.StackAction = append(hb.H.StackAction, WAITINGFORFRIENDS)

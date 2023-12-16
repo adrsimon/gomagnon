@@ -170,6 +170,12 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		if agent.Clan != nil {
 			if agent.NbPart != nil && *agent.NbPart > 0 {
 				*agent.NbPart--
+				for _, ag := range agMan.Agents {
+					val, ok := ag.AgentRelation[agent.ID]
+					if ok && val == "MATEHUNT" {
+						delete(ag.AgentRelation, agent.ID)
+					}
+				}
 			}
 			if len(agent.Clan.members) <= 0 {
 				fmt.Println("\033[31mClan\033[0m", agent.Clan.ID, "\033[31m has no more members.\033[0m")
