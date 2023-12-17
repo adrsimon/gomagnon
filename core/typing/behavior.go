@@ -49,7 +49,6 @@ func (hb *HumanBehavior) DeliberateAtHut() {
 	}
 	/** If he is home and not partner he should wait **/
 	if hb.H.Procreate.Partner != nil && hb.H.Procreate.Valide && !hb.H.Procreate.IsHome {
-		fmt.Println(hb.H.ID, "waiting partner")
 		hb.H.Action = SLEEP
 		return
 	}
@@ -164,7 +163,6 @@ func (hb *HumanBehavior) Deliberate() {
 	}
 
 	if hb.H.Procreate.Partner != nil && !hb.H.Procreate.Valide {
-		fmt.Println("Agent", hb.H.ID, "is asking", hb.H.Procreate.Partner.ID, "to procreate")
 		hb.H.Action = ASK4PROCREATE
 		return
 	}
@@ -196,7 +194,7 @@ func (hb *HumanBehavior) Act() {
 					targetHexagon = hb.H.Hut.Position
 				} else if hb.H.Procreate.Partner != nil && hb.H.Procreate.Valide {
 					targetHexagon = hb.H.Hut.Position
-					fmt.Println("Going hut to procreate", hb.H.ID, hb.H.Position.Position, hb.H.Hut.Position.Position)
+					//fmt.Println("Going hut to procreate", hb.H.ID, hb.H.Position.Position, hb.H.Hut.Position.Position)
 				}
 			}
 
@@ -364,7 +362,6 @@ func (hb *HumanBehavior) Act() {
 		}
 	case ASK4PROCREATE:
 		if !hb.H.Procreate.Partner.Terminated {
-			fmt.Println("Agent", hb.H.ID, "is asking", hb.H.Procreate.Partner.ID, "to procreate at", hb.H.Position.Position, hb.H.Hut.Position.Position, "Timer:", hb.H.Procreate.Timer)
 			select {
 			case hb.H.Procreate.Partner.AgentCommIn <- AgentComm{Agent: hb.H, Action: "PROCREATE", commOut: hb.H.AgentCommIn}:
 				select {
@@ -383,8 +380,7 @@ func (hb *HumanBehavior) Act() {
 			}
 		}
 	case PROCREATE:
-		fmt.Println("Agent", hb.H.ID, "is procreating with", hb.H.Procreate.Partner.ID, "at", hb.H.Position.Position, hb.H.Procreate.Partner.Position.Position, hb.H.Hut.Position.Position, "Timer:", hb.H.Procreate.Timer)
-		if hb.H.Type == 'F' || hb.H.Type == 'M' {
+		if hb.H.Type == 'F' {
 			hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "procreate", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
 			hb.H.Board.AgentManager.messIn <- hb.H.ComOut
 			hb.H.ComIn = <-hb.H.ComOut.commOut
@@ -395,6 +391,7 @@ func (hb *HumanBehavior) Act() {
 		hb.H.Procreate.Valide = false
 		hb.H.Procreate.Partner = nil
 		hb.H.Procreate.Timer = 300
+		hb.H.StackAction = append(hb.H.StackAction, MOVE)
 	case FIGHT:
 		if hb.H.Opponent != nil {
 			if !hb.H.Opponent.Terminated {

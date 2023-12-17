@@ -144,7 +144,7 @@ type Agent struct {
 
 func (h *Agent) PerformAction() bool {
 	randomNumber := Randomizer.Intn(101)
-	return randomNumber <= h.Stats.Sociability
+	return randomNumber <= h.Stats.Sociability+100
 }
 
 type AgentComm struct {
@@ -396,7 +396,6 @@ func (h *Agent) Perceive() {
 		h.Board.AgentManager.messIn <- h.ComOut
 		h.ComIn = <-h.ComOut.commOut
 		if !h.ComIn.Valid {
-			fmt.Println("Partner is dead")
 			h.Procreate.Partner = nil
 			h.Procreate.Valide = false
 			h.Procreate.Timer = 75
@@ -404,11 +403,10 @@ func (h *Agent) Perceive() {
 	}
 
 	h.Neighbours = listHumans
-	if h.Hut != nil && h.Procreate.Partner == nil && !h.Procreate.Valide && h.Procreate.Timer <= 0 && h.Clan != nil /*&& h.PerformAction()*/ {
+	if h.Hut != nil && h.Procreate.Partner == nil && !h.Procreate.Valide && h.Procreate.Timer <= 0 && h.Clan != nil && h.PerformAction() && len(h.Clan.members) < 15 {
 		for _, neighbour := range h.Neighbours {
-			if neighbour.Clan == h.Clan && neighbour.Procreate.Partner == nil && neighbour.Hut == h.Hut && neighbour.Body.Age > 10 /*&& h.Type != neighbour.Type && h.PerformAction()*/ {
+			if neighbour.Clan == h.Clan && neighbour.Procreate.Partner == nil && neighbour.Hut == h.Hut && neighbour.Body.Age > 10 && h.Type != neighbour.Type {
 				h.Procreate.Partner = neighbour
-				fmt.Println("Agent ", h.ID, " found partner ", neighbour.ID)
 				break
 			}
 		}
@@ -463,8 +461,7 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 			h.Hut = res.Agent.Hut
 		}
 	case "PROCREATE":
-		if Randomizer.Intn(2) > -1 {
-			fmt.Println("Agent ", h.ID, " accept")
+		if math.Abs(float64(res.Agent.Stats.Sociability-h.Stats.Sociability)) < 50 {
 			res.commOut <- AgentComm{Agent: h, Action: "ACCEPTPROCREATE", commOut: h.AgentCommIn}
 			h.Procreate.Valide = true
 			h.Procreate.Partner = res.Agent
@@ -508,8 +505,8 @@ func (h *Agent) CloseUpdate() {
 		h.UpdateState(NONE)
 		h.Body.Age += 0.05
 		h.Procreate.Timer -= 1
-		h.Body.Hungriness += 0.01
-		h.Body.Thirstiness += 0.01
+		h.Body.Hungriness += 0.2
+		h.Body.Thirstiness += 0.2
 		h.Body.Tiredness += 0.4
 		h.Fightcooldown -= 1
 	}
