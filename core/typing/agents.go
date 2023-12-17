@@ -405,7 +405,7 @@ func (h *Agent) Perceive() {
 	h.Neighbours = listHumans
 	if h.Hut != nil && h.Procreate.Partner == nil && !h.Procreate.Valide && h.Procreate.Timer <= 0 && h.Clan != nil && h.PerformAction() && len(h.Clan.members) < 15 {
 		for _, neighbour := range h.Neighbours {
-			if neighbour.Clan == h.Clan && neighbour.Procreate.Partner == nil && neighbour.Hut == h.Hut && neighbour.Body.Age > 10 && h.Type != neighbour.Type {
+			if neighbour.Clan == h.Clan && neighbour.Procreate.Partner == nil && neighbour.Hut == h.Hut && neighbour.Body.Age > 10 && h.Type != neighbour.Type && h.Procreate.Timer <= 150 {
 				h.Procreate.Partner = neighbour
 				break
 			}
