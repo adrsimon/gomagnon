@@ -73,6 +73,7 @@ func NewSimulation() Simulation {
 	simu.Board.AgentManager.Start()
 
 	for i := 0; i < settings.Setting.Agents.InitialNumber; i++ {
+
 		x, y := -1, -1
 		for x == -1 && y == -1 {
 			x = typing.Randomizer.Intn(simu.Board.XMax)
@@ -81,38 +82,73 @@ func NewSimulation() Simulation {
 				x, y = -1, -1
 			}
 		}
+		if i < settings.Setting.Agents.InitialNumber/2 {
+			ag := &typing.Agent{
+				ID:   fmt.Sprintf("ag-%d", i),
+				Type: []rune{'M', 'F'}[typing.Randomizer.Intn(2)],
+				Race: typing.Race(0),
+				Body: typing.HumanBody{
+					Thirstiness: float64(int(typing.Randomizer.NormFloat64()*10 + 50)),
+					Hungriness:  float64(int(typing.Randomizer.NormFloat64()*10 + 50)),
+					Age:         float64(25),
+				},
+				Stats: typing.HumanStats{
+					Strength:    int(typing.Randomizer.NormFloat64()*10 + 60),
+					Sociability: int(typing.Randomizer.NormFloat64()*10 + 40),
+					Acuity:      typing.Randomizer.Intn(2) + 4,
+				},
+				Position:       simu.Board.Cases[x][y],
+				Target:         nil,
+				MovingToTarget: false,
+				CurrentPath:    nil,
+				Hut:            nil,
+				Board:          simu.Board,
+				Inventory:      typing.Inventory{Weight: 0, Object: make(map[typing.ResourceType]int)},
+				AgentRelation:  make(map[string]string),
+				AgentCommIn:    make(chan typing.AgentComm),
+				Clan:           nil,
+				Procreate:      typing.Procreate{Partner: nil, Timer: 100},
+				Opponent:       nil,
+				Fightcooldown:  50 + typing.Randomizer.Intn(200),
+			}
 
-		ag := &typing.Agent{
-			ID:   fmt.Sprintf("ag-%d", i),
-			Type: []rune{'M', 'F'}[typing.Randomizer.Intn(2)],
-			Race: typing.Race(typing.Randomizer.Intn(2)),
-			Body: typing.HumanBody{
-				Thirstiness: 50,
-				Hungriness:  50,
-				Age:         float64(25),
-			},
-			Stats: typing.HumanStats{
-				Strength:    50,
-				Sociability: 50,
-				Acuity:      typing.Randomizer.Intn(2) + 4,
-			},
-			Position:       simu.Board.Cases[x][y],
-			Target:         nil,
-			MovingToTarget: false,
-			CurrentPath:    nil,
-			Hut:            nil,
-			Board:          simu.Board,
-			Inventory:      typing.Inventory{Weight: 0, Object: make(map[typing.ResourceType]int)},
-			AgentRelation:  make(map[string]string),
-			AgentCommIn:    make(chan typing.AgentComm),
-			Clan:           nil,
-			Procreate:      typing.Procreate{Partner: nil, Timer: 100},
-			Opponent:       nil,
-			Fightcooldown:  50 + typing.Randomizer.Intn(200),
+			simu.Board.AgentManager.Agents = append(simu.Board.AgentManager.Agents, ag)
+			ag.Behavior = &typing.HumanBehavior{H: ag}
+			simu.Board.AgentManager.Count++
+		} else {
+			ag := &typing.Agent{
+				ID:   fmt.Sprintf("ag-%d", i),
+				Type: []rune{'M', 'F'}[typing.Randomizer.Intn(2)],
+				Race: typing.Race(1),
+				Body: typing.HumanBody{
+					Thirstiness: float64(int(typing.Randomizer.NormFloat64()*10 + 50)),
+					Hungriness:  float64(int(typing.Randomizer.NormFloat64()*10 + 50)),
+					Age:         float64(25),
+				},
+				Stats: typing.HumanStats{
+					Strength:    int(typing.Randomizer.NormFloat64()*10 + 40),
+					Sociability: int(typing.Randomizer.NormFloat64()*10 + 60),
+					Acuity:      typing.Randomizer.Intn(2) + 4,
+				},
+				Position:       simu.Board.Cases[x][y],
+				Target:         nil,
+				MovingToTarget: false,
+				CurrentPath:    nil,
+				Hut:            nil,
+				Board:          simu.Board,
+				Inventory:      typing.Inventory{Weight: 0, Object: make(map[typing.ResourceType]int)},
+				AgentRelation:  make(map[string]string),
+				AgentCommIn:    make(chan typing.AgentComm),
+				Clan:           nil,
+				Procreate:      typing.Procreate{Partner: nil, Timer: 100},
+				Opponent:       nil,
+				Fightcooldown:  50 + typing.Randomizer.Intn(200),
+			}
+
+			simu.Board.AgentManager.Agents = append(simu.Board.AgentManager.Agents, ag)
+			ag.Behavior = &typing.HumanBehavior{H: ag}
+			simu.Board.AgentManager.Count++
 		}
-		simu.Board.AgentManager.Agents = append(simu.Board.AgentManager.Agents, ag)
-		ag.Behavior = &typing.HumanBehavior{H: ag}
-		simu.Board.AgentManager.Count++
 	}
 
 	simu.Debug = false
