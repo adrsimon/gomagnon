@@ -354,7 +354,7 @@ func (h *Agent) Perceive() {
 	cases = append(cases, h.Board.GetNeighbours(h.Position)...)
 	for _, v := range cases {
 		for _, p := range v.Agents {
-			if p != h {
+			if p != h && p.Body.Age >= 10 {
 				_, ok := h.AgentRelation[p.ID]
 				listHumans = append(listHumans, p)
 				if !ok {
