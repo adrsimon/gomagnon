@@ -158,7 +158,7 @@ type Clan struct {
 const (
 	AnimalFoodValueMultiplier = 5.0
 	FruitFoodValueMultiplier  = 3.0
-	WaterValueMultiplier      = 2.0
+	WaterValueMultiplier      = 4.0
 	DistanceMultiplier        = 0.2
 )
 
@@ -237,10 +237,10 @@ func (h *Agent) BestMatchHuman() *Agent {
 	}
 
 	bestMatch := h.Neighbours[0]
-	highestScore := calculateScore(h, bestMatch)
+	highestScore := h.calculateScore(bestMatch)
 
 	for _, neighbour := range h.Neighbours[1:] {
-		score := calculateScore(h, neighbour)
+		score := h.calculateScore(neighbour)
 		if score > highestScore {
 			bestMatch = neighbour
 			highestScore = score
@@ -250,15 +250,18 @@ func (h *Agent) BestMatchHuman() *Agent {
 	return bestMatch
 }
 
-func calculateScore(h, n *Agent) float64 {
+func (h *Agent) calculateScore(n *Agent) float64 {
 	var score float64
-	score += float64(n.Stats.Sociability / 100)
-	score += float64(n.Stats.Strength / 100)
-	if n.Type != h.Type && h.Clan != nil && len(h.Clan.members) < 4 {
+	score += float64(n.Stats.Sociability / 10)
+	score += float64(n.Stats.Strength / 10)
+	if n.Type != h.Type {
+		score += 4
+	}
+	if h.Clan != nil && len(h.Clan.members) < 4 {
 		score += 2
 	}
 	if n.Race == h.Race {
-		score += 1
+		score += 4
 	}
 	return score
 }
@@ -360,7 +363,7 @@ func (h *Agent) Perceive() {
 					h.Opponent = nil
 					if h.Clan != nil && p.Clan == h.Clan {
 						// Même clan
-						if Randomizer.Intn(100) < 50 {
+						if Randomizer.Intn(100) < 10 {
 							relation = "Enemy"
 							//fmt.Println("New enemy from same clan for agent: ", h.ID)
 							if h.Opponent == nil {
@@ -412,7 +415,8 @@ func (h *Agent) Perceive() {
 func (h *Agent) AnswerAgents(res AgentComm) {
 	switch res.Action {
 	case "CREATECLAN":
-		if h.Clan != nil {
+		score := h.calculateScore(res.Agent)
+		if h.Clan != nil && score < 12 {
 			res.commOut <- AgentComm{Agent: h, Action: "REFUSECLAN", commOut: h.AgentCommIn}
 		} else {
 			res.commOut <- AgentComm{Agent: h, Action: "ACCEPTCLAN", commOut: h.AgentCommIn}
@@ -502,7 +506,7 @@ func (h *Agent) UpdateAgent() {
 	case res := <-h.AgentCommIn:
 		h.AnswerAgents(res)
 		h.Terminated = true
-	case <-time.After(2 * time.Millisecond):
+	case <-time.After(5 * time.Millisecond):
 		h.Terminated = true
 	}
 	h.CloseUpdate()

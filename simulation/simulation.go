@@ -95,7 +95,7 @@ func NewSimulation() Simulation {
 				Stats: typing.HumanStats{
 					Strength:    int(typing.Randomizer.NormFloat64()*10 + 60),
 					Sociability: int(typing.Randomizer.NormFloat64()*10 + 40),
-					Acuity:      typing.Randomizer.Intn(2) + 4,
+					Acuity:      typing.Randomizer.Intn(3) + 4,
 				},
 				Position:       simu.Board.Cases[x][y],
 				Target:         nil,

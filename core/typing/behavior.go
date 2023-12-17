@@ -128,12 +128,6 @@ func (hb *HumanBehavior) Deliberate() {
 		}
 	}
 
-	if hb.H.Opponent != nil && hb.H.Body.Thirstiness < 80 && hb.H.Body.Hungriness < 80 && hb.H.Body.Tiredness < 80 && hb.H.Fightcooldown == 0 {
-		hb.H.Action = FIGHT
-		hb.H.Fightcooldown = 100
-		return
-	}
-
 	/** In Hut actions **/
 	if hb.H.Hut != nil && hb.H.Position.Position == hb.H.Hut.Position.Position {
 		hb.DeliberateAtHut()
@@ -164,6 +158,12 @@ func (hb *HumanBehavior) Deliberate() {
 
 	if hb.H.Clan != nil && hb.H.Clan.chief == hb.H && hb.H.Looking4Someone {
 		hb.H.Action = LOOK4SOMEONE
+		return
+	}
+
+	if hb.H.Opponent != nil && hb.H.Body.Thirstiness < 80 && hb.H.Body.Hungriness < 80 && hb.H.Body.Tiredness < 80 && hb.H.Fightcooldown == 0 {
+		hb.H.Action = FIGHT
+		hb.H.Fightcooldown = 100
 		return
 	}
 
