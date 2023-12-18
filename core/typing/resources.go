@@ -26,6 +26,13 @@ var Weights = map[ResourceType]float64{
 	WOOD:   WeightWood,
 }
 
+var ResourceToBiome = map[ResourceType][]BiomeType{
+	FRUIT:  {FOREST},
+	ANIMAL: {PLAINS},
+	ROCK:   {CAVE},
+	WOOD:   {FOREST},
+}
+
 type CoolDown struct {
 	Current  int
 	Resource ResourceType
@@ -35,6 +42,7 @@ type ResourceManager struct {
 	maxQuantities     map[ResourceType]int
 	CurrentQuantities map[ResourceType]int
 	RespawnCDs        []CoolDown
+	FreeSpots         map[BiomeType][]Point2D
 }
 
 func NewResourceManager(maxs map[ResourceType]int) *ResourceManager {
@@ -42,5 +50,6 @@ func NewResourceManager(maxs map[ResourceType]int) *ResourceManager {
 		maxQuantities:     maxs,
 		CurrentQuantities: make(map[ResourceType]int),
 		RespawnCDs:        make([]CoolDown, 0),
+		FreeSpots:         make(map[BiomeType][]Point2D),
 	}
 }

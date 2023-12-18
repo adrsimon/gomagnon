@@ -54,7 +54,7 @@ func NewSimulation() Simulation {
 	simu.Board = typing.NewBoard(
 		settings.Setting.World.Size.X,
 		settings.Setting.World.Size.Y,
-		float32(hexSize),
+		hexSize,
 		resourcesMap,
 	)
 
