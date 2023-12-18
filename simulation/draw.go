@@ -2,6 +2,7 @@ package simulation
 
 import (
 	"github.com/adrsimon/gomagnon/core/drawing"
+	"github.com/adrsimon/gomagnon/core/typing"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -27,7 +28,7 @@ func (s *Simulation) Draw(screen *ebiten.Image) {
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyR) {
-		s.zoomFactor = 0.6
+		s.zoomFactor = 1
 		s.cameraX = 0
 		s.cameraY = 0
 		s.SelectedAgent = ""
@@ -51,7 +52,15 @@ func (s *Simulation) Draw(screen *ebiten.Image) {
 
 	screen.Fill(s.backgroundColor)
 	drawing.DrawBoard(screen, s.Board, s.cameraX, s.cameraY, s.zoomFactor)
-	drawing.DrawAgents(screen, s.Board.AgentManager.Agents, s.cameraX, s.cameraY, s.zoomFactor, s.Board.HexSize, s.Debug)
+	if s.SelectedAgent != "" {
+		_, ag := s.Board.AgentManager.GetAgent(s.SelectedAgent)
+		if ag != nil {
+			drawing.DrawAgents(screen, []*typing.Agent{ag}, s.cameraX, s.cameraY, s.zoomFactor, s.Board.HexSize, s.Debug)
+			drawing.DrawAgents(screen, s.Board.AgentManager.Agents, s.cameraX, s.cameraY, s.zoomFactor, s.Board.HexSize, false)
+		}
+	} else {
+		drawing.DrawAgents(screen, s.Board.AgentManager.Agents, s.cameraX, s.cameraY, s.zoomFactor, s.Board.HexSize, s.Debug)
+	}
 
 	if !ebiten.IsKeyPressed(ebiten.KeySpace) {
 		s.UI.Draw(screen)
