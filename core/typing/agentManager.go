@@ -286,6 +286,44 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		}
 		ag.Opponent = nil
 		ag.Fightcooldown = 300
+	case "leave-clan":
+		_, agent := agMan.GetAgent(request.AgentID)
+		if agent.Clan != nil {
+			if len(agent.Clan.members) <= 0 {
+				fmt.Println("\033[31mClan\033[0m", agent.Clan.ID, "\033[31m has no more members.\033[0m")
+				agent.Clan = nil
+				agent.Hut.Owner = nil
+				(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = nil
+			} else if agent.Clan.chief.ID == agent.ID {
+				newChief := agent.Clan.members[Randomizer.Intn(len(agent.Clan.members))]
+				if agent.Hut.Owner.ID == agent.ID {
+					agent.Hut.Owner = newChief
+					(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = newChief
+				}
+				agent.Clan.chief = newChief
+				for i, v := range agent.Clan.members {
+					if v.ID == newChief.ID {
+						agent.Clan.members = append(agent.Clan.members[:i], agent.Clan.members[i+1:]...)
+					}
+				}
+				fmt.Println("\033[35mClan\033[0m", agent.Clan.ID, "\033[35mchief left, new chief is\033[0m", newChief.ID)
+			} else {
+				for i, v := range agent.Clan.members {
+					if v.ID == agent.ID {
+						agent.Clan.members = append(agent.Clan.members[:i], agent.Clan.members[i+1:]...)
+					}
+				}
+			}
+		} else {
+			if agent.Hut != nil {
+				agent.Hut.Owner = nil
+				(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = nil
+			}
+		}
+		fmt.Println("\033[35mAgent\033[0m", agent.ID, "\033[35mleft his clan\033[0m", agent.Clan.ID)
+		agent.Clan = nil
+		agent.Hut = nil
+		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 	}
 }
 

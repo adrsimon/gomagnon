@@ -512,8 +512,13 @@ func (h *Agent) CloseUpdate() {
 		h.Procreate.Timer -= 1
 		h.Fightcooldown -= 1
 	}
-	if h.Body.Age > 10 {
+	if int(h.Body.Age) == 10 {
 		h.Behavior = &HumanBehavior{H: h}
+		if Randomizer.Intn(40) < 1 && h.Clan != nil {
+			h.ComOut = agentToManager{AgentID: h.ID, Action: "leave-clan", Pos: h.Position, commOut: make(chan managerToAgent)}
+			h.Board.AgentManager.messIn <- h.ComOut
+			h.ComIn = <-h.ComOut.commOut
+		}
 	}
 }
 
