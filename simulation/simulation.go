@@ -82,6 +82,14 @@ func NewSimulation() Simulation {
 			}
 		}
 
+		mapVision := make([][]typing.Hexagone, simu.Board.XMax)
+		for i := range mapVision {
+			mapVision[i] = make([]typing.Hexagone, simu.Board.YMax)
+			for j := range mapVision[i] {
+				mapVision[i][j] = typing.Hexagone{Position: &typing.Point2D{X: -1, Y: -1}}
+			}
+		}
+
 		ag := &typing.Agent{
 			ID:   fmt.Sprintf("ag-%d", i),
 			Type: []rune{'M', 'F'}[typing.Randomizer.Intn(2)],
@@ -96,6 +104,7 @@ func NewSimulation() Simulation {
 				Sociability: 50,
 				Acuity:      typing.Randomizer.Intn(2) + 4,
 			},
+			MapVision:      mapVision,
 			Position:       simu.Board.Cases[x][y],
 			Target:         nil,
 			MovingToTarget: false,

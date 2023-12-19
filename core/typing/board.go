@@ -45,7 +45,7 @@ func (b *Board) Generate() {
 	}
 }
 
-func (b *Board) GetNeighbours(hex *Hexagone) []*Hexagone {
+func (b *Board) GetNeighbours(hex Hexagone) []*Hexagone {
 	neighbours := make([]*Hexagone, 0)
 
 	addIfExist := func(x, y int) {

@@ -8,9 +8,13 @@ import (
 	"golang.org/x/image/colornames"
 )
 
-func DrawBoard(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFactor float32) {
+func DrawBoard(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFactor float32, agent *typing.Agent) {
 	for _, line := range b.Cases {
 		for _, hex := range line {
+			if agent != nil && agent.MapVision[hex.Position.X][hex.Position.Y].Position.X == -1 && agent.MapVision[hex.Position.X][hex.Position.Y].Position.Y == -1 {
+				continue
+			}
+
 			hexSize := b.HexSize
 			x := hex.Position.X
 			y := hex.Position.Y
@@ -61,15 +65,15 @@ func DrawAgents(screen *ebiten.Image, agents []*typing.Agent, cameraX, cameraY, 
 
 		if agent.CurrentPath != nil && len(agent.CurrentPath) > 0 {
 			x0, y0 := GetHexGraphicalCenter(agent.Position.Position.X, agent.Position.Position.Y, hexSize)
-			x1, y1 := GetHexGraphicalCenter(agent.CurrentPath[len(agent.CurrentPath)-1].Position.X, agent.CurrentPath[len(agent.CurrentPath)-1].Position.Y, hexSize)
+			x1, y1 := GetHexGraphicalCenter(agent.CurrentPath[len(agent.CurrentPath)-1].X, agent.CurrentPath[len(agent.CurrentPath)-1].Y, hexSize)
 			x0, y0 = x0-cameraX, y0-cameraY
 			x1, y1 = x1-cameraX, y1-cameraY
 			x0, y0 = x0*zoomFactor, y0*zoomFactor
 			x1, y1 = x1*zoomFactor, y1*zoomFactor
 			DrawAgentPath(screen, x0, y0, x1, y1, col)
 			for i := 0; i < len(agent.CurrentPath)-1; i++ {
-				xa, ya := GetHexGraphicalCenter(agent.CurrentPath[i].Position.X, agent.CurrentPath[i].Position.Y, hexSize)
-				xb, yb := GetHexGraphicalCenter(agent.CurrentPath[i+1].Position.X, agent.CurrentPath[i+1].Position.Y, hexSize)
+				xa, ya := GetHexGraphicalCenter(agent.CurrentPath[i].X, agent.CurrentPath[i].Y, hexSize)
+				xb, yb := GetHexGraphicalCenter(agent.CurrentPath[i+1].X, agent.CurrentPath[i+1].Y, hexSize)
 				xa, ya = xa-cameraX, ya-cameraY
 				xb, yb = xb-cameraX, yb-cameraY
 				xa, ya = xa*zoomFactor, ya*zoomFactor

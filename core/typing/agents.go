@@ -105,13 +105,15 @@ type Agent struct {
 	Body  HumanBody
 	Stats HumanStats
 
+	Board     *Board
+	MapVision [][]Hexagone
+
 	Inventory Inventory
 
 	Position       *Hexagone
 	Target         *Hexagone
 	MovingToTarget bool
-	CurrentPath    []*Hexagone
-	Board          *Board
+	CurrentPath    []*Point2D
 
 	Hut                *Hut
 	HutInventoryVision []ResourceType
@@ -162,12 +164,12 @@ const (
 	DistanceMultiplier        = 0.2
 )
 
-func NewHuman(id string, Type rune, Race Race, body HumanBody, stats HumanStats, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Hexagone, board *Board, comOut agentToManager, comIn managerToAgent, hut *Hut, inventory Inventory, agentRelation map[string]string) *Agent {
-	return &Agent{ID: id, Type: Type, Race: Race, Body: body, Stats: stats, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn, Hut: hut, Inventory: inventory, AgentRelation: agentRelation}
+func NewHuman(id string, Type rune, Race Race, body HumanBody, stats HumanStats, mapVision [][]Hexagone, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Point2D, board *Board, comOut agentToManager, comIn managerToAgent, hut *Hut, inventory Inventory, agentRelation map[string]string) *Agent {
+	return &Agent{ID: id, Type: Type, Race: Race, Body: body, Stats: stats, MapVision: mapVision, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn, Hut: hut, Inventory: inventory, AgentRelation: agentRelation}
 }
 
 func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
-	var score = 0.0
+	var score = 1.0
 	threshold := 85.0
 
 	dist := distance(*h.Position, *hex)
@@ -221,7 +223,7 @@ func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
 		}
 	}
 
-	for _, nb := range h.Board.GetNeighbours(hex) {
+	for _, nb := range h.Board.GetNeighbours(*hex) {
 		if nb.Biome == WATER && h.Body.Thirstiness > threshold {
 			score += (float64(h.Body.Thirstiness)/100)*WaterValueMultiplier + 0.5
 			break
@@ -263,7 +265,7 @@ func calculateScore(h, n *Agent) float64 {
 	return score
 }
 
-func (h *Agent) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
+func (h *Agent) BestMove(surroundingHexagons []*Hexagone) *Hexagone {
 	if h.Body.Tiredness > 70 && h.Hut != nil {
 		return h.Hut.Position
 	}
@@ -278,7 +280,7 @@ func (h *Agent) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
 		}
 	}
 
-	if indexBest != -1 && surroundingHexagons[indexBest] != h.Position {
+	if indexBest != -1 && surroundingHexagons[indexBest].Position.X != h.Position.Position.X && surroundingHexagons[indexBest].Position.Y != h.Position.Position.Y {
 		return surroundingHexagons[indexBest]
 	}
 
@@ -333,7 +335,7 @@ func (h *Agent) UpdateState(resource ResourceType) {
 		h.Inventory.Weight += WeightWood
 	}
 
-	neighbours := h.Board.GetNeighbours(h.Position)
+	neighbours := h.Board.GetNeighbours(*h.Position)
 	for _, neighbour := range neighbours {
 		if neighbour == nil {
 			continue
@@ -348,7 +350,7 @@ func (h *Agent) Perceive() {
 	listHumans := make([]*Agent, 0)
 	cases := make([]*Hexagone, 0)
 	cases = append(cases, h.Position)
-	cases = append(cases, h.Board.GetNeighbours(h.Position)...)
+	cases = append(cases, h.Board.GetNeighbours(*h.Position)...)
 	for _, v := range cases {
 		for _, p := range v.Agents {
 			if p != h {
@@ -406,6 +408,13 @@ func (h *Agent) Perceive() {
 
 	if h.Hut != nil && h.Position.Position == h.Hut.Position.Position {
 		h.HutInventoryVision = h.Hut.Inventory
+	}
+
+	for _, v := range h.Behavior.GetNeighboursWithinAcuity() {
+		if v == nil {
+			continue
+		}
+		h.MapVision[v.Position.X][v.Position.Y] = *v
 	}
 }
 
@@ -515,7 +524,7 @@ func (h *Agent) ToString() string {
 		race = "Sapiens"
 	}
 
-	str := h.ID + " - " + race + "\n\n"
+	str := h.ID + " - " + race + " X : " + h.Position.ToString() + "\n\n"
 	str += "--- Body ---" + "\n"
 	str += "Age : " + fmt.Sprintf("%d", int(h.Body.Age)) + "\n"
 	str += "Hungriness : " + fmt.Sprintf("%d", int(h.Body.Hungriness)) + "\n"

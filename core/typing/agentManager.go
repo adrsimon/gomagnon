@@ -37,7 +37,7 @@ func (agMan *AgentManager) startResources() {
 	}
 }
 
-func MakeChild(parent1 *Agent, parent2 *Agent, count int) *Agent {
+func (agMan *AgentManager) MakeChild(parent1 *Agent, parent2 *Agent, count int) *Agent {
 	var failChance int
 	var newHuman *Agent
 	newHuman = nil
@@ -47,6 +47,13 @@ func MakeChild(parent1 *Agent, parent2 *Agent, count int) *Agent {
 		failChance = Randomizer.Intn(1)
 	}
 	if failChance == 0 {
+		mapVision := make([][]Hexagone, len(*agMan.Map))
+		for i := range mapVision {
+			mapVision[i] = make([]Hexagone, len((*agMan.Map)[i]))
+			for j := range mapVision[i] {
+				mapVision[i][j] = Hexagone{Position: &Point2D{X: -1, Y: -1}}
+			}
+		}
 		newHuman = &Agent{
 			ID:   fmt.Sprintf("ag-%d", count),
 			Type: []rune{'M', 'F'}[Randomizer.Intn(2)],
@@ -61,6 +68,7 @@ func MakeChild(parent1 *Agent, parent2 *Agent, count int) *Agent {
 				Sociability: (parent1.Stats.Sociability + parent2.Stats.Sociability) / 2,
 				Acuity:      (parent1.Stats.Acuity + parent2.Stats.Acuity) / 2,
 			},
+			MapVision:      mapVision,
 			Position:       parent1.Position,
 			Target:         nil,
 			MovingToTarget: false,
@@ -139,7 +147,7 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		if ag.Procreate.Partner != nil {
 			numChildren := Randomizer.Intn(2) + 1
 			for i := 0; i < numChildren; i++ {
-				newHuman := MakeChild(ag, ag.Procreate.Partner, agMan.Count)
+				newHuman := agMan.MakeChild(ag, ag.Procreate.Partner, agMan.Count)
 				if newHuman != nil {
 					agMan.Count++
 					agMan.Agents = append(agMan.Agents, newHuman)

@@ -51,14 +51,15 @@ func (s *Simulation) Draw(screen *ebiten.Image) {
 	}
 
 	screen.Fill(s.backgroundColor)
-	drawing.DrawBoard(screen, s.Board, s.cameraX, s.cameraY, s.zoomFactor)
 	if s.SelectedAgent != "" {
 		_, ag := s.Board.AgentManager.GetAgent(s.SelectedAgent)
 		if ag != nil {
+			drawing.DrawBoard(screen, s.Board, s.cameraX, s.cameraY, s.zoomFactor, ag)
 			drawing.DrawAgents(screen, []*typing.Agent{ag}, s.cameraX, s.cameraY, s.zoomFactor, s.Board.HexSize, s.Debug)
 			drawing.DrawAgents(screen, s.Board.AgentManager.Agents, s.cameraX, s.cameraY, s.zoomFactor, s.Board.HexSize, false)
 		}
 	} else {
+		drawing.DrawBoard(screen, s.Board, s.cameraX, s.cameraY, s.zoomFactor, nil)
 		drawing.DrawAgents(screen, s.Board.AgentManager.Agents, s.cameraX, s.cameraY, s.zoomFactor, s.Board.HexSize, s.Debug)
 	}
 
