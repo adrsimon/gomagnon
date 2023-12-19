@@ -132,7 +132,7 @@ func NewSimulation() Simulation {
 				Body: typing.HumanBody{
 					Thirstiness: float64(int(typing.Randomizer.NormFloat64()*10 + 50)),
 					Hungriness:  float64(int(typing.Randomizer.NormFloat64()*10 + 50)),
-					Age:         float64(25),
+					Age:         float64(typing.Randomizer.Intn(10) + 15),
 				},
 				Stats: typing.HumanStats{
 					Strength:    int(typing.Randomizer.NormFloat64()*10 + 40),

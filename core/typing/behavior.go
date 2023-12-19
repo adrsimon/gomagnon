@@ -219,9 +219,6 @@ func (hb *HumanBehavior) Act() {
 					}
 				}
 				targetHexagon = hb.H.BestMove(memorizedHexes)
-				if targetHexagon.Position.X == hb.H.Position.Position.X && targetHexagon.Position.Y == hb.H.Position.Position.Y {
-					fmt.Println("bubgubgubug")
-				}
 			}
 
 			res := AStar(*hb.H, *targetHexagon)

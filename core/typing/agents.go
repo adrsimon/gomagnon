@@ -190,10 +190,8 @@ func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
 	case ANIMAL:
 		if h.Race == NEANDERTHAL {
 			score += AnimalFoodValueMultiplier + 0.5
-			score += AnimalFoodValueMultiplier + 0.5
 		}
 		if h.Race == SAPIENS {
-			score += AnimalFoodValueMultiplier + 1.0
 			score += AnimalFoodValueMultiplier + 1.0
 		}
 		if h.Body.Hungriness > threshold {
@@ -229,12 +227,11 @@ func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
 
 	for _, nb := range h.Board.GetNeighbours(*hex) {
 		if nb.Biome == WATER && h.Hut == nil && h.Inventory.Object[WOOD] >= Needs["hut"][WOOD] && h.Inventory.Object[ROCK] >= Needs["hut"][ROCK] {
-			fmt.Println("cherche de l'eau pr construire")
 			score += 100
 			break
 		}
 		if nb.Biome == WATER && h.Body.Thirstiness > threshold {
-			score += (float64(h.Body.Thirstiness)/100)*WaterValueMultiplier + 0.5
+			score += WaterValueMultiplier + 0.5
 			break
 		}
 	}
