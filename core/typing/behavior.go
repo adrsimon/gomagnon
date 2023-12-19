@@ -144,7 +144,6 @@ func (hb *HumanBehavior) Deliberate() {
 
 	/** General actions **/
 	if hb.H.Body.Thirstiness > 80 || hb.H.Body.Hungriness > 80 {
-		fmt.Println(hb.H.ID, "je move pour boire ou manger")
 		if !hb.H.MovingToTarget {
 			hb.H.Action = MOVE
 			return
@@ -152,7 +151,6 @@ func (hb *HumanBehavior) Deliberate() {
 	}
 
 	if hb.H.Procreate.Partner != nil && hb.H.Procreate.Valide && hb.H.Position != hb.H.Hut.Position {
-		fmt.Println(hb.H.ID, "je move pour procreate")
 		hb.H.Action = MOVE
 		return
 	}
@@ -181,7 +179,6 @@ func (hb *HumanBehavior) Deliberate() {
 	}
 
 	if !hb.H.MovingToTarget {
-		fmt.Println(hb.H.ID, "je move car je n'ai pas de but")
 		hb.H.Action = MOVE
 		return
 	}
@@ -235,7 +232,6 @@ func (hb *HumanBehavior) Act() {
 
 		/** Next move stacking **/
 		if hb.H.MovingToTarget && len(hb.H.CurrentPath) > 0 {
-			fmt.Println(hb.H.ID, "je continue mon chemin")
 			hb.H.StackAction = append(hb.H.StackAction, MOVE)
 		}
 
