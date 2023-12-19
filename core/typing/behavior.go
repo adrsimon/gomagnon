@@ -174,6 +174,12 @@ func (hb *HumanBehavior) Deliberate() {
 		return
 	}
 
+	if hb.H.Opponent != nil && hb.H.Body.Thirstiness < 80 && hb.H.Body.Hungriness < 80 && hb.H.Body.Tiredness < 80 && hb.H.Fightcooldown == 0 {
+		hb.H.Action = FIGHT
+		hb.H.Fightcooldown = 100
+		return
+	}
+
 	if !hb.H.MovingToTarget {
 		fmt.Println(hb.H.ID, "je move car je n'ai pas de but")
 		hb.H.Action = MOVE
