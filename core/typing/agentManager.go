@@ -112,10 +112,11 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		(*agMan.Map)[ag.Hut.Position.Position.X][ag.Hut.Position.Position.Y].Hut.Owner = nil
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 		fmt.Println("\033[33mAgent\033[0m", request.AgentID, "\033[33mleft his house and joined clan\033[0m", ag.Clan.ID)
-	case "isHome":
+	case "isAlive":
 		_, ag := agMan.GetAgent(request.AgentID)
-		if ag != nil {
-			if ag.Procreate.Partner != nil && ag.Procreate.Partner.Position.Position == ag.Hut.Position.Position {
+		if ag != nil && ag.Procreate.Partner != nil {
+			_, part := agMan.GetAgent(ag.Procreate.Partner.ID)
+			if part != nil {
 				request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 			} else {
 				request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
@@ -131,8 +132,6 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 				ag.Procreate.Partner.Procreate.Partner = nil
 				ag.Procreate.Partner.Procreate.Timer = 100
 			}
-			ag.Procreate.Partner = nil
-			ag.Procreate.Timer = 100
 			request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
 			return
 		}
