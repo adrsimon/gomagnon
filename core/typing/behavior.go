@@ -376,13 +376,15 @@ func (hb *HumanBehavior) Act() {
 						hb.H.Procreate.Valide = true
 					} else {
 						hb.H.Procreate.Partner = nil
-						hb.H.Procreate.Timer = 100
+						hb.H.Procreate.Timer = 300
 					}
 				case <-time.After(20 * time.Millisecond):
 					hb.H.Procreate.Partner = nil
+					hb.H.Procreate.Timer = 300
 				}
 			case <-time.After(20 * time.Millisecond):
 				hb.H.Procreate.Partner = nil
+				hb.H.Procreate.Timer = 300
 			}
 		}
 	case PROCREATE:
@@ -397,6 +399,7 @@ func (hb *HumanBehavior) Act() {
 		hb.H.Procreate.Valide = false
 		hb.H.Procreate.Partner = nil
 		hb.H.Procreate.Timer = 300
+		hb.H.Procreate.IsHome = false
 		hb.H.StackAction = append(hb.H.StackAction, MOVE)
 	case FIGHT:
 		if hb.H.Opponent != nil {

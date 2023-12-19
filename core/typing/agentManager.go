@@ -42,7 +42,7 @@ func MakeChild(parent1 *Agent, parent2 *Agent, count int) *Agent {
 	var newHuman *Agent
 	newHuman = nil
 	if parent1.Race == NEANDERTHAL {
-		failChance = Randomizer.Intn(1)
+		failChance = Randomizer.Intn(2)
 	} else {
 		failChance = Randomizer.Intn(1)
 	}
@@ -112,17 +112,6 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 		(*agMan.Map)[ag.Hut.Position.Position.X][ag.Hut.Position.Position.Y].Hut.Owner = nil
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
 		fmt.Println("\033[33mAgent\033[0m", request.AgentID, "\033[33mleft his house and joined clan\033[0m", ag.Clan.ID)
-	case "isHome":
-		_, ag := agMan.GetAgent(request.AgentID)
-		if ag != nil {
-			if ag.Procreate.Partner != nil && ag.Procreate.Partner.Position.Position == ag.Hut.Position.Position {
-				request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
-			} else {
-				request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
-			}
-		} else {
-			request.commOut <- managerToAgent{Valid: false, Map: *agMan.Map, Resource: NONE}
-		}
 	case "isAlive":
 		_, ag := agMan.GetAgent(request.AgentID)
 		if ag != nil && ag.Procreate.Partner != nil {

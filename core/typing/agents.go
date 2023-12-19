@@ -259,7 +259,7 @@ func (h *Agent) calculateScore(n *Agent) float64 {
 	score += float64(n.Stats.Sociability / 10)
 	score += float64(n.Stats.Strength / 10)
 	if n.Type != h.Type {
-		score += 4
+		score += 5
 	}
 	if h.Clan != nil && len(h.Clan.members) < 4 {
 		score += 2
@@ -362,14 +362,11 @@ func (h *Agent) Perceive() {
 				_, ok := h.AgentRelation[p.ID]
 				listHumans = append(listHumans, p)
 				if !ok {
-					//Choix ami ou ennemi + reinitialisation opponent
 					var relation string
 					h.Opponent = nil
 					if h.Clan != nil && p.Clan == h.Clan {
-						// Même clan
 						if Randomizer.Intn(100) < 10 {
 							relation = "Enemy"
-							//fmt.Println("New enemy from same clan for agent: ", h.ID)
 							if h.Opponent == nil {
 								h.Opponent = p
 							}
@@ -377,10 +374,8 @@ func (h *Agent) Perceive() {
 							relation = "Friend"
 						}
 					} else {
-						// autre clan
 						if Randomizer.Intn(100) < 50 {
 							relation = "Enemy"
-							//fmt.Println("New enemy from different clan for agent: ", h.ID)
 							if h.Opponent == nil {
 								h.Opponent = p
 							}
@@ -394,31 +389,23 @@ func (h *Agent) Perceive() {
 			}
 		}
 	}
+	h.Neighbours = listHumans
 	if h.Procreate.Partner != nil {
-		h.ComOut = agentToManager{AgentID: h.ID, Action: "isAlive", Pos: h.Position, commOut: make(chan managerToAgent)}
-		h.Board.AgentManager.messIn <- h.ComOut
-		h.ComIn = <-h.ComOut.commOut
-		if !h.ComIn.Valid {
-			h.Procreate.Partner = nil
-			h.Procreate.Valide = false
-			h.Procreate.Timer = 75
+		for _, neighbour := range h.Neighbours {
+			if neighbour == h.Procreate.Partner && neighbour.Procreate.Partner == h && neighbour.Position.Position == h.Position.Position {
+				h.Procreate.IsHome = true
+				break
+			}
 		}
 	}
 
-	h.Neighbours = listHumans
 	if h.Hut != nil && h.Procreate.Partner == nil && !h.Procreate.Valide && h.Procreate.Timer <= 0 && h.Clan != nil && h.PerformAction() && len(h.Clan.members) < 15 {
 		for _, neighbour := range h.Neighbours {
-			if neighbour.Clan == h.Clan && neighbour.Procreate.Partner == nil && neighbour.Hut == h.Hut && neighbour.Body.Age > 10 && h.Type != neighbour.Type && h.Procreate.Timer <= 150 {
+			if neighbour.Clan == h.Clan && neighbour.Procreate.Partner == nil && neighbour.Hut == h.Hut && neighbour.Body.Age > 10 && h.Type != neighbour.Type && h.Procreate.Timer <= 100 {
 				h.Procreate.Partner = neighbour
 				break
 			}
 		}
-
-	} else if h.Hut != nil && h.Procreate.Partner != nil && h.Position.Position == h.Hut.Position.Position {
-		h.ComOut = agentToManager{AgentID: h.ID, Action: "isHome", Pos: h.Position, commOut: make(chan managerToAgent)}
-		h.Board.AgentManager.messIn <- h.ComOut
-		h.ComIn = <-h.ComOut.commOut
-		h.Procreate.IsHome = h.ComIn.Valid
 	}
 
 	if h.Hut != nil && h.Position.Position == h.Hut.Position.Position {
@@ -465,7 +452,7 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 			h.Hut = res.Agent.Hut
 		}
 	case "PROCREATE":
-		if math.Abs(float64(res.Agent.Stats.Sociability-h.Stats.Sociability)) < 50 {
+		if math.Abs(float64(res.Agent.Stats.Sociability-h.Stats.Sociability)) < 50 && h.Procreate.Timer <= 0 {
 			res.commOut <- AgentComm{Agent: h, Action: "ACCEPTPROCREATE", commOut: h.AgentCommIn}
 			h.Procreate.Valide = true
 			h.Procreate.Partner = res.Agent
