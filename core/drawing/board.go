@@ -23,10 +23,23 @@ func DrawBoard(screen *ebiten.Image, b *typing.Board, cameraX, cameraY, zoomFact
 			xc, yc = xc-cameraX, yc-cameraY
 			xc, yc = xc*zoomFactor, yc*zoomFactor
 
+			res := hex.Resource
+			if agent != nil {
+				res = agent.MapVision[x][y].Resource
+			}
+
 			if &hex.Hut == nil {
-				DrawHex(screen, xc, yc, hex.Biome, hexSize*zoomFactor, hex.Resource, nil)
+				DrawHex(screen, xc, yc, hex.Biome, hexSize*zoomFactor, res, nil)
 			} else {
-				DrawHex(screen, xc, yc, hex.Biome, hexSize*zoomFactor, hex.Resource, hex.Hut)
+				DrawHex(screen, xc, yc, hex.Biome, hexSize*zoomFactor, res, hex.Hut)
+			}
+
+			if agent != nil {
+				for _, ag := range hex.Agents {
+					if ag.ID != agent.ID {
+						DrawAgent(screen, xc, yc, hexSize*zoomFactor, ag)
+					}
+				}
 			}
 		}
 	}

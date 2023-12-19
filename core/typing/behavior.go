@@ -190,10 +190,6 @@ func (hb *HumanBehavior) Act() {
 				}
 			}
 
-			if hb.H.Opponent != nil {
-				targetHexagon = hb.H.Opponent.Position
-			}
-
 			if targetHexagon == nil {
 				var memorizedHexes []*Hexagone
 				for _, v := range hb.H.MapVision {

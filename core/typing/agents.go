@@ -528,7 +528,7 @@ func (h *Agent) ToString() string {
 		race = "Sapiens"
 	}
 
-	str := h.ID + " - " + race + " X : " + h.Position.ToString() + "\n\n"
+	str := h.ID + " - " + race + h.Position.ToString() + "\n\n"
 	str += "--- Body ---" + "\n"
 	str += "Age : " + fmt.Sprintf("%d", int(h.Body.Age)) + "\n"
 	str += "Hungriness : " + fmt.Sprintf("%d", int(h.Body.Hungriness)) + "\n"
