@@ -212,7 +212,7 @@ func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
 	case ROCK:
 		if h.Hut == nil && h.Inventory.Object[ROCK] < Needs["hut"][ROCK] && h.Inventory.Weight <= MaxWeightInv-WeightRock {
 			score += 3
-		} else if (h.Hut != nil || h.Inventory.Object[ROCK] > Needs["hut"][ROCK]) && h.Inventory.Weight <= MaxWeightInv-WeightRock {
+		} else if (h.Hut != nil || h.Inventory.Object[ROCK] >= Needs["hut"][ROCK]) && h.Inventory.Weight <= MaxWeightInv-WeightRock {
 			score += 0.5
 		} else {
 			score -= 1
@@ -220,7 +220,7 @@ func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
 	case WOOD:
 		if h.Hut == nil && h.Inventory.Object[WOOD] < Needs["hut"][WOOD] && h.Inventory.Weight <= MaxWeightInv-WeightWood {
 			score += 3
-		} else if (h.Hut != nil || h.Inventory.Object[WOOD] > Needs["hut"][WOOD]) && h.Inventory.Weight <= MaxWeightInv-WeightWood {
+		} else if (h.Hut != nil || h.Inventory.Object[WOOD] >= Needs["hut"][WOOD]) && h.Inventory.Weight <= MaxWeightInv-WeightWood {
 			score += 0.5
 		} else {
 			score -= 1
@@ -228,6 +228,11 @@ func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
 	}
 
 	for _, nb := range h.Board.GetNeighbours(*hex) {
+		if nb.Biome == WATER && h.Hut == nil && h.Inventory.Object[WOOD] >= Needs["hut"][WOOD] && h.Inventory.Object[ROCK] >= Needs["hut"][ROCK] {
+			fmt.Println("cherche de l'eau pr construire")
+			score += 100
+			break
+		}
 		if nb.Biome == WATER && h.Body.Thirstiness > threshold {
 			score += (float64(h.Body.Thirstiness)/100)*WaterValueMultiplier + 0.5
 			break
@@ -305,9 +310,9 @@ func (h *Agent) BestMove(surroundingHexagons []*Hexagone) *Hexagone {
 
 func (h *Agent) MoveToHexagon(hex *Hexagone) {
 	h.Position = hex
-	h.Body.Hungriness += 0.5
-	h.Body.Thirstiness += 1
-	h.Body.Tiredness += 0.5
+	h.Body.Hungriness += 0.2
+	h.Body.Thirstiness += 0.4
+	h.Body.Tiredness += 0.2
 }
 
 func (h *Agent) UpdateState(resource ResourceType) {
@@ -504,10 +509,10 @@ func (h *Agent) CloseUpdate() {
 	} else {
 		h.UpdateState(NONE)
 		h.Body.Age += 0.05
-		h.Procreate.Timer -= 1
-		h.Body.Hungriness += 0.2
+		h.Body.Hungriness += 0.1
 		h.Body.Thirstiness += 0.2
-		h.Body.Tiredness += 0.4
+		h.Body.Tiredness += 0.1
+		h.Procreate.Timer -= 1
 		h.Fightcooldown -= 1
 	}
 	if h.Body.Age > 10 {
