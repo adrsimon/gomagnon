@@ -42,6 +42,7 @@ const (
 	VOTE
 	GETRESULT
 	LOOK4SOMEONE
+	ASK4PROCREATE
 	PROCREATE
 	FIGHT
 )
@@ -74,6 +75,8 @@ func (h *Agent) actionToStr() (action string) {
 		action = "LOOK4SOMEONE"
 	case PROCREATE:
 		action = "PROCREATE"
+	case ASK4PROCREATE:
+		action = "ASK4PROCREATE"
 	case FIGHT:
 		action = "FIGHT"
 	}
@@ -94,8 +97,9 @@ type Inventory struct {
 
 type Procreate struct {
 	Partner *Agent
+	Valide  bool
 	Timer   int
-	isHome  bool
+	IsHome  bool
 }
 
 type Agent struct {
@@ -142,7 +146,7 @@ type Agent struct {
 
 func (h *Agent) PerformAction() bool {
 	randomNumber := Randomizer.Intn(101)
-	return randomNumber <= h.Stats.Sociability
+	return randomNumber <= h.Stats.Sociability+100
 }
 
 type AgentComm struct {
@@ -257,7 +261,7 @@ func (h *Agent) calculateScore(n *Agent) float64 {
 	score += float64(n.Stats.Sociability / 10)
 	score += float64(n.Stats.Strength / 10)
 	if n.Type != h.Type {
-		score += 4
+		score += 5
 	}
 	if h.Clan != nil && len(h.Clan.members) < 4 {
 		score += 2
@@ -360,14 +364,11 @@ func (h *Agent) Perceive() {
 				_, ok := h.AgentRelation[p.ID]
 				listHumans = append(listHumans, p)
 				if !ok {
-					//Choix ami ou ennemi + reinitialisation opponent
 					var relation string
 					h.Opponent = nil
 					if h.Clan != nil && p.Clan == h.Clan {
-						// Même clan
 						if Randomizer.Intn(100) < 10 {
 							relation = "Enemy"
-							//fmt.Println("New enemy from same clan for agent: ", h.ID)
 							if h.Opponent == nil {
 								h.Opponent = p
 							}
@@ -375,10 +376,8 @@ func (h *Agent) Perceive() {
 							relation = "Friend"
 						}
 					} else {
-						// autre clan
 						if Randomizer.Intn(100) < 50 {
 							relation = "Enemy"
-							//fmt.Println("New enemy from different clan for agent: ", h.ID)
 							if h.Opponent == nil {
 								h.Opponent = p
 							}
@@ -393,20 +392,22 @@ func (h *Agent) Perceive() {
 		}
 	}
 	h.Neighbours = listHumans
-	if h.Hut != nil && h.Procreate.Partner == nil && h.Procreate.Timer <= 0 && h.Clan != nil && h.PerformAction() {
+	if h.Procreate.Partner != nil {
 		for _, neighbour := range h.Neighbours {
-			if neighbour.Clan == h.Clan && neighbour.Procreate.Partner == nil && neighbour.Hut == h.Hut && neighbour.Body.Age > 10 && h.Type != neighbour.Type && h.PerformAction() {
-				h.Procreate.Partner = neighbour
-				neighbour.Procreate.Partner = h
+			if neighbour == h.Procreate.Partner && neighbour.Procreate.Partner == h && neighbour.Position.Position == h.Position.Position {
+				h.Procreate.IsHome = true
 				break
 			}
 		}
+	}
 
-	} else if h.Hut != nil && h.Procreate.Partner != nil && h.Position.Position == h.Hut.Position.Position {
-		h.ComOut = agentToManager{AgentID: h.ID, Action: "isHome", Pos: h.Position, commOut: make(chan managerToAgent)}
-		h.Board.AgentManager.messIn <- h.ComOut
-		h.ComIn = <-h.ComOut.commOut
-		h.Procreate.isHome = h.ComIn.Valid
+	if h.Hut != nil && h.Procreate.Partner == nil && !h.Procreate.Valide && h.Procreate.Timer <= 0 && h.Clan != nil && h.PerformAction() && len(h.Clan.members) < 15 {
+		for _, neighbour := range h.Neighbours {
+			if neighbour.Clan == h.Clan && neighbour.Procreate.Partner == nil && neighbour.Hut == h.Hut && neighbour.Body.Age > 10 && h.Type != neighbour.Type && h.Procreate.Timer <= 100 {
+				h.Procreate.Partner = neighbour
+				break
+			}
+		}
 	}
 
 	if h.Hut != nil && h.Position.Position == h.Hut.Position.Position {
@@ -459,6 +460,14 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 			}
 			h.Hut = res.Agent.Hut
 		}
+	case "PROCREATE":
+		if math.Abs(float64(res.Agent.Stats.Sociability-h.Stats.Sociability)) < 50 && h.Procreate.Timer <= 0 {
+			res.commOut <- AgentComm{Agent: h, Action: "ACCEPTPROCREATE", commOut: h.AgentCommIn}
+			h.Procreate.Valide = true
+			h.Procreate.Partner = res.Agent
+		} else {
+			res.commOut <- AgentComm{Agent: h, Action: "REFUSEPROCREATE", commOut: h.AgentCommIn}
+		}
 	case "FIGHT":
 		h.Opponent = res.Agent
 		SociabilityOpp := h.Opponent.Stats.Sociability
@@ -497,7 +506,7 @@ func (h *Agent) CloseUpdate() {
 		h.Body.Age += 0.05
 		h.Procreate.Timer -= 1
 		h.Body.Hungriness += 0.2
-		h.Body.Thirstiness += 0.4
+		h.Body.Thirstiness += 0.2
 		h.Body.Tiredness += 0.4
 		h.Fightcooldown -= 1
 	}
