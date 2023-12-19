@@ -109,13 +109,15 @@ type Agent struct {
 	Body  HumanBody
 	Stats HumanStats
 
+	Board     *Board
+	MapVision [][]Hexagone
+
 	Inventory Inventory
 
 	Position       *Hexagone
 	Target         *Hexagone
 	MovingToTarget bool
-	CurrentPath    []*Hexagone
-	Board          *Board
+	CurrentPath    []*Point2D
 
 	Hut                *Hut
 	HutInventoryVision []ResourceType
@@ -166,12 +168,12 @@ const (
 	DistanceMultiplier        = 0.2
 )
 
-func NewHuman(id string, Type rune, Race Race, body HumanBody, stats HumanStats, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Hexagone, board *Board, comOut agentToManager, comIn managerToAgent, hut *Hut, inventory Inventory, agentRelation map[string]string) *Agent {
-	return &Agent{ID: id, Type: Type, Race: Race, Body: body, Stats: stats, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn, Hut: hut, Inventory: inventory, AgentRelation: agentRelation}
+func NewHuman(id string, Type rune, Race Race, body HumanBody, stats HumanStats, mapVision [][]Hexagone, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Point2D, board *Board, comOut agentToManager, comIn managerToAgent, hut *Hut, inventory Inventory, agentRelation map[string]string) *Agent {
+	return &Agent{ID: id, Type: Type, Race: Race, Body: body, Stats: stats, MapVision: mapVision, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn, Hut: hut, Inventory: inventory, AgentRelation: agentRelation}
 }
 
 func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
-	var score = 0.0
+	var score = 1.0
 	threshold := 85.0
 
 	dist := distance(*h.Position, *hex)
@@ -188,10 +190,8 @@ func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
 	case ANIMAL:
 		if h.Race == NEANDERTHAL {
 			score += AnimalFoodValueMultiplier + 0.5
-			score += AnimalFoodValueMultiplier + 0.5
 		}
 		if h.Race == SAPIENS {
-			score += AnimalFoodValueMultiplier + 1.0
 			score += AnimalFoodValueMultiplier + 1.0
 		}
 		if h.Body.Hungriness > threshold {
@@ -210,7 +210,7 @@ func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
 	case ROCK:
 		if h.Hut == nil && h.Inventory.Object[ROCK] < Needs["hut"][ROCK] && h.Inventory.Weight <= MaxWeightInv-WeightRock {
 			score += 3
-		} else if (h.Hut != nil || h.Inventory.Object[ROCK] > Needs["hut"][ROCK]) && h.Inventory.Weight <= MaxWeightInv-WeightRock {
+		} else if (h.Hut != nil || h.Inventory.Object[ROCK] >= Needs["hut"][ROCK]) && h.Inventory.Weight <= MaxWeightInv-WeightRock {
 			score += 0.5
 		} else {
 			score -= 1
@@ -218,16 +218,20 @@ func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
 	case WOOD:
 		if h.Hut == nil && h.Inventory.Object[WOOD] < Needs["hut"][WOOD] && h.Inventory.Weight <= MaxWeightInv-WeightWood {
 			score += 3
-		} else if (h.Hut != nil || h.Inventory.Object[WOOD] > Needs["hut"][WOOD]) && h.Inventory.Weight <= MaxWeightInv-WeightWood {
+		} else if (h.Hut != nil || h.Inventory.Object[WOOD] >= Needs["hut"][WOOD]) && h.Inventory.Weight <= MaxWeightInv-WeightWood {
 			score += 0.5
 		} else {
 			score -= 1
 		}
 	}
 
-	for _, nb := range h.Board.GetNeighbours(hex) {
+	for _, nb := range h.Board.GetNeighbours(*hex) {
+		if nb.Biome == WATER && h.Hut == nil && h.Inventory.Object[WOOD] >= Needs["hut"][WOOD] && h.Inventory.Object[ROCK] >= Needs["hut"][ROCK] {
+			score += 100
+			break
+		}
 		if nb.Biome == WATER && h.Body.Thirstiness > threshold {
-			score += (float64(h.Body.Thirstiness)/100)*WaterValueMultiplier + 0.5
+			score += WaterValueMultiplier + 0.5
 			break
 		}
 	}
@@ -270,7 +274,7 @@ func (h *Agent) calculateScore(n *Agent) float64 {
 	return score
 }
 
-func (h *Agent) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
+func (h *Agent) BestMove(surroundingHexagons []*Hexagone) *Hexagone {
 	if h.Body.Tiredness > 70 && h.Hut != nil {
 		return h.Hut.Position
 	}
@@ -285,7 +289,7 @@ func (h *Agent) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
 		}
 	}
 
-	if indexBest != -1 && surroundingHexagons[indexBest] != h.Position {
+	if indexBest != -1 && surroundingHexagons[indexBest].Position.X != h.Position.Position.X && surroundingHexagons[indexBest].Position.Y != h.Position.Position.Y {
 		return surroundingHexagons[indexBest]
 	}
 
@@ -303,9 +307,9 @@ func (h *Agent) BestNeighbor(surroundingHexagons []*Hexagone) *Hexagone {
 
 func (h *Agent) MoveToHexagon(hex *Hexagone) {
 	h.Position = hex
-	h.Body.Hungriness += 0.5
-	h.Body.Thirstiness += 1
-	h.Body.Tiredness += 0.5
+	h.Body.Hungriness += 0.2
+	h.Body.Thirstiness += 0.4
+	h.Body.Tiredness += 0.2
 }
 
 func (h *Agent) UpdateState(resource ResourceType) {
@@ -340,7 +344,7 @@ func (h *Agent) UpdateState(resource ResourceType) {
 		h.Inventory.Weight += WeightWood
 	}
 
-	neighbours := h.Board.GetNeighbours(h.Position)
+	neighbours := h.Board.GetNeighbours(*h.Position)
 	for _, neighbour := range neighbours {
 		if neighbour == nil {
 			continue
@@ -355,7 +359,7 @@ func (h *Agent) Perceive() {
 	listHumans := make([]*Agent, 0)
 	cases := make([]*Hexagone, 0)
 	cases = append(cases, h.Position)
-	cases = append(cases, h.Board.GetNeighbours(h.Position)...)
+	cases = append(cases, h.Board.GetNeighbours(*h.Position)...)
 	for _, v := range cases {
 		for _, p := range v.Agents {
 			if p != h && p.Body.Age >= 10 {
@@ -410,6 +414,13 @@ func (h *Agent) Perceive() {
 
 	if h.Hut != nil && h.Position.Position == h.Hut.Position.Position {
 		h.HutInventoryVision = h.Hut.Inventory
+	}
+
+	for _, v := range h.Behavior.GetNeighboursWithinAcuity() {
+		if v == nil {
+			continue
+		}
+		h.MapVision[v.Position.X][v.Position.Y] = *v
 	}
 }
 
@@ -495,10 +506,10 @@ func (h *Agent) CloseUpdate() {
 	} else {
 		h.UpdateState(NONE)
 		h.Body.Age += 0.05
-		h.Procreate.Timer -= 1
-		h.Body.Hungriness += 0.2
+		h.Body.Hungriness += 0.1
 		h.Body.Thirstiness += 0.2
-		h.Body.Tiredness += 0.4
+		h.Body.Tiredness += 0.1
+		h.Procreate.Timer -= 1
 		h.Fightcooldown -= 1
 	}
 	if h.Body.Age > 10 {
@@ -528,7 +539,7 @@ func (h *Agent) ToString() string {
 		race = "Sapiens"
 	}
 
-	str := h.ID + " - " + race + "\n\n"
+	str := h.ID + " - " + race + h.Position.ToString() + "\n\n"
 	str += "--- Body ---" + "\n"
 	str += "Age : " + fmt.Sprintf("%d", int(h.Body.Age)) + "\n"
 	str += "Hungriness : " + fmt.Sprintf("%d", int(h.Body.Hungriness)) + "\n"

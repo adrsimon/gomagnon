@@ -12,10 +12,10 @@ func distance(from Hexagone, to Hexagone) float64 {
 	return (math.Abs(float64(q3)) + math.Abs(float64(q3+r3)) + math.Abs(float64(r3))) / 2
 }
 
-func createPath(maps map[*Hexagone]*Hexagone, hexagon *Hexagone) []*Hexagone {
-	path := make([]*Hexagone, 0)
-	path = append(path, hexagon)
-	val, ok := maps[hexagon]
+func createPath(maps map[*Point2D]*Point2D, hexagon *Hexagone) []*Point2D {
+	path := make([]*Point2D, 0)
+	path = append(path, hexagon.Position)
+	val, ok := maps[hexagon.Position]
 	for ok {
 		path = append(path, val)
 		val, ok = maps[val]
@@ -23,7 +23,7 @@ func createPath(maps map[*Hexagone]*Hexagone, hexagon *Hexagone) []*Hexagone {
 	return path
 }
 
-func HauteurNoeud(node *Hexagone, save map[*Hexagone]*Hexagone) int {
+func HauteurNoeud(node *Point2D, save map[*Point2D]*Point2D) int {
 	cnt := 1
 	for save[node] != nil {
 		cnt++
@@ -33,31 +33,31 @@ func HauteurNoeud(node *Hexagone, save map[*Hexagone]*Hexagone) int {
 	return cnt
 }
 
-func AStar(agent Agent, goal *Hexagone) map[*Hexagone]*Hexagone {
+func AStar(agent Agent, goal Hexagone) map[*Point2D]*Point2D {
 	l := make(PriorityQueue, 0)
 	heap.Init(&l)
-	l.Push(Item{agent, distance(*agent.Position, *goal)})
-	save := make(map[*Hexagone]*Hexagone)
-	save[agent.Position] = nil
+	l.Push(Item{agent, distance(*agent.Position, goal)})
+	save := make(map[*Point2D]*Point2D)
+	save[agent.Position.Position] = nil
 
 	for l.Len() != 0 {
 		a := heap.Pop(&l).(*Item)
 		agTemp := a.value
 
-		if agTemp.Position == goal {
+		if agTemp.Position == &goal {
 			return save
 		}
 
-		for _, succ := range agTemp.Board.GetNeighbours(agTemp.Position) {
+		for _, succ := range agTemp.Board.GetNeighbours(*agTemp.Position) {
 			if succ.Biome == DEEP_WATER {
 				continue
 			}
-			_, ok := save[succ]
+			_, ok := save[succ.Position]
 			if !ok {
-				save[succ] = agTemp.Position
-				newHum := NewHuman(agent.ID, agent.Type, agent.Race, agent.Body, agent.Stats, succ, agent.Target, agent.MovingToTarget, agent.CurrentPath, agent.Board, agent.ComOut, agent.ComIn, agent.Hut, agent.Inventory, agent.AgentRelation)
-				g := HauteurNoeud(succ, save)
-				dist := distance(*newHum.Position, *goal)
+				save[succ.Position] = agTemp.Position.Position
+				newHum := NewHuman(agent.ID, agent.Type, agent.Race, agent.Body, agent.Stats, agent.MapVision, succ, agent.Target, agent.MovingToTarget, agent.CurrentPath, agent.Board, agent.ComOut, agent.ComIn, agent.Hut, agent.Inventory, agent.AgentRelation)
+				g := HauteurNoeud(succ.Position, save)
+				dist := distance(*newHum.Position, goal)
 				l.Push(Item{*newHum, dist + float64(g) + a.priority})
 			}
 		}

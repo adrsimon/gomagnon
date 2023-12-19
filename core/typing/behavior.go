@@ -24,7 +24,7 @@ type ChildBehavior struct {
 }
 
 func (hb *HumanBehavior) GetNeighboursWithinAcuity() []*Hexagone {
-	neighbours := hb.H.Board.GetNeighbours(hb.H.Position)
+	neighbours := hb.H.Board.GetNeighbours(*hb.H.Position)
 	visited := make(map[*Hexagone]bool)
 	for i := 1; i < hb.H.Stats.Acuity; i++ {
 		for _, neighbour := range neighbours {
@@ -33,7 +33,7 @@ func (hb *HumanBehavior) GetNeighboursWithinAcuity() []*Hexagone {
 			}
 			if _, ok := visited[neighbour]; !ok {
 				visited[neighbour] = true
-				neighbours = append(neighbours, hb.H.Board.GetNeighbours(neighbour)...)
+				neighbours = append(neighbours, hb.H.Board.GetNeighbours(*neighbour)...)
 			}
 		}
 	}
@@ -116,7 +116,7 @@ func (hb *HumanBehavior) Deliberate() {
 
 		/** if he can build a home and don't have one, he should build it **/
 		if hb.H.Inventory.Object[WOOD] >= Needs["hut"][WOOD] && hb.H.Inventory.Object[ROCK] >= Needs["hut"][ROCK] {
-			for _, v := range hb.H.Board.GetNeighbours(hb.H.Position) {
+			for _, v := range hb.H.Board.GetNeighbours(*hb.H.Position) {
 				if v == nil {
 					continue
 				}
@@ -209,11 +209,19 @@ func (hb *HumanBehavior) Act() {
 			//}
 
 			if targetHexagon == nil {
-				surroundingHexagons := hb.GetNeighboursWithinAcuity()
-				targetHexagon = hb.H.BestNeighbor(surroundingHexagons)
+				var memorizedHexes []*Hexagone
+				for _, v := range hb.H.MapVision {
+					for _, v2 := range v {
+						if v2.Position.X != -1 && v2.Position.Y != -1 {
+							hex := v2
+							memorizedHexes = append(memorizedHexes, &hex)
+						}
+					}
+				}
+				targetHexagon = hb.H.BestMove(memorizedHexes)
 			}
 
-			res := AStar(*hb.H, targetHexagon)
+			res := AStar(*hb.H, *targetHexagon)
 			hb.H.CurrentPath = createPath(res, targetHexagon)
 			if len(hb.H.CurrentPath) < 2 {
 				hb.H.CurrentPath = nil
@@ -226,7 +234,7 @@ func (hb *HumanBehavior) Act() {
 
 		if hb.H.MovingToTarget && len(hb.H.CurrentPath) > 0 {
 			nextHexagon := hb.H.CurrentPath[len(hb.H.CurrentPath)-1]
-			hb.H.MoveToHexagon(hb.H.Board.Cases[nextHexagon.Position.X][nextHexagon.Position.Y])
+			hb.H.MoveToHexagon(hb.H.Board.Cases[nextHexagon.X][nextHexagon.Y])
 			hb.H.CurrentPath = hb.H.CurrentPath[:len(hb.H.CurrentPath)-1]
 		}
 
@@ -441,7 +449,6 @@ func (hb *HumanBehavior) Act() {
 				}
 			}
 		}
-
 	default:
 		fmt.Println("Should not be here")
 	}
@@ -449,7 +456,7 @@ func (hb *HumanBehavior) Act() {
 }
 
 func (hb *ChildBehavior) GetNeighboursWithinAcuity() []*Hexagone {
-	neighbours := hb.C.Board.GetNeighbours(hb.C.Position)
+	neighbours := hb.C.Board.GetNeighbours(*hb.C.Position)
 	visited := make(map[*Hexagone]bool)
 	for i := 1; i < hb.C.Stats.Acuity; i++ {
 		for _, neighbour := range neighbours {
@@ -458,7 +465,7 @@ func (hb *ChildBehavior) GetNeighboursWithinAcuity() []*Hexagone {
 			}
 			if _, ok := visited[neighbour]; !ok {
 				visited[neighbour] = true
-				for _, neigbour2 := range hb.C.Board.GetNeighbours(neighbour) {
+				for _, neigbour2 := range hb.C.Board.GetNeighbours(*neighbour) {
 					if distance(*hb.C.Hut.Position, *neigbour2) <= 5 {
 						neighbours = append(neighbours, neigbour2)
 					}
@@ -545,10 +552,10 @@ func (hb *ChildBehavior) Act() {
 
 			if targetHexagon == nil {
 				surroundingHexagons := hb.GetNeighboursWithinAcuity()
-				targetHexagon = hb.C.BestNeighbor(surroundingHexagons)
+				targetHexagon = hb.C.BestMove(surroundingHexagons)
 			}
 
-			res := AStar(*hb.C, targetHexagon)
+			res := AStar(*hb.C, *targetHexagon)
 			hb.C.CurrentPath = createPath(res, targetHexagon)
 			if len(hb.C.CurrentPath) < 2 {
 				hb.C.CurrentPath = nil
@@ -561,7 +568,7 @@ func (hb *ChildBehavior) Act() {
 
 		if hb.C.MovingToTarget && len(hb.C.CurrentPath) > 0 {
 			nextHexagon := hb.C.CurrentPath[len(hb.C.CurrentPath)-1]
-			hb.C.MoveToHexagon(hb.C.Board.Cases[nextHexagon.Position.X][nextHexagon.Position.Y])
+			hb.C.MoveToHexagon(hb.C.Board.Cases[nextHexagon.X][nextHexagon.Y])
 			hb.C.CurrentPath = hb.C.CurrentPath[:len(hb.C.CurrentPath)-1]
 		}
 

@@ -73,7 +73,6 @@ func NewSimulation() Simulation {
 	simu.Board.AgentManager.Start()
 
 	for i := 0; i < settings.Setting.Agents.InitialNumber; i++ {
-
 		x, y := -1, -1
 		for x == -1 && y == -1 {
 			x = typing.Randomizer.Intn(simu.Board.XMax)
@@ -82,6 +81,15 @@ func NewSimulation() Simulation {
 				x, y = -1, -1
 			}
 		}
+
+		mapVision := make([][]typing.Hexagone, simu.Board.XMax)
+		for i := range mapVision {
+			mapVision[i] = make([]typing.Hexagone, simu.Board.YMax)
+			for j := range mapVision[i] {
+				mapVision[i][j] = typing.Hexagone{Position: &typing.Point2D{X: -1, Y: -1}}
+			}
+		}
+
 		if i < settings.Setting.Agents.InitialNumber/2 {
 			ag := &typing.Agent{
 				ID:   fmt.Sprintf("ag-%d", i),
@@ -97,6 +105,7 @@ func NewSimulation() Simulation {
 					Sociability: int(typing.Randomizer.NormFloat64()*10 + 40),
 					Acuity:      typing.Randomizer.Intn(3) + 4,
 				},
+				MapVision:      mapVision,
 				Position:       simu.Board.Cases[x][y],
 				Target:         nil,
 				MovingToTarget: false,
@@ -123,13 +132,14 @@ func NewSimulation() Simulation {
 				Body: typing.HumanBody{
 					Thirstiness: float64(int(typing.Randomizer.NormFloat64()*10 + 50)),
 					Hungriness:  float64(int(typing.Randomizer.NormFloat64()*10 + 50)),
-					Age:         float64(25),
+					Age:         float64(typing.Randomizer.Intn(10) + 15),
 				},
 				Stats: typing.HumanStats{
 					Strength:    int(typing.Randomizer.NormFloat64()*10 + 40),
 					Sociability: int(typing.Randomizer.NormFloat64()*10 + 60),
 					Acuity:      typing.Randomizer.Intn(2) + 4,
 				},
+				MapVision:      mapVision,
 				Position:       simu.Board.Cases[x][y],
 				Target:         nil,
 				MovingToTarget: false,
