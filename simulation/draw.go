@@ -36,6 +36,12 @@ func (s *Simulation) Draw(screen *ebiten.Image) {
 		s.Selector.SetSelectedEntry(AgentChoice{id: ""})
 	}
 
+	if ebiten.IsKeyPressed(ebiten.KeyU) {
+		s.SelectedAgent = ""
+		s.AgentDesc.SetText("Select an agent to see it's statistics")
+		s.Selector.SetSelectedEntry(AgentChoice{id: " "})
+	}
+
 	if s.SelectedAgent != "" {
 		_, ag := s.Board.AgentManager.GetAgent(s.SelectedAgent)
 		if ag == nil {
