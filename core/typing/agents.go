@@ -502,7 +502,6 @@ func (h *Agent) UpdateAgent() {
 	case res := <-h.AgentCommIn:
 		h.Terminated = true
 		h.AnswerAgents(res)
-		fmt.Println(h.ID)
 	case <-time.After(20 * time.Millisecond):
 		h.Terminated = true
 	}
