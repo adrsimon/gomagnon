@@ -80,6 +80,7 @@ func (agMan *AgentManager) MakeChild(parent1 *Agent, parent2 *Agent, count int) 
 			AgentCommIn:    make(chan AgentComm),
 			Clan:           parent1.Clan,
 			Procreate:      Procreate{Partner: nil, Timer: 200},
+			DeathAge:       Randomizer.NormFloat64()*6 + 37,
 		}
 		newHuman.Behavior = &ChildBehavior{C: newHuman}
 	}

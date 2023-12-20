@@ -112,6 +112,7 @@ func NewSimulation() Simulation {
 				Procreate:      typing.Procreate{Partner: nil, Timer: 100},
 				Opponent:       nil,
 				Fightcooldown:  50 + typing.Randomizer.Intn(200),
+				DeathAge:       typing.Randomizer.NormFloat64()*6 + 37,
 			}
 
 			simu.Board.AgentManager.Agents = append(simu.Board.AgentManager.Agents, ag)
@@ -146,6 +147,7 @@ func NewSimulation() Simulation {
 				Procreate:      typing.Procreate{Partner: nil, Timer: 100},
 				Opponent:       nil,
 				Fightcooldown:  50 + typing.Randomizer.Intn(200),
+				DeathAge:       typing.Randomizer.NormFloat64()*6 + 37,
 			}
 
 			simu.Board.AgentManager.Agents = append(simu.Board.AgentManager.Agents, ag)

@@ -103,11 +103,12 @@ type Procreate struct {
 }
 
 type Agent struct {
-	ID    string
-	Type  rune
-	Race  Race
-	Body  HumanBody
-	Stats HumanStats
+	ID       string
+	Type     rune
+	Race     Race
+	Body     HumanBody
+	Stats    HumanStats
+	DeathAge float64
 
 	Board     *Board
 	MapVision [][]Hexagone
@@ -492,7 +493,7 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 }
 
 func (h *Agent) IsDead() bool {
-	return h.Body.Hungriness >= 100 || h.Body.Thirstiness >= 100 || h.Body.Tiredness >= 100 || h.Body.Age >= 40
+	return h.Body.Hungriness >= 100 || h.Body.Thirstiness >= 100 || h.Body.Tiredness >= 100 || h.Body.Age >= h.DeathAge
 }
 
 func (h *Agent) CloseUpdate() {
