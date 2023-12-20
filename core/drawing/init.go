@@ -1,12 +1,13 @@
 package drawing
 
 import (
+	"log"
+
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"log"
 )
 
-var imgSapiens, imgNeanderthal, imgBabySapiens, imgBabyNeanderthal, imgPlains, imgForest, imgWater, imgDeepWater, imgCaves, imgCow, imgMushroom, imgRock, imgWood *ebiten.Image
+var imgSapiens, imgNeanderthal, imgBabySapiens, imgBabyNeanderthal, imgPlains, imgForest, imgWater, imgDeepWater, imgCaves, imgCow, imgMushroom, imgRock, imgWood, imgHutSapiens, imgHutNeanderthal, imgHutAbandonned *ebiten.Image
 
 func init() {
 	sapiens, _, err := ebitenutil.NewImageFromFile("assets/textures/sapiens.png")
@@ -86,4 +87,22 @@ func init() {
 		log.Fatal(err)
 	}
 	imgWood = wood
+
+	hutSapiens, _, err := ebitenutil.NewImageFromFile("assets/textures/hutSapiens.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	imgHutSapiens = hutSapiens
+
+	hutNeanderthal, _, err := ebitenutil.NewImageFromFile("assets/textures/hutNeanderthal.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	imgHutNeanderthal = hutNeanderthal
+
+	hutAbandonned, _, err := ebitenutil.NewImageFromFile("assets/textures/hutAbandonned.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+	imgHutAbandonned = hutAbandonned
 }
