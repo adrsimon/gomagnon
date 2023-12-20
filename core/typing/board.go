@@ -7,6 +7,7 @@ import (
 
 type Board struct {
 	Cases           [][]*Hexagone
+	Spawnables      []*Hexagone
 	XMax            int
 	YMax            int
 	HexSize         float32
@@ -108,6 +109,9 @@ func (b *Board) GenerateContinentBiomes() {
 
 			hex.Biome = biomeType
 			b.ResourceManager.FreeSpots[biomeType] = append(b.ResourceManager.FreeSpots[biomeType], Point2D{X: i, Y: j})
+			if biomeType != WATER && biomeType != DEEP_WATER {
+				b.Spawnables = append(b.Spawnables, hex)
+			}
 		}
 	}
 }
@@ -157,6 +161,10 @@ func (b *Board) GenerateIslandBiomes() {
 			}
 
 			hex.Biome = biomeType
+			b.ResourceManager.FreeSpots[biomeType] = append(b.ResourceManager.FreeSpots[biomeType], Point2D{X: i, Y: j})
+			if biomeType != WATER && biomeType != DEEP_WATER {
+				b.Spawnables = append(b.Spawnables, hex)
+			}
 		}
 	}
 }
