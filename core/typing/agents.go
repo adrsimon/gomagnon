@@ -166,7 +166,7 @@ const (
 	AnimalFoodValueMultiplier = 5.0
 	FruitFoodValueMultiplier  = 3.0
 	WaterValueMultiplier      = 4.0
-	DistanceMultiplier        = 0.2
+	DistanceMultiplier        = 0.5
 )
 
 func NewHuman(id string, Type rune, Race Race, body HumanBody, stats HumanStats, mapVision [][]Hexagone, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Point2D, board *Board, comOut agentToManager, comIn managerToAgent, hut *Hut, inventory Inventory, agentRelation map[string]string, procreate Procreate) *Agent {
@@ -210,13 +210,13 @@ func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
 		}
 	case ROCK:
 		if h.Hut == nil && h.Inventory.Object[ROCK] < Needs["hut"][ROCK] && h.Inventory.Weight <= MaxWeightInv-WeightRock {
-			score += 3
+			score += 10
 		} else if h.Hut == nil && h.Inventory.Object[ROCK] >= Needs["hut"][ROCK] {
 			score = math.Inf(-1)
 		}
 	case WOOD:
 		if h.Hut == nil && h.Inventory.Object[WOOD] < Needs["hut"][WOOD] && h.Inventory.Weight <= MaxWeightInv-WeightWood {
-			score += 3
+			score += 10
 		} else if h.Hut == nil && h.Inventory.Object[WOOD] >= Needs["hut"][WOOD] {
 			score = math.Inf(-1)
 		}
@@ -517,6 +517,10 @@ func (h *Agent) CloseUpdate() {
 			h.ComIn = <-h.ComOut.commOut
 		}
 	}
+	if h.Body.Tiredness < 0 {
+		h.Body.Tiredness = 0
+	}
+	
 }
 
 func (h *Agent) UpdateAgent() {

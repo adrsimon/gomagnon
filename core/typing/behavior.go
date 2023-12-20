@@ -43,13 +43,13 @@ func (hb *HumanBehavior) GetNeighboursWithinAcuity() []*Hexagone {
 
 func (hb *HumanBehavior) DeliberateAtHut() {
 	/** If he is tired and have a home, he should sleep **/
-	if hb.H.Body.Tiredness > 0 {
+	if hb.H.Body.Tiredness >= 1 {
 		hb.H.Action = SLEEP
 		return
 	}
 	/** If he is home and not partner he should wait **/
 	if hb.H.Procreate.Partner != nil && hb.H.Procreate.Valide && !hb.H.Procreate.IsHome {
-		hb.H.Action = SLEEP
+		hb.H.Action = NOOP
 		return
 	}
 
@@ -271,7 +271,7 @@ func (hb *HumanBehavior) Act() {
 			hb.H.Inventory.Weight -= WeightRock * float64(Needs["hut"][ROCK])
 		}
 	case SLEEP:
-		if hb.H.Body.Tiredness > 0 {
+		if hb.H.Body.Tiredness >= 1 {
 			hb.H.Body.Tiredness -= 3
 			hb.H.StackAction = append(hb.H.StackAction, SLEEP)
 		}
@@ -512,7 +512,7 @@ func (hb *ChildBehavior) Deliberate() {
 
 func (hb *ChildBehavior) DeliberateAtHut() {
 	/** If he is tired and have a home, he should sleep **/
-	if hb.C.Body.Tiredness > 0 {
+	if hb.C.Body.Tiredness >= 1 {
 		hb.C.Action = SLEEP
 		return
 	}
@@ -594,7 +594,7 @@ func (hb *ChildBehavior) Act() {
 			}
 		}
 	case SLEEP:
-		if hb.C.Body.Tiredness > 0 {
+		if hb.C.Body.Tiredness >= 1 {
 			hb.C.Body.Tiredness -= 3
 			// hb.H.Body.Hungriness += 0.5
 			// hb.H.Body.Thirstiness += 0.5

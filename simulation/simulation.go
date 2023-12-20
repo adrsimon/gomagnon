@@ -73,7 +73,7 @@ func NewSimulation() Simulation {
 	simu.Board.AgentManager.Start()
 
 	for i := 0; i < settings.Setting.Agents.InitialNumber; i++ {
-		hex := simu.Board.Spawnables[typing.Randomizer.Intn(len(simu.Board.Spawnables))].Position
+		hex := simu.Board.Spawnables[typing.Randomizer.Intn(len(simu.Board.Spawnables))]
 
 		mapVision := make([][]typing.Hexagone, simu.Board.XMax)
 		for i := range mapVision {
