@@ -150,7 +150,7 @@ func (hb *HumanBehavior) Deliberate() {
 		}
 	}
 
-	if hb.H.Procreate.Partner != nil && hb.H.Procreate.Valide && hb.H.Position != hb.H.Hut.Position {
+	if hb.H.Procreate.Partner != nil && hb.H.Procreate.Valide && hb.H.Hut != nil && hb.H.Position != hb.H.Hut.Position {
 		hb.H.Action = MOVE
 		return
 	}

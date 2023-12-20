@@ -492,7 +492,7 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 }
 
 func (h *Agent) IsDead() bool {
-	return h.Body.Hungriness >= 100 || h.Body.Thirstiness >= 100 || h.Body.Tiredness >= 100 || h.Body.Age >= 100
+	return h.Body.Hungriness >= 100 || h.Body.Thirstiness >= 100 || h.Body.Tiredness >= 100 || h.Body.Age >= 40
 }
 
 func (h *Agent) CloseUpdate() {
@@ -501,7 +501,7 @@ func (h *Agent) CloseUpdate() {
 		h.Board.AgentManager.messIn <- h.ComOut
 	} else {
 		h.UpdateState(NONE)
-		h.Body.Age += 0.05
+		h.Body.Age += 0.01
 		h.Body.Hungriness += 0.1
 		h.Body.Thirstiness += 0.2
 		h.Body.Tiredness += 0.1
@@ -510,7 +510,7 @@ func (h *Agent) CloseUpdate() {
 	}
 	if int(h.Body.Age) == 10 {
 		h.Behavior = &HumanBehavior{H: h}
-		if Randomizer.Intn(40) < 1 && h.Clan != nil {
+		if Randomizer.Intn(200) < 1 && h.Clan != nil {
 			h.ComOut = agentToManager{AgentID: h.ID, Action: "leave-clan", Pos: h.Position, commOut: make(chan managerToAgent)}
 			h.Board.AgentManager.messIn <- h.ComOut
 			h.ComIn = <-h.ComOut.commOut

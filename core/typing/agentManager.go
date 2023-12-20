@@ -320,7 +320,7 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 				(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = nil
 			}
 		}
-		fmt.Println("\033[35mAgent\033[0m", agent.ID, "\033[35mleft his clan\033[0m", agent.Clan.ID)
+		fmt.Println("\033[35mAgent\033[0m", agent.ID, "\033[35mleft his clan\033[0m.")
 		agent.Clan = nil
 		agent.Hut = nil
 		request.commOut <- managerToAgent{Valid: true, Map: *agMan.Map, Resource: NONE}
