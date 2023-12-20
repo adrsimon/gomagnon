@@ -168,8 +168,8 @@ const (
 	DistanceMultiplier        = 0.2
 )
 
-func NewHuman(id string, Type rune, Race Race, body HumanBody, stats HumanStats, mapVision [][]Hexagone, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Point2D, board *Board, comOut agentToManager, comIn managerToAgent, hut *Hut, inventory Inventory, agentRelation map[string]string) *Agent {
-	return &Agent{ID: id, Type: Type, Race: Race, Body: body, Stats: stats, MapVision: mapVision, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn, Hut: hut, Inventory: inventory, AgentRelation: agentRelation}
+func NewHuman(id string, Type rune, Race Race, body HumanBody, stats HumanStats, mapVision [][]Hexagone, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Point2D, board *Board, comOut agentToManager, comIn managerToAgent, hut *Hut, inventory Inventory, agentRelation map[string]string, procreate Procreate) *Agent {
+	return &Agent{ID: id, Type: Type, Race: Race, Body: body, Stats: stats, MapVision: mapVision, Position: position, Target: target, MovingToTarget: movingToTarget, CurrentPath: currentPath, Board: board, ComOut: comOut, ComIn: comIn, Hut: hut, Inventory: inventory, AgentRelation: agentRelation, Procreate: procreate}
 }
 
 func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
@@ -210,18 +210,14 @@ func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
 	case ROCK:
 		if h.Hut == nil && h.Inventory.Object[ROCK] < Needs["hut"][ROCK] && h.Inventory.Weight <= MaxWeightInv-WeightRock {
 			score += 3
-		} else if (h.Hut != nil || h.Inventory.Object[ROCK] >= Needs["hut"][ROCK]) && h.Inventory.Weight <= MaxWeightInv-WeightRock {
-			score += 0.5
-		} else {
-			score -= 1
+		} else if h.Hut == nil && h.Inventory.Object[ROCK] >= Needs["hut"][ROCK] {
+			score = math.Inf(-1)
 		}
 	case WOOD:
 		if h.Hut == nil && h.Inventory.Object[WOOD] < Needs["hut"][WOOD] && h.Inventory.Weight <= MaxWeightInv-WeightWood {
 			score += 3
-		} else if (h.Hut != nil || h.Inventory.Object[WOOD] >= Needs["hut"][WOOD]) && h.Inventory.Weight <= MaxWeightInv-WeightWood {
-			score += 0.5
-		} else {
-			score -= 1
+		} else if h.Hut == nil && h.Inventory.Object[WOOD] >= Needs["hut"][WOOD] {
+			score = math.Inf(-1)
 		}
 	}
 
@@ -512,8 +508,13 @@ func (h *Agent) CloseUpdate() {
 		h.Procreate.Timer -= 1
 		h.Fightcooldown -= 1
 	}
-	if h.Body.Age > 10 {
+	if int(h.Body.Age) == 10 {
 		h.Behavior = &HumanBehavior{H: h}
+		if Randomizer.Intn(40) < 1 && h.Clan != nil {
+			h.ComOut = agentToManager{AgentID: h.ID, Action: "leave-clan", Pos: h.Position, commOut: make(chan managerToAgent)}
+			h.Board.AgentManager.messIn <- h.ComOut
+			h.ComIn = <-h.ComOut.commOut
+		}
 	}
 }
 
