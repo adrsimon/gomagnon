@@ -73,14 +73,7 @@ func NewSimulation() Simulation {
 	simu.Board.AgentManager.Start()
 
 	for i := 0; i < settings.Setting.Agents.InitialNumber; i++ {
-		x, y := -1, -1
-		for x == -1 && y == -1 {
-			x = typing.Randomizer.Intn(simu.Board.XMax)
-			y = typing.Randomizer.Intn(simu.Board.YMax)
-			if simu.Board.Cases[x][y].Biome == typing.DEEP_WATER {
-				x, y = -1, -1
-			}
-		}
+		hex := simu.Board.Spawnables[typing.Randomizer.Intn(len(simu.Board.Spawnables))].Position
 
 		mapVision := make([][]typing.Hexagone, simu.Board.XMax)
 		for i := range mapVision {
@@ -106,7 +99,7 @@ func NewSimulation() Simulation {
 					Acuity:      typing.Randomizer.Intn(3) + 4,
 				},
 				MapVision:      mapVision,
-				Position:       simu.Board.Cases[x][y],
+				Position:       simu.Board.Cases[hex.X][hex.Y],
 				Target:         nil,
 				MovingToTarget: false,
 				CurrentPath:    nil,
@@ -140,7 +133,7 @@ func NewSimulation() Simulation {
 					Acuity:      typing.Randomizer.Intn(2) + 4,
 				},
 				MapVision:      mapVision,
-				Position:       simu.Board.Cases[x][y],
+				Position:       simu.Board.Cases[hex.X][hex.Y],
 				Target:         nil,
 				MovingToTarget: false,
 				CurrentPath:    nil,
