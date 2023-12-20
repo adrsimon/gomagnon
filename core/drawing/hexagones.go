@@ -1,8 +1,6 @@
 package drawing
 
 import (
-	"github.com/hajimehoshi/ebiten/v2/vector"
-	"golang.org/x/image/colornames"
 	_ "image/png"
 
 	"github.com/adrsimon/gomagnon/core/typing"
@@ -44,11 +42,14 @@ func DrawHex(background *ebiten.Image, xCenter float32, yCenter float32, biome t
 
 	if hut != nil {
 		if hut.Owner == nil {
-			vector.DrawFilledRect(background, xCenter-hexSize/4, yCenter-hexSize/4, hexSize/2, hexSize/2, colornames.Black, false)
+			drawImage(background, xCenter, yCenter, hexSize/0.75, imgHutAbandonned)
+			//vector.DrawFilledRect(background, xCenter-hexSize/4, yCenter-hexSize/4, hexSize/2, hexSize/2, colornames.Black, false)
 		} else if hut.Owner.Race == typing.SAPIENS {
-			vector.DrawFilledRect(background, xCenter-hexSize/4, yCenter-hexSize/4, hexSize/2, hexSize/2, colornames.Blue, false)
+			drawImage(background, xCenter, yCenter, hexSize/0.75, imgHutSapiens)
+			//vector.DrawFilledRect(background, xCenter-hexSize/4, yCenter-hexSize/4, hexSize/2, hexSize/2, colornames.Blue, false)
 		} else if hut.Owner.Race == typing.NEANDERTHAL {
-			vector.DrawFilledRect(background, xCenter-hexSize/4, yCenter-hexSize/4, hexSize/2, hexSize/2, colornames.Red, false)
+			drawImage(background, xCenter, yCenter, hexSize/0.75, imgHutNeanderthal)
+			//vector.DrawFilledRect(background, xCenter-hexSize/4, yCenter-hexSize/4, hexSize/2, hexSize/2, colornames.Red, false)
 		}
 	}
 }
