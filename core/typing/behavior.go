@@ -163,6 +163,9 @@ func (hb *HumanBehavior) Deliberate() {
 	}
 
 	if hb.H.Procreate.Partner != nil && !hb.H.Procreate.Valide {
+		if hb.H.ID == "ag-30" {
+			fmt.Println("test")
+		}
 		hb.H.Action = ASK4PROCREATE
 		return
 	}
@@ -192,6 +195,7 @@ func (hb *HumanBehavior) Act() {
 	case MOVE:
 		if !hb.H.MovingToTarget {
 			var targetHexagon *Hexagone
+			targetHexagon = hb.H.Target
 
 			if hb.H.Hut != nil {
 				if hb.H.Body.Tiredness > 80 {
@@ -204,15 +208,11 @@ func (hb *HumanBehavior) Act() {
 				}
 			}
 
-			//if hb.H.Opponent != nil {
-			//	targetHexagon = hb.H.Opponent.Position
-			//}
-
 			if targetHexagon == nil {
-				var memorizedHexes []*Hexagone
+				memorizedHexes := make([]*Hexagone, 0)
 				for _, v := range hb.H.MapVision {
 					for _, v2 := range v {
-						if v2.Position.X != -1 && v2.Position.Y != -1 {
+						if (v2.Position.X != -1 && v2.Position.Y != -1) || (hb.H.Hut != nil && v2.Position.X != hb.H.Hut.Position.Position.X && v2.Position.Y != hb.H.Hut.Position.Position.Y) {
 							hex := v2
 							memorizedHexes = append(memorizedHexes, &hex)
 						}
@@ -261,14 +261,17 @@ func (hb *HumanBehavior) Act() {
 		}
 	case BUILD:
 		hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "build", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
+		hb.H.Hut = &Hut{Position: hb.H.Position, Inventory: make([]ResourceType, 0), Owner: hb.H}
 		hb.H.Board.AgentManager.messIn <- hb.H.ComOut
 		hb.H.ComIn = <-hb.H.ComOut.commOut
 		if hb.H.ComIn.Valid {
-			hb.H.Hut = &Hut{Position: hb.H.Position, Inventory: make([]ResourceType, 0), Owner: hb.H}
 			hb.H.Inventory.Object[WOOD] -= Needs["hut"][WOOD]
 			hb.H.Inventory.Object[ROCK] -= Needs["hut"][ROCK]
 			hb.H.Inventory.Weight -= WeightWood * float64(Needs["hut"][WOOD])
 			hb.H.Inventory.Weight -= WeightRock * float64(Needs["hut"][ROCK])
+		} else {
+			hb.H.Hut = nil
+			hb.H.StackAction = append(hb.H.StackAction, MOVE)
 		}
 	case SLEEP:
 		if hb.H.Body.Tiredness >= 1 {
@@ -385,6 +388,7 @@ func (hb *HumanBehavior) Act() {
 					} else {
 						hb.H.Procreate.Partner = nil
 						hb.H.Procreate.Timer = 300
+						hb.H.StackAction = append(hb.H.StackAction, MOVE)
 					}
 				case <-time.After(20 * time.Millisecond):
 					hb.H.Procreate.Partner = nil
@@ -394,6 +398,9 @@ func (hb *HumanBehavior) Act() {
 				hb.H.Procreate.Partner = nil
 				hb.H.Procreate.Timer = 300
 			}
+		} else {
+			hb.H.Procreate.Partner = nil
+			hb.H.Procreate.Timer = 300
 		}
 	case PROCREATE:
 		if hb.H.Type == 'F' {
@@ -541,7 +548,7 @@ func (hb *ChildBehavior) Act() {
 	case MOVE:
 		if !hb.C.MovingToTarget {
 			var targetHexagon *Hexagone
-
+			targetHexagon = hb.C.Target
 			if hb.C.Hut != nil {
 				if hb.C.Body.Tiredness > 80 {
 					targetHexagon = hb.C.Hut.Position

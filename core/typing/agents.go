@@ -293,7 +293,8 @@ func (h *Agent) BestMove(surroundingHexagons []*Hexagone) *Hexagone {
 	valid := false
 	randHex := &Hexagone{}
 	for !valid {
-		randHex = surroundingHexagons[Randomizer.Intn(len(surroundingHexagons))]
+		n := len(surroundingHexagons)
+		randHex = surroundingHexagons[Randomizer.Intn(n)]
 		if h.Board.isValidHex(randHex) && randHex.Biome != DEEP_WATER && randHex.Biome != WATER {
 			valid = true
 		}
@@ -520,7 +521,7 @@ func (h *Agent) CloseUpdate() {
 	if h.Body.Tiredness < 0 {
 		h.Body.Tiredness = 0
 	}
-	
+
 }
 
 func (h *Agent) UpdateAgent() {
