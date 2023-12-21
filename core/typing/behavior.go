@@ -315,9 +315,9 @@ func (hb *HumanBehavior) Act() {
 						hb.H.Clan = clan
 						bestH.AgentCommIn <- AgentComm{Agent: hb.H, Action: "INVITECLAN", commOut: hb.H.AgentCommIn}
 					}
-				case <-time.After(20 * time.Millisecond):
+				case <-time.After(30 * time.Millisecond):
 				}
-			case <-time.After(20 * time.Millisecond):
+			case <-time.After(30 * time.Millisecond):
 
 			}
 		}
@@ -368,9 +368,9 @@ func (hb *HumanBehavior) Act() {
 					} else {
 						hb.H.Action = MOVE
 					}
-				case <-time.After(20 * time.Millisecond):
+				case <-time.After(30 * time.Millisecond):
 				}
-			case <-time.After(20 * time.Millisecond):
+			case <-time.After(30 * time.Millisecond):
 
 			}
 		}
@@ -387,11 +387,11 @@ func (hb *HumanBehavior) Act() {
 						hb.H.Procreate.Timer = 300
 						hb.H.StackAction = append(hb.H.StackAction, MOVE)
 					}
-				case <-time.After(20 * time.Millisecond):
+				case <-time.After(30 * time.Millisecond):
 					hb.H.Procreate.Partner = nil
 					hb.H.Procreate.Timer = 300
 				}
-			case <-time.After(20 * time.Millisecond):
+			case <-time.After(30 * time.Millisecond):
 				hb.H.Procreate.Partner = nil
 				hb.H.Procreate.Timer = 300
 			}
@@ -446,9 +446,9 @@ func (hb *HumanBehavior) Act() {
 							hb.H.Opponent = nil
 							hb.H.Fightcooldown = 300
 						}
-					case <-time.After(20 * time.Millisecond):
+					case <-time.After(30 * time.Millisecond):
 					}
-				case <-time.After(20 * time.Millisecond):
+				case <-time.After(30 * time.Millisecond):
 
 				}
 			}

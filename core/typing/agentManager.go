@@ -151,7 +151,7 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 			return
 		}
 		if ag.Procreate.Partner != nil {
-			numChildren := Randomizer.Intn(2) + 1
+			numChildren := Randomizer.Intn(3) + 1
 			for i := 0; i < numChildren; i++ {
 				newHuman := agMan.MakeChild(ag, ag.Procreate.Partner, agMan.Count)
 				if newHuman != nil {

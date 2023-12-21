@@ -29,7 +29,7 @@ func NewBoard(xmax, ymax int, hexSize float32, maxResources map[ResourceType]int
 		YMax:            ymax,
 		HexSize:         hexSize,
 		ResourceManager: resMan,
-		AgentManager:    NewAgentManager(cases, make(chan agentToManager, 100), agents, resMan),
+		AgentManager:    NewAgentManager(cases, make(chan agentToManager, 100000), agents, resMan),
 	}
 }
 
