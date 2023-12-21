@@ -96,7 +96,7 @@ func NewSimulation() Simulation {
 				Stats: typing.HumanStats{
 					Strength:    int(typing.Randomizer.NormFloat64()*10 + 60),
 					Sociability: int(typing.Randomizer.NormFloat64()*10 + 40),
-					Acuity:      typing.Randomizer.Intn(3) + 4,
+					Acuity:      typing.Randomizer.Intn(2) + 4,
 				},
 				MapVision:      mapVision,
 				Position:       simu.Board.Cases[hex.X][hex.Y],
@@ -129,9 +129,9 @@ func NewSimulation() Simulation {
 					Age:         float64(typing.Randomizer.Intn(10) + 10),
 				},
 				Stats: typing.HumanStats{
-					Strength:    int(typing.Randomizer.NormFloat64()*10 + 40),
-					Sociability: int(typing.Randomizer.NormFloat64()*10 + 60),
-					Acuity:      typing.Randomizer.Intn(2) + 4,
+					Strength:    int(typing.Randomizer.NormFloat64()*10 + 50),
+					Sociability: int(typing.Randomizer.NormFloat64()*10 + 70),
+					Acuity:      typing.Randomizer.Intn(3) + 4,
 				},
 				MapVision:      mapVision,
 				Position:       simu.Board.Cases[hex.X][hex.Y],
