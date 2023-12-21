@@ -442,7 +442,6 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 					}
 				}
 				h.Hut = res2.Agent.Hut
-				fmt.Println("a")
 			}
 		}
 	case "INVITECLAN":
@@ -460,7 +459,6 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 				}
 			}
 			h.Hut = res.Agent.Hut
-			fmt.Println("b")
 		}
 	case "PROCREATE":
 		if math.Abs(float64(res.Agent.Stats.Sociability-h.Stats.Sociability)) < 50 && h.Procreate.Timer <= 0 {
@@ -514,7 +512,7 @@ func (h *Agent) CloseUpdate() {
 	}
 	if int(h.Body.Age) == 10 {
 		h.Behavior = &HumanBehavior{H: h}
-		if Randomizer.Intn(200) < 1 && h.Clan != nil {
+		if Randomizer.Intn(200) < 1 && h.Clan != nil && len(h.Clan.members) > 5 {
 			h.ComOut = agentToManager{AgentID: h.ID, Action: "leave-clan", Pos: h.Position, commOut: make(chan managerToAgent)}
 			h.Board.AgentManager.messIn <- h.ComOut
 			h.ComIn = <-h.ComOut.commOut

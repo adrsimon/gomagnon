@@ -163,9 +163,6 @@ func (hb *HumanBehavior) Deliberate() {
 	}
 
 	if hb.H.Procreate.Partner != nil && !hb.H.Procreate.Valide {
-		if hb.H.ID == "ag-30" {
-			fmt.Println("test")
-		}
 		hb.H.Action = ASK4PROCREATE
 		return
 	}
