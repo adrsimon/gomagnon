@@ -384,20 +384,19 @@ func (hb *HumanBehavior) Act() {
 						hb.H.Procreate.Valide = true
 					} else {
 						hb.H.Procreate.Partner = nil
-						hb.H.Procreate.Timer = 300
-						hb.H.StackAction = append(hb.H.StackAction, MOVE)
+						hb.H.Procreate.Timer = 100
 					}
 				case <-time.After(30 * time.Millisecond):
 					hb.H.Procreate.Partner = nil
-					hb.H.Procreate.Timer = 300
+					hb.H.Procreate.Timer = 100
 				}
 			case <-time.After(30 * time.Millisecond):
 				hb.H.Procreate.Partner = nil
-				hb.H.Procreate.Timer = 300
+				hb.H.Procreate.Timer = 100
 			}
 		} else {
 			hb.H.Procreate.Partner = nil
-			hb.H.Procreate.Timer = 300
+			hb.H.Procreate.Timer = 100
 		}
 	case PROCREATE:
 		if hb.H.Type == 'F' {
@@ -410,7 +409,7 @@ func (hb *HumanBehavior) Act() {
 		}
 		hb.H.Procreate.Valide = false
 		hb.H.Procreate.Partner = nil
-		hb.H.Procreate.Timer = 300
+		hb.H.Procreate.Timer = 100
 		hb.H.Procreate.IsHome = false
 		hb.H.StackAction = append(hb.H.StackAction, MOVE)
 	case FIGHT:

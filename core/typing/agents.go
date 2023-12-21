@@ -190,17 +190,17 @@ func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
 	switch hex.Resource {
 	case ANIMAL:
 		if h.Race == NEANDERTHAL {
-			score += AnimalFoodValueMultiplier + 0.5
+			score += AnimalFoodValueMultiplier
 		}
 		if h.Race == SAPIENS {
-			score += AnimalFoodValueMultiplier + 1.0
+			score += AnimalFoodValueMultiplier
 		}
 		if h.Body.Hungriness > threshold {
 			score += 3
 		}
 	case FRUIT:
 		if h.Race == NEANDERTHAL {
-			score += FruitFoodValueMultiplier + 0.01
+			score = math.Inf(-1)
 		}
 		if h.Race == SAPIENS {
 			score += FruitFoodValueMultiplier + 0.5
