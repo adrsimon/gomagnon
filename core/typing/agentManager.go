@@ -59,8 +59,8 @@ func (agMan *AgentManager) MakeChild(parent1 *Agent, parent2 *Agent, count int) 
 			Type: []rune{'M', 'F'}[Randomizer.Intn(2)],
 			Race: parent1.Race,
 			Body: HumanBody{
-				Thirstiness: 50,
-				Hungriness:  50,
+				Thirstiness: 20,
+				Hungriness:  20,
 				Age:         0,
 			},
 			Stats: HumanStats{
