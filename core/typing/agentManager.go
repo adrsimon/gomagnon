@@ -191,7 +191,7 @@ func (agMan *AgentManager) executeResources(request agentToManager) {
 				(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = nil
 			} else if agent.Clan.chief.ID == agent.ID {
 				newChief := agent.Clan.members[Randomizer.Intn(len(agent.Clan.members))]
-				if agent.Hut != nil && agent.Hut.Owner.ID == agent.ID {
+				if agent.Hut.Owner.ID == agent.ID { // PB ICI OWNER NIL
 					agent.Hut.Owner = newChief
 					(*agMan.Map)[agent.Hut.Position.Position.X][agent.Hut.Position.Position.Y].Hut.Owner = newChief
 				}

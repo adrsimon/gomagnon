@@ -83,7 +83,7 @@ func (hb *HumanBehavior) DeliberateAtHut() {
 		hb.H.Action = CREATEVOTENEWMEMBER
 		return
 	}
-	if hb.H.Clan != nil && hb.H.Hut.Ballot.VoteInProgress && slices.Contains(hb.H.Hut.Ballot.VotersID, hb.H.ID) {
+	if hb.H.Clan != nil && hb.H.Hut.Ballot.VoteInProgress && slices.Contains(hb.H.Hut.Ballot.VotersID, hb.H.ID) && !hb.H.Hut.Ballot.EndTimeVote.Before(time.Now()) {
 		hb.H.Action = VOTE
 		return
 	}
