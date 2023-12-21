@@ -426,7 +426,7 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 	switch res.Action {
 	case "CREATECLAN":
 		score := h.calculateScore(res.Agent)
-		if h.Clan != nil && score < 12 {
+		if h.Clan != nil || score < 12 {
 			res.commOut <- AgentComm{Agent: h, Action: "REFUSECLAN", commOut: h.AgentCommIn}
 		} else {
 			res.commOut <- AgentComm{Agent: h, Action: "ACCEPTCLAN", commOut: h.AgentCommIn}
