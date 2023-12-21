@@ -197,7 +197,7 @@ func (hb *HumanBehavior) Act() {
 			var targetHexagon *Hexagone
 			targetHexagon = hb.H.Target
 
-			if hb.H.Hut != nil {
+			if hb.H.Hut != nil && targetHexagon != nil {
 				if hb.H.Body.Tiredness > 80 {
 					targetHexagon = hb.H.Hut.Position
 				} else if hb.H.Body.Hungriness > 80 && (slices.Contains(hb.H.HutInventoryVision, ANIMAL) || slices.Contains(hb.H.HutInventoryVision, FRUIT)) {
