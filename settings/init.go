@@ -54,4 +54,8 @@ func init() {
 		fmt.Println("Error: unknown world type, should be one of island|continent")
 		os.Exit(1)
 	}
+	if Setting.World.Size.X <= 0 || Setting.World.Size.Y <= 0 {
+		fmt.Println("Error: map cannot be of negative length")
+		os.Exit(1)
+	}
 }
