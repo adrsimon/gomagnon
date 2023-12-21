@@ -442,6 +442,7 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 					}
 				}
 				h.Hut = res2.Agent.Hut
+				fmt.Println("a")
 			}
 		}
 	case "INVITECLAN":
@@ -459,6 +460,7 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 				}
 			}
 			h.Hut = res.Agent.Hut
+			fmt.Println("b")
 		}
 	case "PROCREATE":
 		if math.Abs(float64(res.Agent.Stats.Sociability-h.Stats.Sociability)) < 50 && h.Procreate.Timer <= 0 {
