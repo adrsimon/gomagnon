@@ -166,7 +166,7 @@ const (
 	AnimalFoodValueMultiplier = 5.0
 	FruitFoodValueMultiplier  = 3.0
 	WaterValueMultiplier      = 4.0
-	DistanceMultiplier        = 0.2
+	DistanceMultiplier        = 0.5
 )
 
 func NewHuman(id string, Type rune, Race Race, body HumanBody, stats HumanStats, mapVision [][]Hexagone, position *Hexagone, target *Hexagone, movingToTarget bool, currentPath []*Point2D, board *Board, comOut agentToManager, comIn managerToAgent, hut *Hut, inventory Inventory, agentRelation map[string]string, procreate Procreate) *Agent {
@@ -190,17 +190,17 @@ func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
 	switch hex.Resource {
 	case ANIMAL:
 		if h.Race == NEANDERTHAL {
-			score += AnimalFoodValueMultiplier + 0.5
+			score += AnimalFoodValueMultiplier
 		}
 		if h.Race == SAPIENS {
-			score += AnimalFoodValueMultiplier + 1.0
+			score += AnimalFoodValueMultiplier
 		}
 		if h.Body.Hungriness > threshold {
 			score += 3
 		}
 	case FRUIT:
 		if h.Race == NEANDERTHAL {
-			score += FruitFoodValueMultiplier + 0.01
+			score = math.Inf(-1)
 		}
 		if h.Race == SAPIENS {
 			score += FruitFoodValueMultiplier + 0.5
@@ -210,13 +210,13 @@ func (h *Agent) EvaluateOneHex(hex *Hexagone) float64 {
 		}
 	case ROCK:
 		if h.Hut == nil && h.Inventory.Object[ROCK] < Needs["hut"][ROCK] && h.Inventory.Weight <= MaxWeightInv-WeightRock {
-			score += 3
+			score += 10
 		} else if h.Hut == nil && h.Inventory.Object[ROCK] >= Needs["hut"][ROCK] {
 			score = math.Inf(-1)
 		}
 	case WOOD:
 		if h.Hut == nil && h.Inventory.Object[WOOD] < Needs["hut"][WOOD] && h.Inventory.Weight <= MaxWeightInv-WeightWood {
-			score += 3
+			score += 10
 		} else if h.Hut == nil && h.Inventory.Object[WOOD] >= Needs["hut"][WOOD] {
 			score = math.Inf(-1)
 		}
@@ -293,7 +293,8 @@ func (h *Agent) BestMove(surroundingHexagons []*Hexagone) *Hexagone {
 	valid := false
 	randHex := &Hexagone{}
 	for !valid {
-		randHex = surroundingHexagons[Randomizer.Intn(len(surroundingHexagons))]
+		n := len(surroundingHexagons)
+		randHex = surroundingHexagons[Randomizer.Intn(n)]
 		if h.Board.isValidHex(randHex) && randHex.Biome != DEEP_WATER && randHex.Biome != WATER {
 			valid = true
 		}
@@ -425,7 +426,7 @@ func (h *Agent) AnswerAgents(res AgentComm) {
 	switch res.Action {
 	case "CREATECLAN":
 		score := h.calculateScore(res.Agent)
-		if h.Clan != nil && score < 12 {
+		if h.Clan != nil || score < 12 {
 			res.commOut <- AgentComm{Agent: h, Action: "REFUSECLAN", commOut: h.AgentCommIn}
 		} else {
 			res.commOut <- AgentComm{Agent: h, Action: "ACCEPTCLAN", commOut: h.AgentCommIn}
@@ -511,12 +512,16 @@ func (h *Agent) CloseUpdate() {
 	}
 	if int(h.Body.Age) == 10 {
 		h.Behavior = &HumanBehavior{H: h}
-		if Randomizer.Intn(200) < 1 && h.Clan != nil {
+		if Randomizer.Intn(200) < 1 && h.Clan != nil && len(h.Clan.members) > 5 {
 			h.ComOut = agentToManager{AgentID: h.ID, Action: "leave-clan", Pos: h.Position, commOut: make(chan managerToAgent)}
 			h.Board.AgentManager.messIn <- h.ComOut
 			h.ComIn = <-h.ComOut.commOut
 		}
 	}
+	if h.Body.Tiredness < 0 {
+		h.Body.Tiredness = 0
+	}
+
 }
 
 func (h *Agent) UpdateAgent() {

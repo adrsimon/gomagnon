@@ -43,13 +43,13 @@ func (hb *HumanBehavior) GetNeighboursWithinAcuity() []*Hexagone {
 
 func (hb *HumanBehavior) DeliberateAtHut() {
 	/** If he is tired and have a home, he should sleep **/
-	if hb.H.Body.Tiredness > 0 {
+	if hb.H.Body.Tiredness >= 1 {
 		hb.H.Action = SLEEP
 		return
 	}
 	/** If he is home and not partner he should wait **/
 	if hb.H.Procreate.Partner != nil && hb.H.Procreate.Valide && !hb.H.Procreate.IsHome {
-		hb.H.Action = SLEEP
+		hb.H.Action = NOOP
 		return
 	}
 
@@ -83,7 +83,7 @@ func (hb *HumanBehavior) DeliberateAtHut() {
 		hb.H.Action = CREATEVOTENEWMEMBER
 		return
 	}
-	if hb.H.Clan != nil && hb.H.Hut.Ballot.VoteInProgress && slices.Contains(hb.H.Hut.Ballot.VotersID, hb.H.ID) {
+	if hb.H.Clan != nil && hb.H.Hut.Ballot.VoteInProgress && slices.Contains(hb.H.Hut.Ballot.VotersID, hb.H.ID) && !hb.H.Hut.Ballot.EndTimeVote.Before(time.Now()) {
 		hb.H.Action = VOTE
 		return
 	}
@@ -192,8 +192,9 @@ func (hb *HumanBehavior) Act() {
 	case MOVE:
 		if !hb.H.MovingToTarget {
 			var targetHexagon *Hexagone
+			targetHexagon = hb.H.Target
 
-			if hb.H.Hut != nil {
+			if hb.H.Hut != nil && targetHexagon != nil {
 				if hb.H.Body.Tiredness > 80 {
 					targetHexagon = hb.H.Hut.Position
 				} else if hb.H.Body.Hungriness > 80 && (slices.Contains(hb.H.HutInventoryVision, ANIMAL) || slices.Contains(hb.H.HutInventoryVision, FRUIT)) {
@@ -204,15 +205,11 @@ func (hb *HumanBehavior) Act() {
 				}
 			}
 
-			//if hb.H.Opponent != nil {
-			//	targetHexagon = hb.H.Opponent.Position
-			//}
-
 			if targetHexagon == nil {
-				var memorizedHexes []*Hexagone
+				memorizedHexes := make([]*Hexagone, 0)
 				for _, v := range hb.H.MapVision {
 					for _, v2 := range v {
-						if v2.Position.X != -1 && v2.Position.Y != -1 {
+						if (v2.Position.X != -1 && v2.Position.Y != -1) || (hb.H.Hut != nil && v2.Position.X != hb.H.Hut.Position.Position.X && v2.Position.Y != hb.H.Hut.Position.Position.Y) {
 							hex := v2
 							memorizedHexes = append(memorizedHexes, &hex)
 						}
@@ -261,17 +258,20 @@ func (hb *HumanBehavior) Act() {
 		}
 	case BUILD:
 		hb.H.ComOut = agentToManager{AgentID: hb.H.ID, Action: "build", Pos: hb.H.Position, commOut: make(chan managerToAgent)}
+		hb.H.Hut = &Hut{Position: hb.H.Position, Inventory: make([]ResourceType, 0), Owner: hb.H}
 		hb.H.Board.AgentManager.messIn <- hb.H.ComOut
 		hb.H.ComIn = <-hb.H.ComOut.commOut
 		if hb.H.ComIn.Valid {
-			hb.H.Hut = &Hut{Position: hb.H.Position, Inventory: make([]ResourceType, 0), Owner: hb.H}
 			hb.H.Inventory.Object[WOOD] -= Needs["hut"][WOOD]
 			hb.H.Inventory.Object[ROCK] -= Needs["hut"][ROCK]
 			hb.H.Inventory.Weight -= WeightWood * float64(Needs["hut"][WOOD])
 			hb.H.Inventory.Weight -= WeightRock * float64(Needs["hut"][ROCK])
+		} else {
+			hb.H.Hut = nil
+			hb.H.StackAction = append(hb.H.StackAction, MOVE)
 		}
 	case SLEEP:
-		if hb.H.Body.Tiredness > 0 {
+		if hb.H.Body.Tiredness >= 1 {
 			hb.H.Body.Tiredness -= 3
 			hb.H.StackAction = append(hb.H.StackAction, SLEEP)
 		}
@@ -315,9 +315,9 @@ func (hb *HumanBehavior) Act() {
 						hb.H.Clan = clan
 						bestH.AgentCommIn <- AgentComm{Agent: hb.H, Action: "INVITECLAN", commOut: hb.H.AgentCommIn}
 					}
-				case <-time.After(20 * time.Millisecond):
+				case <-time.After(30 * time.Millisecond):
 				}
-			case <-time.After(20 * time.Millisecond):
+			case <-time.After(30 * time.Millisecond):
 
 			}
 		}
@@ -368,9 +368,9 @@ func (hb *HumanBehavior) Act() {
 					} else {
 						hb.H.Action = MOVE
 					}
-				case <-time.After(20 * time.Millisecond):
+				case <-time.After(30 * time.Millisecond):
 				}
-			case <-time.After(20 * time.Millisecond):
+			case <-time.After(30 * time.Millisecond):
 
 			}
 		}
@@ -384,16 +384,19 @@ func (hb *HumanBehavior) Act() {
 						hb.H.Procreate.Valide = true
 					} else {
 						hb.H.Procreate.Partner = nil
-						hb.H.Procreate.Timer = 300
+						hb.H.Procreate.Timer = 100
 					}
-				case <-time.After(20 * time.Millisecond):
+				case <-time.After(30 * time.Millisecond):
 					hb.H.Procreate.Partner = nil
-					hb.H.Procreate.Timer = 300
+					hb.H.Procreate.Timer = 100
 				}
-			case <-time.After(20 * time.Millisecond):
+			case <-time.After(30 * time.Millisecond):
 				hb.H.Procreate.Partner = nil
-				hb.H.Procreate.Timer = 300
+				hb.H.Procreate.Timer = 100
 			}
+		} else {
+			hb.H.Procreate.Partner = nil
+			hb.H.Procreate.Timer = 100
 		}
 	case PROCREATE:
 		if hb.H.Type == 'F' {
@@ -406,7 +409,7 @@ func (hb *HumanBehavior) Act() {
 		}
 		hb.H.Procreate.Valide = false
 		hb.H.Procreate.Partner = nil
-		hb.H.Procreate.Timer = 300
+		hb.H.Procreate.Timer = 100
 		hb.H.Procreate.IsHome = false
 		hb.H.StackAction = append(hb.H.StackAction, MOVE)
 	case FIGHT:
@@ -442,9 +445,9 @@ func (hb *HumanBehavior) Act() {
 							hb.H.Opponent = nil
 							hb.H.Fightcooldown = 300
 						}
-					case <-time.After(20 * time.Millisecond):
+					case <-time.After(30 * time.Millisecond):
 					}
-				case <-time.After(20 * time.Millisecond):
+				case <-time.After(30 * time.Millisecond):
 
 				}
 			}
@@ -512,7 +515,7 @@ func (hb *ChildBehavior) Deliberate() {
 
 func (hb *ChildBehavior) DeliberateAtHut() {
 	/** If he is tired and have a home, he should sleep **/
-	if hb.C.Body.Tiredness > 0 {
+	if hb.C.Body.Tiredness >= 1 {
 		hb.C.Action = SLEEP
 		return
 	}
@@ -541,7 +544,7 @@ func (hb *ChildBehavior) Act() {
 	case MOVE:
 		if !hb.C.MovingToTarget {
 			var targetHexagon *Hexagone
-
+			targetHexagon = hb.C.Target
 			if hb.C.Hut != nil {
 				if hb.C.Body.Tiredness > 80 {
 					targetHexagon = hb.C.Hut.Position
@@ -594,7 +597,7 @@ func (hb *ChildBehavior) Act() {
 			}
 		}
 	case SLEEP:
-		if hb.C.Body.Tiredness > 0 {
+		if hb.C.Body.Tiredness >= 1 {
 			hb.C.Body.Tiredness -= 3
 			// hb.H.Body.Hungriness += 0.5
 			// hb.H.Body.Thirstiness += 0.5
