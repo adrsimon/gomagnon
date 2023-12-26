@@ -42,8 +42,8 @@ La simulation est gérée par un fichier de configuration situé dans le dossier
   }
 }
 ```
-- `initialNumber` : nombre d'agents à l'origine du monde.
-- `seed` : la graîne de génération du monde, qui vous permettra de pouvoir reproduire la même solution plusieurs fois d'affilée.
-`- type` : type du monde, doit être un de `ìsland|continent`, island générera une grande île entourée d'eau, continent génerera un continent avec plusieurs lacs.
-- `maxXXX` : quantité maximale de la ressource XXX simulaténement disponible sur la carte.
-- `size` : taille du monde, X correspond à la largeur, Y à la hauteur.
+- `initialNumber` (int) : nombre d'agents à l'origine du monde.
+- `seed` (int) : la graîne de génération du monde, qui vous permettra de pouvoir reproduire la même solution plusieurs fois d'affilée.
+- `type` (string) : type du monde, doit être un de `ìsland|continent`, island générera une grande île entourée d'eau, continent génerera un continent avec plusieurs lacs.
+- `maxXXX` (int) : quantité maximale de la ressource XXX simulaténement disponible sur la carte.
+- `size` (int) : taille du monde, X correspond à la largeur, Y à la hauteur.

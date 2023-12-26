@@ -51,7 +51,7 @@ func (hu *Hut) StartNewVote(agent *Agent, reason string) bool {
 }
 
 func (hu *Hut) Vote(agent *Agent, choice string) bool {
-	if !hu.Ballot.EndTimeVote.Before(time.Now()) {
+	if !hu.Ballot.EndTimeVote.Before(time.Now().Add(-time.Second)) {
 		if slices.Contains(hu.Ballot.VotersID, agent.ID) {
 			hu.removeVoter(agent.ID)
 			if choice == "VoteYes" {
